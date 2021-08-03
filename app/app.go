@@ -5,10 +5,10 @@ import (
 	"os"
 
 	//"github.com/psinthorn/go_smallsite/controllers"
-	controllers "github.com/psinthorn/go_smallsite/controllers/handlers"
-	domain_mail "github.com/psinthorn/go_smallsite/domain/mail"
-	"github.com/psinthorn/go_smallsite/internal/render"
-	"github.com/psinthorn/go_smallsite/internal/utils"
+	controllers "github.com/psinthorn/f2coth/controllers/handlers"
+	domain_mail "github.com/psinthorn/f2coth/domain/mail"
+	"github.com/psinthorn/f2coth/internal/render"
+	"github.com/psinthorn/f2coth/internal/utils"
 )
 
 var infoLog *log.Logger

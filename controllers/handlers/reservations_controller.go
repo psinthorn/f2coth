@@ -11,14 +11,14 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	domain_mail "github.com/psinthorn/go_smallsite/domain/mail"
-	domain_reservation "github.com/psinthorn/go_smallsite/domain/reservations"
-	domain "github.com/psinthorn/go_smallsite/domain/rooms"
-	"github.com/psinthorn/go_smallsite/domain/templates"
-	"github.com/psinthorn/go_smallsite/internal/forms"
-	"github.com/psinthorn/go_smallsite/internal/helpers"
-	"github.com/psinthorn/go_smallsite/internal/render"
-	"github.com/psinthorn/go_smallsite/internal/utils"
+	domain_mail "github.com/psinthorn/f2coth/domain/mail"
+	domain_reservation "github.com/psinthorn/f2coth/domain/reservations"
+	domain "github.com/psinthorn/f2coth/domain/rooms"
+	"github.com/psinthorn/f2coth/domain/templates"
+	"github.com/psinthorn/f2coth/internal/forms"
+	"github.com/psinthorn/f2coth/internal/helpers"
+	"github.com/psinthorn/f2coth/internal/render"
+	"github.com/psinthorn/f2coth/internal/utils"
 )
 
 // CheckAvailability is check-availability page render

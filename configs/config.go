@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/alexedwards/scs/v2"
-	domain_mail "github.com/psinthorn/go_smallsite/domain/mail"
+	domain_mail "github.com/psinthorn/f2coth/domain/mail"
 )
 
 type AppConfig struct {

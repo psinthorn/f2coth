@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	domain_reservation "github.com/psinthorn/go_smallsite/domain/reservations"
-	"github.com/psinthorn/go_smallsite/domain/templates"
-	"github.com/psinthorn/go_smallsite/internal/helpers"
-	"github.com/psinthorn/go_smallsite/internal/render"
+	domain_reservation "github.com/psinthorn/f2coth/domain/reservations"
+	"github.com/psinthorn/f2coth/domain/templates"
+	"github.com/psinthorn/f2coth/internal/helpers"
+	"github.com/psinthorn/f2coth/internal/render"
 )
 
 // ReservationLists Show all current reservations

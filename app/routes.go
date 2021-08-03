@@ -5,9 +5,9 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/psinthorn/go_smallsite/configs"
-	controllers "github.com/psinthorn/go_smallsite/controllers/handlers"
-	"github.com/psinthorn/go_smallsite/internal/utils"
+	"github.com/psinthorn/f2coth/configs"
+	controllers "github.com/psinthorn/f2coth/controllers/handlers"
+	"github.com/psinthorn/f2coth/internal/utils"
 )
 
 // Routes use to map url with controller func

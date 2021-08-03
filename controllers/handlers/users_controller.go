@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/psinthorn/go_smallsite/domain/templates"
-	domain "github.com/psinthorn/go_smallsite/domain/users"
+	"github.com/psinthorn/f2coth/domain/templates"
+	domain "github.com/psinthorn/f2coth/domain/users"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/psinthorn/go_smallsite/internal/forms"
-	"github.com/psinthorn/go_smallsite/internal/helpers"
-	"github.com/psinthorn/go_smallsite/internal/render"
+	"github.com/psinthorn/f2coth/internal/forms"
+	"github.com/psinthorn/f2coth/internal/helpers"
+	"github.com/psinthorn/f2coth/internal/render"
 )
 
 // var (

@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/psinthorn/go_smallsite/configs"
+	"github.com/psinthorn/f2coth/configs"
 )
 
 // Repo

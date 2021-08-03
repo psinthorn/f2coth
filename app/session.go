@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
-	domain_reservation "github.com/psinthorn/go_smallsite/domain/reservations"
-	domain "github.com/psinthorn/go_smallsite/domain/rooms"
-	"github.com/psinthorn/go_smallsite/domain/users"
+	domain_reservation "github.com/psinthorn/f2coth/domain/reservations"
+	domain "github.com/psinthorn/f2coth/domain/rooms"
+	"github.com/psinthorn/f2coth/domain/users"
 )
 
 // CreateSession and store session to AppConfig.Session

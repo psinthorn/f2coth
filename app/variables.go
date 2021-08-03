@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/alexedwards/scs/v2"
-	"github.com/psinthorn/go_smallsite/configs"
+	"github.com/psinthorn/f2coth/configs"
 )
 
 var (

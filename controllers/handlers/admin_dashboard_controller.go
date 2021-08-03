@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/psinthorn/go_smallsite/domain/templates"
-	"github.com/psinthorn/go_smallsite/internal/render"
+	"github.com/psinthorn/f2coth/domain/templates"
+	"github.com/psinthorn/f2coth/internal/render"
 )
 
 // GetRoomForm form for create new room

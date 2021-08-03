@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/psinthorn/go_smallsite/datasources/drivers"
+	"github.com/psinthorn/f2coth/datasources/drivers"
 )
 
 // import (
