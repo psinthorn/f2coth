@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	const portNumber = ":8080"
+	const portNumber = ":8081"
 	// start application and connect to database
 	err := StartApp()
 	if err != nil {
@@ -22,7 +22,7 @@ func main() {
 	fmt.Println("Current environment isProduction: ", appConfig.IsProduction)
 
 	// Serve server service
-	err = http.ListenAndServe(":8080", routes(&appConfig))
+	err = http.ListenAndServe(portNumber, routes(&appConfig))
 	if err != nil {
 		fmt.Println("------------------------------------------------------------------")
 		fmt.Println(fmt.Sprintf(":( sorry can't start server on port %s ", portNumber))

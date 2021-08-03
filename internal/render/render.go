@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/justinas/nosurf"
-	"github.com/psinthorn/go_smallsite/configs"
-	"github.com/psinthorn/go_smallsite/domain/templates"
+	"github.com/psinthorn/f2coth/configs"
+	"github.com/psinthorn/f2coth/domain/templates"
 )
 
 var (

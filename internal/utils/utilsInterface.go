@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/psinthorn/go_smallsite/configs"
+	"github.com/psinthorn/f2coth/configs"
 )
 
 var UtilsService utilsInterface = &Utils{}
