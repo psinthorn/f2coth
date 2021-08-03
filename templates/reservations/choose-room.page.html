@@ -1,0 +1,33 @@
+{{template "base" .}}
+{{define "banner"}}
+        <img src="/static/images/contact-samui-natien-resort-villas-17.png" class="img-fluid d-block w-100" style="height: 260px; margin: 0; border: 0;" alt="Samui Natien Resort">        
+{{end}}
+    {{define "content"}}
+    <div class="container mt-5 mb-5">
+        <div class="row">
+                <h1 class="mt-3  mt-5 mb-5">Choose room </h1>
+        </div>   
+        {{$rooms := index .Data "rooms"}}     
+            <div class="row mt-5 mb-5">
+                {{range $rooms}}
+                <!-- <p>
+                    Room No: <p>{{.RoomNo}}  Room Type: {{.ID}}</p><br/>
+                </p> -->
+                    <div class="col-xs-4 col-sm-3 col-md-2 col-lg-1">
+                        <div class="card text-center">
+                            <a href="/rooms/reseration/choose-room/{{.ID}}/{{.RoomTypeId}}/{{.RoomNo}}">{{.RoomNo}}</a>
+                        </div>               
+                    </div>
+                {{end}}
+                </div>                           
+            </div>                    
+    </div>
+    {{end}}
+
+    {{define "js"}}
+    <!-- if you have specific javascript for this page put it here -->
+    <script>
+        console.log("Separate script form individual page is start here")
+    </script>
+    {{end}}
+    

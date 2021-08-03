@@ -1,0 +1,4 @@
+INSERT INTO public.users (first_name,last_name,email,"password",access_level,status,created_at,updated_at) VALUES
+	 ('Sinthorn','Pradutnam','psinthorn@gmail.com','$2a$12$LoYn0VZviKyDMaLJLkyMHemcqPqis9oNm5/Q/N8KpNb/A0uIWbsf2',1,'published','2021-05-12 13:41:08.992','2021-05-12 13:41:08.992'),
+	 ('Sinthorn','Pra','psinth@gmail.com','$2a$12$LoYn0VZviKyDMaLJLkyMHemcqPqis9oNm5/Q/N8KpNb/A0uIWbsf2',2,'public','2021-06-14 23:06:05.521','2021-06-14 23:06:05.521'),
+	 ('Bruce','Wyne','bruce@kingofcave.com','$2a$12$LoYn0VZviKyDMaLJLkyMHemcqPqis9oNm5/Q/N8KpNb/A0uIWbsf2',3,'public','2021-06-15 09:42:00.520','2021-06-15 09:42:00.520');

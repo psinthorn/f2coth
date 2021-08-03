@@ -1,0 +1,9 @@
+create_table("rooms") {
+    t.Column("id", "integer", {primary: true})
+    t.Column("roomtype_id", "integer", {})
+    t.Column("room_name", "string", {"default": ""})
+    t.Column("room_no", "string", {"default": ""})
+    t.Column("description", "string", {"default": ""})
+    t.Column("status", "string", {"default": "available"})
+
+}

@@ -1,0 +1,171 @@
+{{template "base" .}}
+{{template "navbar-top" .}}
+{{define "banner"}}
+    <div id="main-carousel" class="carousel slide mb-5" data-ride="carousel">
+
+        <ol class="carousel-indicators">
+            <li data-target="#main-carousel" data-slide-to="0" class="active"></li>
+            <li data-target="#main-carousel" data-slide-to="1"></li>
+            <li data-target="#main-carousel" data-slide-to="2"></li>
+        </ol>
+
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="/static/images/snr_banner_01_1440x640.png" class="img-fluid d-block w-100" alt="Samui Natien Resort">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>First slide label</h5>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="/static/images/snr_banner_02_1440x640.png" class="img-fluid d-block w-100" alt="Samui Natien Resort">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Second slide label</h5>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="/static/images/snr_banner_05_1440x640.png" class="img-fluid d-block w-100" alt="Samui Natien Resort">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Family Natural</h5>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{{end}}
+{{define "content"}}
+    <div class="container mt-5">
+        <div class="row">
+            <!-- <div class="col-sm-4 col-md-4 col-lg-4">
+                <img src="/static/images/rooms/snr_deluxe_room_02.jpg"
+                     class="img-fluid img-thumbnail mx-auto d-block room-image" alt="room image">
+            </div> -->
+
+            <div class="col-sm-6 col-md-3 col-lg-3">
+                <img src="/static/images/rooms/snr_deluxe_room_02.jpg"
+                     class="img-fluid img-thumbnail mx-auto d-block" alt="room image">
+            </div>
+            <div class="col-sm-6 col-md-3 col-lg-3">
+                <img src="/static/images/rooms/snr_deluxe_room_02.jpg"
+                     class="img-fluid img-thumbnail mx-auto d-block" alt="room image">
+            </div>
+            <div class="col-sm-6 col-md-3 col-lg-3">
+                <img src="/static/images/rooms/snr_deluxe_room_02.jpg"
+                     class="img-fluid img-thumbnail mx-auto d-block" alt="room image">
+            </div>
+            <div class="col-sm-6 col-md-3 col-lg-3">
+                <img src="/static/images/rooms/snr_deluxe_room_02.jpg"
+                     class="img-fluid img-thumbnail mx-auto d-block" alt="room image">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12 col-md-6 col-lg-6">
+                <h1 class="text-center mt-4">Deluxe</h1>
+                <p>
+                    Your home away form home, set on the majestic waters of the Atlantic Ocean, this will be a vacation
+                    to remember.
+                    Your home away form home, set on the majestic waters of the Atlantic Ocean, this will be a vacation
+                    to remember.
+                    Your home away form home, set on the majestic waters of the Atlantic Ocean, this will be a vacation
+                    to remember.
+                    Your home away form home, set on the majestic waters of the Atlantic Ocean, this will be a vacation
+                    to remember.
+                    Your home away form home, set on the majestic waters of the Atlantic Ocean, this will be a vacation
+                    to remember.
+                    Your home away form home, set on the majestic waters of the Atlantic Ocean, this will be a vacation
+                    to remember.
+                </p>
+            </div>
+            
+            <div class="col-sm-12 col-md-3 col-lg-3 h3 text-center mt-5">
+                Facilities
+            </div>
+            <div class="col-sm-12 col-md-3 col-lg-3 text-center mt-5">
+                    <a id="check-availability-button" href="#!" class="btn btn-success">Check Availability</a>
+            </div>
+        </div>
+        
+    </div>
+{{end}}
+
+{{define "js"}}
+    <!-- if you have specific javascript for this page put it here -->
+    <script>
+
+        document.getElementById("check-availability-button").addEventListener("click", function () {
+        let html = `
+        <form id="check-availability-form" action="/rooms/search-availability-response" method="post" novalidate class="needs-validation">
+              <div class="form-row">
+                <input type="hidden" value="2" id="room_id" name="room_id">
+                <div class="col">
+                      <div class="form-row" id="reservation-dates-modal">
+                          <div class="col">
+                              <input required disabled class="form-control" type="text" name="start_date" id="start_date" placeholder="Arrival" autocomplete="off">
+                          </div>
+                          <div class="col">
+                              <input required disabled class="form-control" type="text" name="end_date" id="end_date" placeholder="Departure" autocomplete="off">
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </form>
+        `;
+        attention.custom({
+            title: 'Choose your dates',
+            msg: html,
+
+            willOpen: () => {
+                      const elem = document.getElementById("reservation-dates-modal");
+                      const rp = new DateRangePicker(elem, {
+                          format: 'yyyy-mm-dd',
+                          showOnFocus: true,
+                          minDate: new Date(),
+                      })
+            },
+
+            didOpen: () => {
+                      document.getElementById("start_date").removeAttribute("disabled");
+                      document.getElementById("end_date").removeAttribute("disabled");
+            },
+
+              callback: (results) => {
+                let form = document.getElementById("check-availability-form");
+
+                // retrive data from all form input field
+                let formData = new FormData(form);
+
+                // append csrf to form
+                formData.append("csrf_token", "{{.CSRFToken}}");
+
+                fetch("/rooms/search-availability-response", {
+                    method: 'post',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.Ok) {
+                        attention.custom({
+                            icon: "success",
+                            showConfirmButton: false,
+                            showCloseButton: true,
+                            showCancelButton: false,
+                            msg: `<p>Room is available</p> <a href="/rooms/reservation" type="button" class="btn btn-success">Book Now</a>`,
+                        })
+                    } else {
+                        attention.custom({
+                            icon: "warning",
+                            showConfirmButton: false,
+                            showCancelButton: false,
+                            timer: 1500,
+                            msg: `<p>Sorry :( Room is not available</p>`,
+                        })
+                    }
+                })
+              }
+          });
+      })
+    </script>
+{{end}}
+    

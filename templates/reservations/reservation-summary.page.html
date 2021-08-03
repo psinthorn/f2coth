@@ -1,0 +1,43 @@
+{{template "base" .}}
+{{define "banner"}}
+        <img src="/static/images/contact-samui-natien-resort-villas-17.png" class="img-fluid d-block w-100" style="height: 260px; margin: 0; border: 0;" alt="Samui Natien Resort">        
+{{end}}
+{{define "content"}}
+    {{$rsvn := index .Data "reservation"}}
+    <div class="container mt-5 mb-5">
+        <div class="row">
+            <div class="col">
+                <h2 class="mt-5 mb-3">Thank you for reservation with us.</h2>
+                <h3 class="mt-5 mb-3">Reservation Infomation</h3>
+                <table class="table tabel-stripe">
+                    <thead> </thead>
+                        <tr>
+                            <td>Name</td>
+                            <td>{{$rsvn.FirstName}} {{$rsvn.LastName}}</td>
+                        </tr>
+                        <tr>
+                            <td>Room Type:</td>
+                            <td>{{$rsvn.RoomTypeName}}</td>
+                        </tr>
+                        <tr>
+                            <td>Arrival:</td>
+                            <td>{{index .StringMap "start_date"}}</td>
+                        </tr>
+                        <tr>
+                            <td>Departure:</td>
+                            <td>{{index .StringMap "end_date"}}</td>
+                        </tr>
+                        <tr>
+                            <td>Email</td>
+                            <td>{{$rsvn.Email}}</td>
+                        </tr>
+                        <tr>
+                            <td>Phone</td>
+                            <td>{{$rsvn.Phone}}</td>
+                        </tr>
+                    </table>
+            </div>
+        </div>
+    </div>
+
+{{end}}

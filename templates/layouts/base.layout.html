@@ -1,0 +1,247 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Go Unique Website | Unique Hotel</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
+          integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+    <!-- <link rel="stylesheet" href="/static/css/bootstrap-5x0/css/bootstrap.min.css"> -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.1.2/dist/css/datepicker-bs4.min.css">
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/notie/dist/notie.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10.15.5/dist/sweetalert2.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
+
+</head>
+
+<body>
+    <!-- {{block "navbar-top" .}}
+    {{end}} -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">GoUniqueHotel</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item active">
+                    <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/about">About</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Accommodations
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" href="/rooms/superior">Superior</a>
+                        <a class="dropdown-item" href="/rooms/deluxe">Deluxe</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/rooms/search-availability">Book Now</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/contact">Contact</a>
+                </li>
+
+                {{ if eq .IsAuthenticate 1}}
+                  <li class="nav-item">
+                    <a class="nav-link" href="/users/logout">Logout</a>
+                  </li>
+
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Admin
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" href="/admin/dashboard">Dashboard</a>
+                        <a class="dropdown-item" href="/users/logout">Logout</a>
+                    </div>
+                  </li>
+
+                {{else}}
+                  <li class="nav-item">
+                    <a class="nav-link" href="/users/login">Login</a>
+                  </li>
+                {{end}}
+            </ul>
+        </div>
+    </nav>
+  {{block "banner" .}}
+  {{end}}  
+    {{block "content" .}}
+    {{end}}
+
+    <!-- Footer -->
+<footer class="page-footer footer font-small blue mt-5 pt-5">
+
+    <!-- Footer Links -->
+    <div class="container-fluid text-center text-md-left mt-5">
+  
+      <!-- Grid row -->
+      <div class="row">
+  
+        <!-- Grid column -->
+        <div class="col-md-6 mt-md-0 mt-3">
+  
+          <!-- Content -->
+          <h5 class="text-uppercase">Unique Hotel Footer Content</h5>
+          <p>Here you can use rows and columns to organize your hotel footer content.</p>
+  
+        </div>
+        <!-- Grid column -->
+  
+        <hr class="clearfix w-100 d-md-none pb-3">
+  
+        <!-- Grid column -->
+        <div class="col-md-3 mb-md-0 mb-3">
+  
+          <!-- Links -->
+          <h5 class="text-uppercase">Links</h5>
+  
+          <ul class="list-unstyled">
+            <li>
+              <a href="/">Home</a>
+            </li>
+            <li>
+              <a href="/about">About</a>
+            </li>
+            <li>
+              <a href="/rooms">Accommodations</a>
+            </li>
+            <li>
+              <a href="/rooms/search-availability">Book Now</a>
+            </li>
+            <li>
+                <a href="/contact">Contact</a>
+              </li>
+          </ul>
+  
+        </div>
+        <!-- Grid column -->
+  
+        <!-- Grid column -->
+        <div class="col-md-3 mb-md-0 mb-3">
+  
+          <!-- Links -->
+          <h5 class="text-uppercase">Manage</h5>
+  
+          <ul class="list-unstyled">
+            {{ if eq .IsAuthenticate 1}}
+            <li>
+              <a href="/users/logout">Logout</a>
+            </li>
+            {{else}}
+            <li>
+              <a href="/users/login">Login</a>
+            </li>
+           {{end}}
+            <!--  <li>
+              <a href="#!">Link 3</a>
+            </li>
+            <li>
+              <a href="#!">Link 4</a>
+            </li> -->
+          </ul>
+  
+        </div>
+        <!-- Grid column -->
+  
+      </div>
+      <!-- Grid row -->
+  
+    </div>
+    <!-- Footer Links -->
+  
+    <!-- Copyright -->
+    <div class="footer-copyright text-center py-3">© 2021 Copyright:
+      <a href="https://f2connect.com"> Go Unique Website</a>
+    </div>
+    <!-- Copyright -->
+  
+  </footer>
+  <!-- Footer -->
+  
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+          integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns"
+          crossorigin="anonymous"></script>
+
+    <!-- <script src="/static/css/bootstrap-5x0/js/bootstrap.bundle.min.js"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.1.2/dist/js/datepicker-full.min.js"></script>
+  <script src="https://unpkg.com/notie"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.15.5/dist/sweetalert2.min.js"></script>
+  <script src="https://unpkg.com/@popperjs/core@2"></script>
+  <script src="/static/js/app.js"></script>
+
+    {{block "js" .}}
+
+    {{end}}
+  
+  <script>
+      let attention = Prompt();
+  
+      (function () {
+          'use strict';
+          window.addEventListener('load', function () {
+              // Fetch all the forms we want to apply custom Bootstrap validation styles to
+              let forms = document.getElementsByClassName('needs-validation');
+              // Loop over them and prevent submission
+              Array.prototype.filter.call(forms, function (form) {
+                  form.addEventListener('submit', function (event) {
+                      if (form.checkValidity() === false) {
+                          event.preventDefault();
+                          event.stopPropagation();
+                      }
+                      form.classList.add('was-validated');
+                  }, false);
+              });
+          }, false);
+      })();     
+      function notify(msg, msgType) {
+          notie.alert({
+              type: msgType,
+              text: msg,
+          })
+      } 
+      function notifyModal(title, text, icon, confirmationButtonText) {
+          Swal.fire({
+              title: title,
+              html: text,
+              icon: icon,
+              confirmButtonText: confirmationButtonText
+          })
+      }
+
+    //   this notify get from seesion that we has add from default template data
+      {{with .Flash}}
+        notify("{{.}},", "success")
+      {{end}}
+
+      {{with .Error}}
+        notify("{{.}},", "error")
+      {{end}}
+
+      {{with .Warning}}
+        notify("{{.}},", "warning")
+      {{end}}
+  
+  </script>
+  
+  </body>
+  
+  </html>
+
+{{end}}

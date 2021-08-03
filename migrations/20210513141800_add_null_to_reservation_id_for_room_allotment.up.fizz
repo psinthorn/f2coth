@@ -1,0 +1,1 @@
+change_column("room_allotments","reservation_id", "integer", {"null": true})

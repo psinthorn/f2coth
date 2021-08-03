@@ -1,0 +1,110 @@
+{{template "base-admin" .}}
+
+{{define "admin-page-title"}}
+    Room management
+{{end}}
+
+{{define "content"}}
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h4 class="mt-5 mb-3">Room Management</h4>
+
+                {{$r := index .Data "room" }}
+                <form method="post" action="/rooms/reservation" class="" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+                    <div class="row">
+                        <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6">
+                            <div class="form-group">
+                                <label for="first_name">Room Name:</label>
+                                {{with .Form.Errors.Get ""}}
+                                    <label class="text-danger">{{.}}</label>
+                                {{end}}
+                                <input class="form-control {{with .Form.Errors.Get "first_name"}} is-invalid {{end}}"
+                                       id="room_name" autocomplete="off" type='text'
+                                       name='room_name' value="{{ $r.RoomName }}" required>
+                            </div>
+                        </div>
+                        <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6">
+                            <div class="form-group">
+                                <label for="last_name">Last Name:</label>
+                                {{with .Form.Errors.Get "last_name"}}
+                                    <label class="text-danger">{{.}}</label>
+                                {{end}}
+                                <input class="form-control {{with .Form.Errors.Get "last_name"}} is-invalid {{end}}"
+                                       id="last_name" autocomplete="off" type='text'
+                                       name='last_name' value="{{$r.LastName}}" required>
+                            </div>                           
+                        </div>
+                    </div>
+                    
+
+                   <div class="row">
+                       <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6">
+                        <div class="form-group">
+                            <label for="start_date">Start Date:</label>
+                            {{with .Form.Errors.Get "start_date"}}
+                                <label class="text-danger">{{.}}</label>
+                            {{end}}
+                            <input class="form-control {{with .Form.Errors.Get "start_date"}} is-invalid {{end}}"
+                                   id="start_date" autocomplete="off" type='text'
+                                   name='start_date'  required>
+                        </div>
+                       </div>
+
+                       <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6">
+                        <div class="form-group">
+                            <label for="end_date">Departure Date:</label>
+                            {{with .Form.Errors.Get "end_date"}}
+                                <label class="text-danger">{{.}}</label>
+                            {{end}}
+                            <input class="form-control {{with .Form.Errors.Get "end_date"}} is-invalid {{end}}"
+                                   id="end_date" autocomplete="off" type='text'
+                                   name='end_date'  required>
+                        </div>
+
+                    </div>
+
+                    <input type="hidden" name="room_id" value="1">
+                   </div>
+                    
+                <div class="row">
+                    <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6">   
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            {{with .Form.Errors.Get "email"}}
+                                <label class="text-danger">{{.}}</label>
+                            {{end}}
+                            <input class="form-control {{with .Form.Errors.Get "email"}} is-invalid {{end}}" id="email"
+                                autocomplete="off" type='email'
+                                name='email' value="{{$r.Email}}" required>
+                        </div>
+                    </div>
+
+                    <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6">   
+                        <div class="form-group">
+                            <label for="phone">Phone:</label>
+                            {{with .Form.Errors.Get "phone"}}
+                                <label class="text-danger">{{.}}</label>
+                            {{end}}
+                            <input class="form-control {{with .Form.Errors.Get "phone"}} is-invalid {{end}}" id="phone"
+                                autocomplete="off" type='phone'
+                                name='phone' value="{{$r.Phone}}" required>
+                        </div>
+                    </div>
+                </div>
+               
+                    <input type="submit" class="btn btn-primary mt-1 mb-1" value="Make Reservation">
+                </form>
+            </div>
+        </div>
+    </div>
+{{end}}
+
+{{define "js"}}
+    <!-- if you have specific javascript for this page put it here -->
+    <script>
+        console.log("Separate script form individual page is start here")
+    </script>
+{{end}}
+    

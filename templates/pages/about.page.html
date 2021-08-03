@@ -1,0 +1,134 @@
+{{template "base" .}}
+{{define "banner"}}
+    <div id="main-carousel" class="carousel slide mb-5" data-ride="carousel">
+
+        <ol class="carousel-indicators">
+            <li data-target="#main-carousel" data-slide-to="0" class="active"></li>
+            <li data-target="#main-carousel" data-slide-to="1"></li>
+            <li data-target="#main-carousel" data-slide-to="2"></li>
+        </ol>
+
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="/static/images/snr_banner_01_1440x640.png" class="img-fluid d-block w-100" alt="Samui Natien Resort">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>First slide label</h5>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="/static/images/snr_banner_02_1440x640.png" class="img-fluid d-block w-100" alt="Samui Natien Resort">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Second slide label</h5>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="/static/images/snr_banner_05_1440x640.png" class="img-fluid d-block w-100" alt="Samui Natien Resort">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Family Natural</h5>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{{end}}
+
+{{define "content"}}
+<div class="container mt-5 mb-5 pb-5">
+    <div class="container mt-5 mb-5">
+        <div class="col text-center">
+            <h1 class="mt-5 mb-5">Property Newly Renovated</h1>
+         </div>
+    </div>
+
+     <div class="row m-1">
+        <div class="col-sm-12 col-md-6 col-lg-6">
+             <p>
+                Our resort has been established its name of the hospitality industry for over 20 years, is the member of Thai Hotels Association (THA) and also contribute 4 stars from Thailand Tourism Standard.
+             </p>
+         </div>
+
+         <div class="col-sm-12 col-md-6 col-lg-6">
+            <p>
+                Samui Natien Resort is in a prime location in the heart of Chaweng Beach, where most happening activities and nightlife continue. The resort capacity of accommodation of 36 rooms and 15 villas.
+            </p>
+         </div>
+     </div>
+
+    <div class="row">
+    <div class="col text-center">
+        <h1 class="mt-5 mb-5">Hotel Amenities</h1>
+    </div>
+    </div>
+
+    <div class="row mb-5">
+    <div class="col-sm-6 col-md-4 col-lg-4 pl-5 pr-5 pb-3">
+            <p class="lead">Pickup & Drop</p>
+            <p class="small">
+                We’ll pick up from airport while you comfy on your ride.
+            </p>
+    </div>
+    <div class="col-sm-6 col-md-4 col-lg-4 pl-5 pr-5 pb-3">
+            <p class="lead">Parking Space</p>
+            <p class="small">
+                Please consider your private parking or better yet.
+            </p>
+    </div>
+    <div class="col-sm-6 col-md-4 col-lg-4 pl-5 pr-5 pb-3">
+        <p class="lead">Drink By The Beach</p>
+        <p class="small">
+            Sipping & enjoying the view.
+        </p>
+    </div>
+    <div class="col-sm-6 col-md-4 col-lg-4 pl-5 pr-5 pb-3">
+            <p class="lead">Hot & Cold Water</p>
+            <p class="small">
+                Let us know if you need anything to be more comfortable.
+            </p>
+    </div>
+    <div class="col-sm-6 col-md-4 col-lg-4 pl-5 pr-5 pb-3">
+        <p class="lead">Meetings & Special Events</p>
+        <p class="small">
+            Discover stories about art, architecture, design, and more.
+        </p>
+    </div>
+    <div class="col-sm-6 col-md-4 col-lg-4 pl-5 pr-5 pb-3">
+        <p class="lead">Swimming Pool</p>
+        <p class="small">
+            Jumping in to our unique freeform shape of a pool.
+        </p>
+    </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm-12 col-md-6 col-lg-6">
+            <img src="/static/images/Samui-Natein-Restaurant_re.jpg" class="w-100 mt-5"/> 
+            <p class="samll text-center text-secondary mt-5">SIMPLY DELICIOUS</p>
+                <h1 class="text-center">Beach front restaurant</h1>
+            <p class="mb-5">
+                    Yum yummy. Your delicious meal start all day everyday here by our seaside restaurant, where delicate cooking is prepares by our top chef recipes. Every morning breakfast buffet serve from 06:00 – 10:00 a.m. follow by our Thai spicy dishes and fusion cuisine menu until 23:00 a.m. Being on sun bed bathing all day could make a thirst, to energize the juice our Seaside staffs are step away ready to serve liquor, cocktails and nutrition fruit smoothies.
+            </p>
+        </div>
+        <div class="col-sm-12 col-md-6 col-lg-6">
+            <img src="/static/images/Ko-Na-Thian.jpg" class="w-100 mt-5"/> 
+            <p class="samll text-center text-secondary mt-5">WADING TO AN ISLAND</p>
+                <h1 class="text-center">Ko Na Thian</h1> 
+            <p class="mb-5">
+                    A unique view of a small island calls “Ko Na Thian”, situated over century and was formed of reefs and corals. To get across either you are swimming or wading through shallow sea and a breathtaking view is right over on the other side leaving Koh Samui right behind.
+            </p>
+        </div>
+    </div>   
+</div>
+
+{{end}}
+
+{{define "js"}}
+    <!-- if you have specific javascript for this page put it here -->
+    <script>
+        console.log("Separate script form individual page is start here")
+    </script>
+{{end}}
+    

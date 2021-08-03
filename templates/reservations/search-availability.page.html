@@ -1,0 +1,43 @@
+{{template "base" .}}
+{{define "banner"}}
+        <img src="/static/images/contact-samui-natien-resort-villas-17.png" class="img-fluid d-block w-100" style="height: 260px; margin: 0; border: 0;" alt="Samui Natien Resort">        
+{{end}}
+{{define "content"}}
+    <div class="container mt-5 mb-5">
+        <div class="row">
+            <div class="col-md-3"></div>
+            <div class="col-xs-6 col-sm-6 col-md-6 col-lg-6">
+                <h1 class="mt-5 mb-5">Search for Availability</h1>
+                <form action="/rooms/search-availability" method="post" novalidate class="needs-validation">
+                    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                    <div class="row  mt-5 mb-5 p-3">                      
+                            <div class="row" id="reservation-dates">
+                                <div class="col-xs-6 col-sm-6 col-md-6 col-lg-6 p-1">
+                                    <input required class="form-control" type="text" name="start_date" placeholder="Arrival" autocomplete="off">
+                                </div>
+                                <div class="col-xs-6 col-sm-6 col-md-6 col-lg-6 p-1">
+                                    <input required class="form-control" type="text" name="end_date" placeholder="Departure" autocomplete="off">
+                                </div>
+                            </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary mt-1 mb-5 p-1">Search Availability</button>
+                </form>
+            </div>
+            <div class="col-md-3"></div>
+        </div>
+
+    </div>
+{{end}}
+
+
+{{define "js"}}
+<script>
+    const elem = document.getElementById('reservation-dates');
+    const rangePicker = new DateRangePicker(elem, {
+        format: "yyyy-mm-dd",
+        minDate: new Date(),
+    });
+</script>
+{{end}}
+

@@ -1,0 +1,41 @@
+{{template "base" .}}
+<!-- {{define "banner"}}
+        <img src="/static/images/contact-samui-natien-resort-villas-17.png" class="img-fluid d-block w-100" style="height: 260px; margin: 0; border: 0;" alt="Samui Natien Resort">        
+{{end}} -->
+{{define "content"}}
+    <div class="container mt-5 mb-5"> 
+        <div class="row">
+            <div class="col-sm-12 col-md-4 col-lg-4"></div>
+            <div class="col-sm-12 col-md-4 col-lg-4 ">
+                <h2 class="text-center mt-5">Login</h2>
+                <div class="card card-body mb-5">
+                    <form method="post" action="/users/login" class="" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        {{with .Form.Errors.Get "email"}}
+                            <label class="text-danger">{{.}}</label>
+                        {{end}}
+                        <input class="form-control {{with .Form.Errors.Get "email"}} is-invalid {{end}}" 
+                        type="emil" id="email" name="email" value="{{index .StringMap "email"}}" autocomplete="off" required>          
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        {{with .Form.Errors.Get "password"}}
+                            <label class="text-danger">{{.}}</label>
+                        {{end}}
+                        <input class="form-control {{with .Form.Errors.Get "password"}} is-invalid {{end}}" 
+                        type="password" name="password" id="password" value="{{index .StringMap "password"}}" autocomplete="off" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                </div>  
+            </div> 
+            <div class="col-sm-12 col-md-4 col-lg-4"></div>
+        </div>        
+    </div>
+{{end}}
+
+{{define "js"}}
+
+{{end}}

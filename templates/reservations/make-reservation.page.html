@@ -1,0 +1,104 @@
+{{template "base" .}}
+<!-- {{define "banner"}}
+        <img src="/static/images/contact-samui-natien-resort-villas-17.png" class="img-fluid d-block w-100" style="height: 260px; margin: 0; border: 0;" alt="Samui Natien Resort">        
+{{end}} -->
+{{define "content"}}
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col">
+                <h1 class="mt-5 mb-5">Make Reservation</h1>
+
+                {{$rsvn := index .Data "reservation" }}
+                <form method="post" action="/rooms/reservation" class="" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+                    <input type="hidden" name="room_id" value="{{$rsvn.RoomID}}">
+                    <input type="hidden" name="roomtype_name" value="$rsvn.RoomTypeName">
+                    <input type="hidden" name="room_type_id" value="{{index .StringMap "room_type_id"}}">
+
+                    <div class="row">
+                        <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 p-3">
+                            <div class="form-group">
+                                <label for="room_type">Room Type:</label>
+                                <input class="form-control" id="room_type" autocomplete="off" type='text'
+                                       name='room_type'  value="{{index .StringMap "room_type"}}" readonly="true" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 p-3">
+                         <div class="form-group">
+                             <label for="start_date">Arrival Date:</label>
+                             <input class="form-control" id="start_date" autocomplete="off" type='text'
+                                    name='start_date'  value="{{index .StringMap "start_date"}}" readonly="true" required>
+                         </div>
+                        </div>
+    
+                        <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 p-3">
+                         <div class="form-group">
+                             <label for="end_date">Departure Date:</label>
+                             <input class="form-control" id="end_date" autocomplete="off" type='text' name='end_date'  value="{{index .StringMap "end_date"}}" readonly="true" required>
+                         </div>
+                     </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 mt-3 p-3">
+                            <h3>Personal information</h3><br/>
+                            <div class="form-group">
+                                <label for="first_name">First Name:</label>
+                                {{with .Form.Errors.Get "first_name"}}
+                                    <label class="text-danger">{{.}}</label>
+                                {{end}}
+                                <input class="form-control {{with .Form.Errors.Get "first_name"}} is-invalid {{end}}"
+                                       id="first_name" autocomplete="off" type='text'
+                                       name='first_name' value="{{ $rsvn.FirstName }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="last_name">Last Name:</label>
+                                {{with .Form.Errors.Get "last_name"}}
+                                    <label class="text-danger">{{.}}</label>
+                                {{end}}
+                                <input class="form-control {{with .Form.Errors.Get "last_name"}} is-invalid {{end}}"
+                                       id="last_name" autocomplete="off" type='text'
+                                       name='last_name' value="{{$rsvn.LastName}}" required>
+                            </div>        
+
+
+                        </div>
+                        <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 mt-3 p-3">   
+                            <h3>Contact information</h3><br/>
+                            <div class="form-group">
+                                <label for="email">Email:</label>
+                                {{with .Form.Errors.Get "email"}}
+                                    <label class="text-danger">{{.}}</label>
+                                {{end}}
+                                <input class="form-control {{with .Form.Errors.Get "email"}} is-invalid {{end}}" id="email"
+                                    autocomplete="off" type='email'
+                                    name='email' value="{{$rsvn.Email}}" required>
+                            </div>
+    
+                            <div class="form-group">
+                                <label for="phone">Phone:</label>
+                                {{with .Form.Errors.Get "phone"}}
+                                    <label class="text-danger">{{.}}</label>
+                                {{end}}
+                                <input class="form-control {{with .Form.Errors.Get "phone"}} is-invalid {{end}}" id="phone"
+                                    autocomplete="off" type='phone'
+                                    name='phone' value="{{$rsvn.Phone}}" required>
+                            </div>
+                        </div>
+                    </div>   
+                    <input type="submit" class="btn btn-primary mt-3" value="Make Reservation">
+                </form>
+            </div>
+        </div>
+    </div>
+{{end}}
+
+{{define "js"}}
+    <!-- if you have specific javascript for this page put it here -->
+    <script>
+        console.log("Separate script form individual page is start here")
+    </script>
+{{end}}
+    

@@ -1,0 +1,62 @@
+{{template "admin-base" .}}
+
+{{define "admin-page-title"}}
+    Room management
+{{end}}
+
+{{define "content"}}
+<div class="container"> 
+    <a href="/admin/rooms/roomtype" type="button" class="btn btn-warning">Back</a>
+    <div class="row">
+        <div class="col">
+            <h4 class="mt-5 mb-3">Add new room status</h4>
+           
+
+            {{$r := index .Data "room_status" }}
+            <form method="post" action="/admin/rooms/room-status/new" class="" novalidate>
+                <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+                <div class="row">
+                    <div class="col-xs-12 col-sm-12 col-md-3 col-lg-3">
+                        <div class="form-group">
+                            <label for="title">Title:</label>
+                            {{with .Form.Errors.Get "title"}}
+                                <label class="text-danger">{{.}}</label>
+                            {{end}}
+                            <input class="form-control {{with .Form.Errors.Get "title"}} is-invalid {{end}}"
+                                   id="title" autocomplete="off" type='text'
+                                   name="title" value="{{$r.Title}}" required>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6">
+                        <div class="form-group">
+                            <label for="description">Description:</label>
+                            {{with .Form.Errors.Get "description"}}
+                                <label class="text-danger">{{.}}</label>
+                            {{end}}
+                            <input class="form-control {{with .Form.Errors.Get "description"}} is-invalid {{end}}"
+                                   id="description" autocomplete="off" type='text'
+                                   name='description' value="{{$r.Description}}" required>
+                        </div>                           
+                    </div>
+                    <div class="col-xs-12 col-sm-12 col-md-3 col-lg-3">   
+                        <div class="form-group">
+                            <label for="Status">Room Status:</label>
+                            {{with .Form.Errors.Get "status"}}
+                                <label class="text-danger">{{.}}</label>
+                            {{end}}
+                            <input class="form-control {{with .Form.Errors.Get "status"}} is-invalid {{end}}" 
+                                id="status"
+                                autocomplete="off" type='text'
+                                name='status' value="{{$r.Status}}" required>
+                        </div>
+                    </div>
+                </div>            
+                <input type="submit" class="btn btn-primary mt-1 mb-1" value="Add"> 
+            </form>
+        </div>
+    </div>
+</div>
+
+{{end}}
+
+
