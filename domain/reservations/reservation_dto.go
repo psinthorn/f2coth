@@ -3,7 +3,7 @@ package domain_reservation
 import (
 	"time"
 
-	domain "github.com/psinthorn/go_smallsite/domain/rooms"
+	domain "github.com/psinthorn/f2coth/domain/rooms"
 )
 
 // Reservations is the reservation model

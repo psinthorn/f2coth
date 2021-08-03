@@ -1,6 +1,6 @@
 package templates
 
-import "github.com/psinthorn/go_smallsite/internal/forms"
+import "github.com/psinthorn/f2coth/internal/forms"
 
 // TemplateData struct is holds all data type that we use to send to template
 type TemplateData struct {

@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/psinthorn/go_smallsite/datasources/drivers"
+	"github.com/psinthorn/f2coth/datasources/drivers"
 	"golang.org/x/crypto/bcrypt"
 )
 

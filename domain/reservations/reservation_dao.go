@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/psinthorn/go_smallsite/datasources/drivers"
-	domain "github.com/psinthorn/go_smallsite/domain/rooms"
+	"github.com/psinthorn/f2coth/datasources/drivers"
+	domain "github.com/psinthorn/f2coth/domain/rooms"
 )
 
 const (
