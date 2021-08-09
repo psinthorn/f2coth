@@ -5,3 +5,6 @@ start:
 
 run:
 	go run app/*.go
+
+build_linux:
+	env GOOS=linux GOARCH=386 go build -o f2coth app/*.go 

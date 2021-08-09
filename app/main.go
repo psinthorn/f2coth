@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	const portNumber = ":8081"
+	const portNumber = ":8082"
 	// start application and connect to database
 	err := StartApp()
 	if err != nil {
