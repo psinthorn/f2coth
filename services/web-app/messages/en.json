@@ -1,0 +1,1000 @@
+{
+  "metadata": {
+    "siteName": "F2 Co., Ltd.",
+    "titleTemplate": "%s · F2 Co., Ltd.",
+    "keywords": "IT services Thailand, hospitality IT, hotel IT support, luxury resort IT, Koh Samui IT, Bangkok IT services, F2, Nextgentechs",
+    "home": {
+      "title": "F2 Co., Ltd. — Thailand's trusted IT partner for luxury hospitality",
+      "description": "F2 Co., Ltd. provides end-to-end IT services to luxury hotels, villas, and resorts across Thailand — including SALA Hospitality, Miskawaan Beach Villas, and Putahracsa Hua Hin."
+    },
+    "services": {
+      "title": "Services",
+      "description": "F2 provides hospitality-grade IT to luxury hotels, villas, and resorts in Thailand: IT management, digital transformation, AI, cybersecurity, hosting, hardware, and solar."
+    },
+    "caseStudies": {
+      "title": "Case studies",
+      "description": "F2's 10+ year client relationships with SALA Hospitality, Miskawaan Beach Villas, and Putahracsa Hua Hin."
+    },
+    "about": {
+      "title": "About F2",
+      "description": "F2 Co., Ltd. (formerly Nextgentechs) is Thailand's trusted IT partner for luxury hospitality, with offices in Bangkok and Koh Samui."
+    },
+    "products": {
+      "title": "Products — iACC",
+      "description": "iACC by F2 — a SaaS accounting platform with industry modules for tour operators, transfer services, and branded e-commerce websites."
+    },
+    "blog": {
+      "title": "Blog",
+      "description": "Notes from F2 on hospitality IT, AI for hotels, and digital transformation in Thailand."
+    },
+    "contact": {
+      "title": "Contact",
+      "description": "Talk to F2. We respond to enquiries within one business day."
+    },
+    "privacy": {
+      "title": "Privacy policy"
+    },
+    "terms": {
+      "title": "Terms of service"
+    }
+  },
+  "common": {
+    "talkToF2": "Talk to F2",
+    "talkToF2About": "Talk to F2 about {topic}",
+    "learnMore": "Learn more",
+    "readMore": "Read more",
+    "viewAll": "View all",
+    "comingSoon": "Coming soon",
+    "back": "Back",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "create": "Create",
+    "creating": "Creating…",
+    "delete": "Delete",
+    "remove": "Remove",
+    "add": "Add",
+    "edit": "Edit",
+    "close": "Close",
+    "search": "Search",
+    "loading": "Loading…",
+    "notFound": "Not found.",
+    "yearsPartnership": "{years}+ year partnership",
+    "yearsPartnershipShort": "{years}+ years",
+    "leadStatus": {
+      "all": "All statuses",
+      "new": "new",
+      "contacted": "contacted",
+      "qualified": "qualified",
+      "won": "won",
+      "lost": "lost",
+      "spam": "spam"
+    },
+    "ticketStatus": {
+      "open": "open",
+      "in_progress": "in progress",
+      "waiting_customer": "waiting customer",
+      "resolved": "resolved",
+      "closed": "closed",
+      "all": "all"
+    },
+    "priority": {
+      "low": "low",
+      "normal": "normal",
+      "high": "high",
+      "urgent": "urgent"
+    },
+    "role": {
+      "admin": "admin",
+      "editor": "editor",
+      "viewer": "viewer",
+      "owner": "owner",
+      "member": "member"
+    },
+    "preferredLanguage": "Preferred language",
+    "slaStatus": {
+      "draft": "draft",
+      "active": "active",
+      "renewing": "renewing",
+      "expired": "expired"
+    }
+  },
+  "header": {
+    "nav": {
+      "services": "Services",
+      "caseStudies": "Case Studies",
+      "products": "Products",
+      "infrastructure": "Infrastructure",
+      "domains": "Domains",
+      "hosting": "Hosting",
+      "blog": "Blog",
+      "about": "About",
+      "contact": "Contact"
+    },
+    "toggleMenu": "Toggle menu",
+    "customerLogin": "Customer login"
+  },
+  "footer": {
+    "tagline": "Thailand's trusted IT partner for luxury hospitality. Bangkok HQ · Koh Samui branch.",
+    "formerName": "Formerly Nextgentechs Service & Support Co., Ltd.",
+    "explore": "Explore",
+    "exploreLinks": {
+      "services": "Services",
+      "domains": "Domains",
+      "hosting": "Hosting",
+      "caseStudies": "Case Studies",
+      "products": "Products / iACC",
+      "blog": "Blog",
+      "about": "About"
+    },
+    "contact": "Contact",
+    "officesValue": "Bangkok HQ & Koh Samui",
+    "startProject": "Start a project",
+    "rights": "All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "partners": {
+      "title": "Partners & accreditations",
+      "lines": [
+        "THNIC reseller (Thai ccTLDs)",
+        "ResellerClub reseller (international gTLDs)",
+        "DigitalOcean partner — managed VPS",
+        "Microsoft 365 reseller",
+        "SiS Distribution — hardware & licensing"
+      ]
+    }
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "th": "ไทย",
+    "switchTo": "Switch to {lang}"
+  },
+  "home": {
+    "badge": "10+ years · Luxury hospitality IT",
+    "headline": "Thailand's trusted IT partner for luxury hotels, villas, and resorts.",
+    "subhead": "From SALA Hospitality's 8 properties to Miskawaan's ultra-luxury villas and Putahracsa Hua Hin — F2 designs, deploys, and operates the technology that keeps award-winning properties running.",
+    "ctaPrimary": "Talk to F2",
+    "ctaSecondary": "See client results",
+    "trust": {
+      "bangkokSamui": "Bangkok HQ · Samui branch",
+      "sameDay": "Same-day Samui on-site",
+      "partners": "ResellerClub · SiS · Microsoft"
+    },
+    "services": {
+      "kicker": "What we do",
+      "title": "Hospitality-grade IT, end to end",
+      "all8": "All 8 services"
+    },
+    "trustedBy": {
+      "title": "Trusted by Thailand's leading luxury hospitality groups"
+    },
+    "cta": {
+      "title": "Bring F2 onto your property team.",
+      "subtitle": "Tell us about your property — we'll come back with a tailored proposal within one business day.",
+      "button": "Start the conversation"
+    }
+  },
+  "services": {
+    "kicker": "Services",
+    "title": "What F2 does for luxury hospitality.",
+    "subtitle": "Eight tightly-scoped service lines, each shaped by 10+ years of running IT for the most demanding properties in Thailand.",
+    "groups": {
+      "core": "Core services",
+      "support": "Support services",
+      "opportunistic": "Specialised services"
+    },
+    "detail": {
+      "back": "All services",
+      "related": "Related services"
+    }
+  },
+  "caseStudies": {
+    "kicker": "Case studies",
+    "title": "Decade-long partnerships with luxury hospitality.",
+    "subtitle": "Our clients don't change IT vendors because we don't fail them. Each of these properties has trusted F2 for 10+ years.",
+    "readCaseStudy": "Read case study",
+    "detail": {
+      "back": "All case studies",
+      "challenge": "Challenge",
+      "solution": "Solution",
+      "results": "Results",
+      "servicesUsed": "Services used",
+      "ctaTitle": "Looking for similar results?",
+      "ctaBody": "Tell us about your property and we'll show you what F2 can do."
+    }
+  },
+  "about": {
+    "kicker": "About",
+    "title": "Built for luxury hospitality. Headquartered in Thailand.",
+    "lead": "F2 Co., Ltd. (formerly Nextgentechs Service & Support Co., Ltd.) is a digital transformation services company. For over a decade we've served Thailand's most demanding luxury hotels, villas, and resorts — and we've never lost a client.",
+    "bangkok": {
+      "title": "Bangkok HQ",
+      "body": "Our head office runs nationwide remote operations, vendor management, and large-property design work."
+    },
+    "samui": {
+      "title": "Koh Samui branch",
+      "body": "Our island team delivers same-day on-site response, hardware deployments, and solar installations across Samui and the Gulf Coast."
+    },
+    "focusTitle": "What we focus on",
+    "focusBody": "70% of our business is core: IT management, digital transformation, AI, domains & hosting, and our iACC SaaS. 20% is support services — MSP and cybersecurity. The remaining 10% is opportunistic — IT hardware (via SiS Distribution) and solar installations on Samui.",
+    "partnerships": {
+      "title": "Partnerships",
+      "body": "ResellerClub.com (domains & hosting, white-label), SiS Distribution (SET-listed hardware distributor), and Microsoft (provider services)."
+    },
+    "clients": {
+      "title": "Clients",
+      "body": "Primarily luxury and boutique hospitality. We're a registered, trusted IT service provider in the Thai hospitality industry."
+    },
+    "products": {
+      "title": "Products",
+      "bodyPrefix": "",
+      "iaccLink": "iACC",
+      "bodySuffix": " — our multi-tenant accounting and operations SaaS for tour operators and travel agencies."
+    }
+  },
+  "products": {
+    "kicker": "Products",
+    "name": "iACC",
+    "tagline": "Your business, on one platform.",
+    "lead": "Subscribe to <strong>iACC Core</strong> for accounting and operations, then add only the <strong>industry modules</strong> that fit your business. Built by F2 for Thai businesses — bilingual EN/TH, multi-currency, multi-company.",
+    "ctaTry": "Try iACC Core free",
+    "ctaTalk": "Talk to F2 about modules",
+    "socialProof": "500+ active users · 50,000+ invoices processed · 99.9% uptime",
+    "core": {
+      "kicker": "iACC Core",
+      "title": "Professional accounting for modern businesses.",
+      "subtitle": "Everything you need to manage your business finances — and capture every order from your website, LINE, Facebook, or email automatically. Available now.",
+      "accounting": {
+        "title": "Accounting & Financial",
+        "items": [
+          "Invoice & billing with automated cycles",
+          "Purchase orders, quotations, approvals",
+          "Double-entry journal & vouchers",
+          "Expense tracking with VAT/WHT",
+          "Real-time dashboards & reports",
+          "Thai tax (PP30/WHT) · 10 currencies"
+        ]
+      },
+      "operations": {
+        "title": "Operations",
+        "items": [
+          "Delivery management linked to POs",
+          "Payment gateway (PromptPay, PayPal, Stripe, bank)",
+          "Sales-channel API — website, LINE, Facebook, email"
+        ],
+        "aiParser": "AI parser turns unstructured TH/EN messages into customers, quotes & invoices"
+      },
+      "admin": {
+        "title": "Administration",
+        "items": [
+          "Multi-user RBAC (Super Admin / Admin / User)",
+          "Multi-company management",
+          "Bilingual interface (English & Thai)",
+          "Role-based audit trails"
+        ]
+      }
+    },
+    "pricing": {
+      "kicker": "Pricing",
+      "title": "iACC Core subscription",
+      "subtitle": "Start free. Upgrade when you need it. View live pricing and full plan comparison on iacc.f2.co.th.",
+      "free": {
+        "name": "Free",
+        "price": "฿0",
+        "period": "/month",
+        "perks": [
+          "5 invoices per month",
+          "1 user",
+          "Basic reports",
+          "Bilingual EN/TH"
+        ],
+        "cta": "Start free"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "฿990",
+        "period": "/month",
+        "badge": "Most popular",
+        "perks": [
+          "Unlimited invoices",
+          "Up to 10 users",
+          "Advanced reports & dashboards",
+          "Payment gateway integration",
+          "Sales-channel API"
+        ],
+        "cta": "Subscribe"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Custom",
+        "period": "",
+        "perks": [
+          "Unlimited everything",
+          "Dedicated onboarding",
+          "Multi-company at scale",
+          "SLA & priority support"
+        ],
+        "cta": "Contact F2"
+      }
+    },
+    "modules": {
+      "kicker": "Industry modules",
+      "title": "Add only what your business needs.",
+      "subtitle": "Each module sits on top of iACC Core as its own subscription. All three are <strong>coming soon</strong> — register interest and we'll be in touch when they go live.",
+      "registerInterest": "Register interest",
+      "firstCustomer": "First customer:",
+      "tour": {
+        "name": "Tour Operator",
+        "serves": "For tour & travel agencies",
+        "blurb": "Bookings, agents, allotments, vouchers, multi-currency settlements — flowing straight into iACC Core's accounting.",
+        "firstCustomer": "My Samui Island Tour Co., Ltd."
+      },
+      "transfer": {
+        "name": "Transfer Service",
+        "serves": "For transfer companies",
+        "blurb": "Vehicle scheduling, driver dispatch, route conflict detection, and per-trip invoicing connected to your iACC ledger."
+      },
+      "ecommerce": {
+        "name": "E-commerce & Web Templates",
+        "serves": "For any client wanting a brand site",
+        "blurb": "Branded storefronts and marketing sites with built-in checkout — every order pushed to iACC Core via the sales-channel API."
+      }
+    },
+    "closing": {
+      "title": "Modern accounting, F2-grade reliability.",
+      "subtitle": "Try iACC Core free today, or talk to F2 about which modules fit your business."
+    }
+  },
+  "blog": {
+    "kicker": "Blog",
+    "title": "Field notes from F2.",
+    "subtitle": "Practical writing about IT for hotels, villas, and resorts in Thailand — what we're seeing, what we're shipping, and what we'd do differently next time.",
+    "empty": {
+      "title": "First posts coming soon.",
+      "body": "We're finalising our editorial calendar. In the meantime, head to the case studies for detailed accounts of long-running F2 engagements.",
+      "cta": "Read case studies"
+    }
+  },
+  "contact": {
+    "kicker": "Contact",
+    "title": "Tell us about your property.",
+    "subtitle": "We respond to every enquiry within one business day. If you prefer email, write to ",
+    "form": {
+      "fullName": "Full name *",
+      "email": "Email *",
+      "phone": "Phone",
+      "company": "Company / Group",
+      "propertyName": "Property name",
+      "propertyNamePlaceholder": "e.g. SALA Phuket",
+      "propertyType": "Property type",
+      "propertyTypes": {
+        "select": "Select property type",
+        "hotel": "Hotel",
+        "resort": "Resort",
+        "villa": "Villa(s)",
+        "restaurant": "Restaurant / F&B",
+        "other": "Other"
+      },
+      "interestPrompt": "What can F2 help with?",
+      "message": "How can we help? *",
+      "messagePlaceholder": "Tell us a bit about your property and what you'd like to improve.",
+      "moduleInterestPrefill": "Hi — I'd like to register interest in the {module} module of iACC. Please get in touch when it's available.",
+      "submit": "Send enquiry",
+      "submitting": "Sending…",
+      "errorRequired": "Name, email, and message are required.",
+      "errorGeneric": "We couldn't submit your enquiry. Please email hello@f2.co.th directly.",
+      "successTitle": "Thank you.",
+      "successBody": "We've received your enquiry and one of our consultants will be in touch within one business day. A confirmation email is on its way to your inbox.",
+      "privacyNotice": "We'll only use your details to respond to your enquiry. See our ",
+      "privacyLink": "privacy policy"
+    },
+    "side": {
+      "email": "Email",
+      "offices": "Offices",
+      "officesValue": "Bangkok HQ · Koh Samui branch",
+      "responseTime": "Response time",
+      "responseTimeValue": "Within one business day, Mon–Fri (Asia/Bangkok)."
+    }
+  },
+  "privacy": {
+    "title": "Privacy policy",
+    "lead": "F2 Co., Ltd. respects your privacy. This page describes what data we collect from visitors to f2.co.th and how we use it.",
+    "collectTitle": "What we collect",
+    "collectBody": "Contact form submissions, anonymous analytics, and chatbot conversation transcripts.",
+    "useTitle": "How we use it",
+    "useBody": "Solely to respond to enquiries and improve our service.",
+    "contactTitle": "Contact",
+    "contactBody": "Questions? Email "
+  },
+  "terms": {
+    "title": "Terms of service",
+    "body": "These terms govern your use of f2.co.th. By using this site you agree to use it lawfully and not to attempt to disrupt, reverse engineer, or compromise the service."
+  },
+  "notFound": {
+    "code": "404",
+    "title": "Page not found",
+    "body": "The page you're looking for has moved, or never existed.",
+    "cta": "Back to home"
+  },
+  "admin": {
+    "shell": {
+      "brand": "Admin",
+      "nav": {
+        "dashboard": "Dashboard",
+        "leads": "Leads",
+        "tickets": "Tickets",
+        "customers": "Customers",
+        "users": "Users",
+        "pricing": "Pricing",
+        "orders": "Domain Orders"
+      },
+      "signedInAs": "Signed in as",
+      "signOut": "Sign out",
+      "toggleMenu": "Toggle menu",
+      "you": "(you)",
+      "groups": {
+        "workspace": "Workspace",
+        "pipeline": "Pipeline",
+        "infrastructure": "Infrastructure",
+        "system": "System"
+      }
+    },
+    "login": {
+      "brandTitle": "F2 Admin",
+      "heading": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "error": "Invalid email or password.",
+      "back": "← Back to f2.co.th"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Overview of leads and recent activity.",
+      "tiles": {
+        "newLeads": "New leads",
+        "newLeadsHint": "last 7 days",
+        "openLeads": "Open leads",
+        "openLeadsHint": "awaiting follow-up",
+        "won": "Won",
+        "wonHint": "last 30 days"
+      },
+      "recentActivity": "Recent activity",
+      "noActivity": "No activity yet. Lead status changes and notes will appear here.",
+      "activity": {
+        "statusChange": "changed status: {from} → {to}",
+        "noteAdded": "added a note: \"{preview}\"",
+        "system": "System"
+      }
+    },
+    "leads": {
+      "title": "Leads",
+      "totalMatching": "{total} total · {matching} matching filters",
+      "searchPlaceholder": "Search name, email, property, company…",
+      "noneYet": "No leads yet — submissions to /contact will appear here.",
+      "noneMatching": "No leads match your filters.",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "property": "Property",
+        "source": "Source",
+        "status": "Status",
+        "created": "Created"
+      },
+      "detail": {
+        "back": "All leads",
+        "enquiry": "Enquiry",
+        "addNote": "Add internal note",
+        "notePlaceholder": "Notes are visible to F2 staff only.",
+        "addNoteButton": "Add note",
+        "addingNote": "Saving…",
+        "activity": "Activity",
+        "noActivity": "No activity yet.",
+        "updateStatus": "Update status",
+        "statusNote": "Optional note",
+        "saveStatus": "Save status",
+        "savingStatus": "Saving…",
+        "contact": "Contact",
+        "source": "Source",
+        "channel": "Channel:",
+        "utmSource": "UTM source:",
+        "utmCampaign": "UTM campaign:",
+        "submitted": "Submitted {date}",
+        "loadFailed": "Could not load lead"
+      }
+    },
+    "tickets": {
+      "title": "Tickets",
+      "subtitle": "Customer support queue",
+      "tiles": {
+        "open": "Open",
+        "inProgress": "In progress",
+        "waiting": "Waiting customer",
+        "urgent": "Urgent open"
+      },
+      "noneAll": "No tickets.",
+      "noneFiltered": "No tickets matching status {status}.",
+      "table": {
+        "subject": "Subject",
+        "customer": "Customer",
+        "priority": "Priority",
+        "status": "Status",
+        "assignee": "Assignee",
+        "updated": "Updated"
+      },
+      "detail": {
+        "back": "All tickets",
+        "openedBy": "opened by {name}",
+        "manage": "Manage",
+        "unassigned": "— unassigned —",
+        "internalNote": "Internal note (hidden from customer)",
+        "send": "Send",
+        "sending": "Sending…",
+        "internalBadge": "internal",
+        "viewCustomer": "View customer →",
+        "relatedService": "Related service:",
+        "customer": "Customer",
+        "replyPlaceholder": "Type your reply…"
+      }
+    },
+    "customers": {
+      "title": "Customers",
+      "subtitle": "{count} client organisations",
+      "addButton": "Add customer",
+      "newCustomer": "New customer",
+      "form": {
+        "slug": "Slug *",
+        "slugPlaceholder": "e.g. sala-hospitality",
+        "name": "Name *",
+        "industry": "Industry",
+        "primaryEmail": "Primary contact email"
+      },
+      "noneYet": "No customers yet.",
+      "table": {
+        "name": "Name",
+        "industry": "Industry",
+        "services": "Services",
+        "manager": "Manager",
+        "status": "Status",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "detail": {
+        "back": "All customers",
+        "openTicketOnBehalf": "Open ticket on behalf",
+        "openTicketTitle": "Open ticket on behalf of {customer}",
+        "openTicketBlurb": "The initial message will be authored by you. The customer will see it in their portal as an F2-staff message.",
+        "subject": "Subject *",
+        "subjectPlaceholder": "e.g. SPF record requested for salahospitality.com",
+        "description": "Description *",
+        "descriptionPlaceholder": "Capture what the customer asked for, when, and how it came in (email / phone / detected by F2).",
+        "priority": "Priority",
+        "relatedService": "Related service",
+        "noneOption": "— none —",
+        "onBehalfOf": "On behalf of",
+        "f2Initiated": "— F2-initiated —",
+        "assignToMe": "Assign to me",
+        "openTicket": "Open ticket",
+        "openingTicket": "Opening…",
+        "domains": {
+          "title": "Domain portfolio",
+          "addButton": "Add domain",
+          "domain": "Domain *",
+          "domainPlaceholder": "example.com",
+          "registrar": "Registrar",
+          "expiresAt": "Expires (YYYY-MM-DD)",
+          "notes": "Notes",
+          "privacyEnabled": "Privacy enabled",
+          "autoRenew": "Auto-renew",
+          "noneYet": "No domains yet — click",
+          "addDomainText": "Add domain",
+          "table": {
+            "domain": "Domain",
+            "registrar": "Registrar",
+            "expires": "Expires",
+            "privacy": "Privacy",
+            "autoRenew": "Auto-renew"
+          },
+          "privacyOn": "On (toggle off)",
+          "privacyOff": "Off (toggle on)",
+          "yes": "Yes",
+          "no": "No",
+          "removeConfirm": "Remove {domain}?"
+        },
+        "sla": {
+          "title": "SLA contracts",
+          "addButton": "Add SLA",
+          "service": "Service *",
+          "noneContracted": "(no services contracted)",
+          "titleField": "Title *",
+          "titlePlaceholder": "e.g. Microsoft 365 Administration SLA",
+          "startsOn": "Starts on (YYYY-MM-DD) *",
+          "endsOn": "Ends on (YYYY-MM-DD) *",
+          "targetUptime": "Target uptime %",
+          "status": "Status",
+          "notes": "Notes",
+          "target": "target {pct}%",
+          "noneYet": "No SLAs yet.",
+          "removeConfirm": "Remove SLA \"{title}\"?"
+        },
+        "profile": "Profile",
+        "primaryEmail": "Primary contact email",
+        "primaryPhone": "Primary contact phone",
+        "servicesField": "Services (comma-separated slugs)",
+        "servicesPlaceholder": "domain-hosting, it-management",
+        "notes": "Notes",
+        "active": "Active",
+        "saveChanges": "Save changes",
+        "contacts": "Contacts",
+        "addContact": "Add contact",
+        "fullNameField": "Full name *",
+        "emailField": "Email *",
+        "passwordField": "Password (≥12 chars) *",
+        "roleField": "Role",
+        "noContacts": "No contacts yet.",
+        "lastLogin": "Last login {date}",
+        "disable": "Disable",
+        "enable": "Enable"
+      }
+    },
+    "users": {
+      "title": "Users",
+      "subtitle": "{count} staff accounts",
+      "addButton": "Add user",
+      "newUser": "New user",
+      "fullName": "Full name",
+      "email": "Email",
+      "passwordHint": "Password (≥12 chars)",
+      "role": "Role",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "status": "Status",
+        "lastLogin": "Last login",
+        "actions": "Actions",
+        "active": "Active",
+        "disabled": "Disabled",
+        "never": "Never"
+      },
+      "you": "(you)",
+      "disable": "Disable",
+      "enable": "Enable"
+    },
+    "pricing": {
+      "title": "Pricing & Plans",
+      "subtitle": "Public pricing for Domain registrations and managed Hosting plans. Source: cms-api / migration 013_infra.sql.",
+      "tabs": {
+        "domains": "Domains",
+        "hosting": "Hosting Plans"
+      },
+      "domains": {
+        "tld": "TLD",
+        "registry": "Registry",
+        "register": "Register / 1y",
+        "renew": "Renew / 1y",
+        "transfer": "Transfer in",
+        "privacy": "Privacy",
+        "thaiOnly": "Thai entities only",
+        "active": "Active",
+        "inactive": "Inactive",
+        "registries": {
+          "thnic": "THNIC",
+          "resellerclub": "ResellerClub"
+        }
+      },
+      "hosting": {
+        "plan": "Plan",
+        "monthly": "Monthly",
+        "annual": "Annual",
+        "storage": "Storage",
+        "sites": "Sites",
+        "emails": "Emails",
+        "bandwidth": "Bandwidth",
+        "ssl": "SSL",
+        "backups": "Backups",
+        "featured": "Featured",
+        "unlimited": "Unlimited"
+      },
+      "editNote": "Edits to public pricing are made via database migration. Open a tracker item to update."
+    },
+    "orders": {
+      "title": "Domain Orders",
+      "subtitle": "Queue of registration, transfer, and renewal requests across THNIC and ResellerClub.",
+      "empty": "No orders yet.",
+      "filterAll": "All statuses",
+      "newOrder": "New order",
+      "headers": {
+        "fqdn": "Domain",
+        "registry": "Registry",
+        "status": "Status",
+        "customer": "Customer / Lead",
+        "created": "Created",
+        "years": "Years"
+      },
+      "statuses": {
+        "pending": "Pending",
+        "quoted": "Quoted",
+        "approved": "Approved",
+        "registered": "Registered",
+        "active": "Active",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled",
+        "failed": "Failed"
+      },
+      "detail": {
+        "back": "All orders",
+        "registrant": "Registrant contact",
+        "manage": "Manage",
+        "registryOrderId": "Registry order ID",
+        "noteAddPlaceholder": "Internal note",
+        "save": "Save",
+        "saved": "Saved",
+        "modeNoticeMock": "reseller-api is in mock mode (no live registry creds). Status changes here are bookkeeping only."
+      },
+      "create": {
+        "title": "New domain order",
+        "sld": "Domain (SLD)",
+        "tld": "TLD",
+        "registry": "Registry",
+        "years": "Years",
+        "privacy": "Enable WHOIS privacy",
+        "contactName": "Contact name",
+        "contactEmail": "Contact email",
+        "contactPhone": "Contact phone",
+        "contactCompany": "Company",
+        "notes": "Notes (optional)",
+        "submit": "Create order",
+        "errorRequired": "Domain, TLD, registry, and contact name/email are required."
+      }
+    }
+  },
+  "portal": {
+    "shell": {
+      "title": "Client Portal",
+      "tagline": "f2.co.th",
+      "nav": {
+        "account": "Account",
+        "tickets": "Tickets",
+        "domains": "Domains",
+        "sla": "SLA"
+      },
+      "organisation": "Organisation",
+      "signedInAs": "Signed in as",
+      "signOut": "Sign out",
+      "toggleMenu": "Toggle menu",
+      "groups": {
+        "workspace": "Workspace",
+        "support": "Support",
+        "services": "Services"
+      }
+    },
+    "login": {
+      "brandTitle": "Client Portal",
+      "heading": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "error": "Invalid email or password.",
+      "back": "← Back to f2.co.th"
+    },
+    "home": {
+      "welcome": "Welcome back,",
+      "yourAccount": "Your account",
+      "servicesContracted": "Services contracted",
+      "accountManager": "Account manager",
+      "noManager": "No manager assigned yet — F2 will be in touch.",
+      "recentTickets": "Recent tickets",
+      "ticketsTotal": "{count} total",
+      "newTicket": "New ticket",
+      "noTickets": "No tickets yet. Open one if you need help.",
+      "viewAllTickets": "View all tickets"
+    },
+    "tickets": {
+      "title": "Tickets",
+      "totalCount": "{count} total",
+      "newButton": "New ticket",
+      "noneYet": "No tickets yet. Click",
+      "noneClickHere": "New ticket",
+      "noneSuffix": "to raise one.",
+      "updated": "Updated {date}",
+      "assigned": "Assigned to {name}",
+      "new": {
+        "title": "New ticket",
+        "subject": "Subject *",
+        "subjectPlaceholder": "Short summary of the issue",
+        "priority": "Priority",
+        "relatedService": "Related service",
+        "noneOption": "— none —",
+        "description": "Description *",
+        "descriptionPlaceholder": "Describe the issue, when it started, and any steps you've already tried.",
+        "submit": "Submit",
+        "submitting": "Submitting…",
+        "errorGeneric": "Could not create ticket",
+        "back": "All tickets"
+      },
+      "detail": {
+        "back": "All tickets",
+        "openedAt": "{priority} priority · opened {date}",
+        "assigned": "Assigned to {name}",
+        "errorGeneric": "Could not load ticket",
+        "errorReply": "Could not send reply",
+        "errorStatus": "Could not change status",
+        "replyPlaceholder": "Reply…",
+        "markResolved": "Mark resolved",
+        "reopen": "Reopen",
+        "sendReply": "Send reply",
+        "sending": "Sending…"
+      }
+    },
+    "domains": {
+      "title": "Domains",
+      "subtitle": "Domain registrations managed by F2 via ResellerClub.",
+      "notEntitled": "The Domains page isn't part of your contracted services.",
+      "talkToManager": "Speak to your account manager if you'd like F2 to manage your domain portfolio.",
+      "noneYet": "No domains on file yet — F2 will add them shortly.",
+      "table": {
+        "domain": "Domain",
+        "registrar": "Registrar",
+        "expires": "Expires",
+        "privacy": "Privacy",
+        "autoRenew": "Auto-renew",
+        "lastDnsChange": "Last DNS change"
+      },
+      "daysOverdue": "{days} days overdue",
+      "daysLeft": "{days} days left",
+      "privacyEnabled": "Enabled",
+      "privacyOff": "Off",
+      "yes": "Yes",
+      "no": "No",
+      "footnote": "Source of truth: F2's ResellerClub management console. Need a change?",
+      "openTicket": "Open a ticket"
+    },
+    "sla": {
+      "title": "SLA",
+      "subtitle": "Active service-level agreements with F2.",
+      "noneYet": "No SLA contract on file. Speak to your account manager if you'd like to set one up.",
+      "period": "Period",
+      "targetUptime": "Target uptime",
+      "periodProgress": "Period progress",
+      "daysRemaining": "{days} days remaining",
+      "daysOverdue": "{days} days overdue",
+      "footnote": "Detailed performance reporting is shared quarterly. Need a copy or have questions?",
+      "openTicket": "Open a ticket"
+    }
+  },
+  "chat": {
+    "title": "F2 Concierge",
+    "tagline": "AI assistant — for guidance only.",
+    "greeting": "Hi — I'm F2 Concierge. Ask me about IT for your hotel, villa, or resort, or tell me about your property and I'll suggest where F2 can help.",
+    "placeholder": "Ask about IT for your property…",
+    "thinking": "thinking…",
+    "errorOffline": "Sorry — the assistant is offline right now. Please email hello@f2.co.th and we'll get back within one business day.",
+    "open": "Open chat",
+    "send": "Send"
+  },
+  "domains": {
+    "metadata": {
+      "title": "Domain Names — F2 Co., Ltd.",
+      "description": "Register Thai (.co.th, .or.th, .in.th) and international domains (.com, .net, .org, .asia, .biz). F2 is a direct THNIC reseller and ResellerClub partner."
+    },
+    "hero": {
+      "kicker": "Infrastructure",
+      "title": "Domain names, registered the right way.",
+      "subtitle": "F2 is a direct THNIC reseller for Thai ccTLDs and a ResellerClub partner for international gTLDs. One invoice, one renewal calendar, one team that picks up the phone."
+    },
+    "search": {
+      "placeholder": "Try yourbrand or yourbrand.co.th",
+      "button": "Check & request",
+      "checking": "Checking availability…",
+      "thanks": "Thanks — we'll be in touch within 1 business day with availability and a quote.",
+      "errorRequired": "Please enter a domain name to search.",
+      "errorContact": "Please add your email so we can reach you.",
+      "checkingLive": "Checking availability…",
+      "resultsTitle": "Availability for \"{sld}\"",
+      "checkAgain": "Check another name",
+      "selectedHint": "Tick a TLD to request this exact name. Otherwise leave a quick note and F2 will recommend the right combination.",
+      "requestSelected": "Request these domains"
+    },
+    "form": {
+      "namePlaceholder": "Your name",
+      "emailPlaceholder": "Your work email",
+      "companyPlaceholder": "Company (optional)",
+      "submit": "Send request"
+    },
+    "table": {
+      "tld": "TLD",
+      "register": "Register / 1y",
+      "renew": "Renew / 1y",
+      "transfer": "Transfer in",
+      "privacy": "Privacy",
+      "notes": "Notes",
+      "privacyIncluded": "Included",
+      "privacyExtra": "On request",
+      "thaiOnly": "Thai entities only",
+      "currencyNote": "All prices are in Thai Baht (THB), per year, exclusive of 7% VAT."
+    },
+    "groups": {
+      "thnic": {
+        "title": "Thai domain names",
+        "subtitle": "Registered through THNIC. F2 handles the eligibility paperwork on your behalf."
+      },
+      "resellerclub": {
+        "title": "International domain names",
+        "subtitle": "Registered through ResellerClub. Domain Privacy is included free with every registration and renewal."
+      }
+    },
+    "cta": {
+      "title": "Not sure which TLD fits?",
+      "body": "Tell us about your brand and we'll recommend the right combination — most resort groups end up with .co.th + .com defensively registered to the same owner.",
+      "button": "Talk to F2"
+    },
+    "status": {
+      "available": "Available",
+      "registered": "Registered",
+      "premium": "Premium",
+      "manual": "F2 will check",
+      "unknown": "Unknown",
+      "manualHint": "Thai ccTLDs are placed via the THNIC partner portal — F2 confirms availability within 1 business day."
+    }
+  },
+  "hosting": {
+    "metadata": {
+      "title": "Web Hosting — F2 Co., Ltd.",
+      "description": "Managed shared hosting from F2: free SSL, daily backups, PHP 8.x + MySQL, optimised for WordPress and Joomla. Asia/Bangkok-based support."
+    },
+    "hero": {
+      "kicker": "Infrastructure",
+      "title": "Hosting that doesn't go quiet at 11pm.",
+      "subtitle": "Three plans, all with free SSL, F2-monitored uptime, and Asia/Bangkok-hours support. Built for property pages, restaurant brand sites, and the small CMS estates that come with running a hospitality group.",
+      "fromLabel": "Plans from",
+      "perMonth": "/month"
+    },
+    "billing": {
+      "monthly": "Billed monthly",
+      "annual": "Billed annually",
+      "save": "Save 2 months",
+      "perMonth": "/month",
+      "perYear": "/year"
+    },
+    "card": {
+      "popular": "Most popular",
+      "ctaPrimary": "Request this plan",
+      "ctaSecondary": "Compare features",
+      "storage": "Storage",
+      "storageUnit": "GB SSD",
+      "sites": "Websites",
+      "emails": "Email accounts",
+      "bandwidth": "Bandwidth",
+      "ssl": "Free SSL",
+      "backups": "Daily backups",
+      "unlimited": "Unlimited",
+      "perksTitle": "What's included"
+    },
+    "compare": {
+      "title": "Beyond the plans",
+      "items": [
+        {
+          "label": "Production-grade",
+          "body": "Every plan runs on F2-managed infrastructure with redundant power, on-host monitoring, and a 99.9% uptime target."
+        },
+        {
+          "label": "Managed migration",
+          "body": "We migrate your existing site for free if you're moving to F2 from another host — including DNS cutover and SSL re-issuance."
+        },
+        {
+          "label": "Dedicated VPS available",
+          "body": "Need more isolation? Our cloud-infrastructure service builds you a managed DigitalOcean VPS with the same support team."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Bigger workload?",
+      "body": "If your traffic, plug-in stack, or compliance posture has outgrown shared hosting, look at our managed Cloud & VPS service — built on DigitalOcean and run by the same F2 team.",
+      "button": "Cloud & VPS"
+    }
+  }
+}

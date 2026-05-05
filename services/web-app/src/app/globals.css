@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-navy: #1e293b;
+  --color-accent: #7c3aed;
+  --color-bg: #ffffff;
+  --color-bg-muted: #f8fafc;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-navy);
+  font-feature-settings: "ss01", "cv11";
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl
+           px-5 py-3 text-sm font-medium transition focus:outline-none
+           focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent;
+  }
+  .btn-primary {
+    @apply btn bg-navy-800 text-white hover:bg-navy-900;
+  }
+  .btn-accent {
+    @apply btn bg-accent-600 text-white hover:bg-accent-700;
+  }
+  .btn-ghost {
+    @apply btn border border-navy-200 bg-white text-navy-800 hover:bg-navy-50;
+  }
+  .card {
+    @apply rounded-xl border border-navy-100 bg-white p-6 shadow-card transition
+           hover:shadow-card-hover;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full bg-accent-50 px-2.5 py-1
+           text-xs font-medium text-accent-700;
+  }
+  .prose-f2 {
+    @apply max-w-none text-navy-700 leading-relaxed;
+  }
+  .prose-f2 h2 { @apply mt-10 mb-4 font-display text-2xl text-navy-900; }
+  .prose-f2 h3 { @apply mt-8 mb-3 text-lg font-semibold text-navy-900; }
+  .prose-f2 p  { @apply mb-4; }
+  .prose-f2 ul { @apply mb-4 list-disc pl-6; }
+}
