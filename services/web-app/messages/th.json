@@ -732,7 +732,10 @@
         "noteAddPlaceholder": "บันทึกภายใน",
         "save": "บันทึก",
         "saved": "บันทึกแล้ว",
-        "modeNoticeMock": "reseller-api อยู่ในโหมด mock (ยังไม่มี credential จริง) การเปลี่ยนสถานะที่นี่เป็นการบันทึกเท่านั้น"
+        "modeNoticeMock": "reseller-api อยู่ในโหมด mock (ยังไม่มี credential จริง) การเปลี่ยนสถานะที่นี่เป็นการบันทึกเท่านั้น",
+        "placeButton": "ยืนยันจดทะเบียน",
+        "placeConfirm": "ยืนยันจดทะเบียน {fqdn} เป็นเวลา {years} ปีผ่าน registry — สำหรับ ResellerClub จะหักจากยอดของรีเซลเลอร์จริง ดำเนินการต่อ?",
+        "placeConfirmYes": "ยืนยัน"
       },
       "create": {
         "title": "สร้างคำสั่งซื้อโดเมนใหม่",
@@ -851,7 +854,24 @@
       "yes": "ใช่",
       "no": "ไม่",
       "footnote": "แหล่งข้อมูลหลัก: ระบบจัดการ ResellerClub ของ F2 ต้องการเปลี่ยนแปลง?",
-      "openTicket": "เปิดตั๋ว"
+      "openTicket": "เปิดตั๋ว",
+      "orders": {
+        "requestNew": "ขอจดโดเมน",
+        "pendingTitle": "คำขอที่รอดำเนินการ",
+        "requestedOn": "ขอเมื่อ {date}",
+        "years": "ปี",
+        "privacyOn": "WHOIS Privacy",
+        "status": {
+          "pending": "รอดำเนินการ",
+          "quoted": "เสนอราคาแล้ว",
+          "approved": "อนุมัติ",
+          "registered": "จดแล้ว",
+          "active": "ใช้งาน",
+          "rejected": "ปฏิเสธ",
+          "cancelled": "ยกเลิก",
+          "failed": "ล้มเหลว"
+        }
+      }
     },
     "sla": {
       "title": "SLA",
@@ -864,6 +884,39 @@
       "daysOverdue": "เกินกำหนด {days} วัน",
       "footnote": "รายงานผลการดำเนินงานละเอียดส่งทุกไตรมาส ต้องการสำเนาหรือมีคำถาม?",
       "openTicket": "เปิดตั๋ว"
+    },
+    "domainsNew": {
+      "back": "กลับไปหน้าโดเมน",
+      "title": "ขอจดโดเมนใหม่",
+      "subtitle": "ตรวจสอบสถานะโดเมนและส่งคำขอ — ทีม F2 จะดูแลการจดทะเบียนให้ตั้งแต่ต้นจนจบ",
+      "searchPlaceholder": "ลองพิมพ์ yourbrand หรือ yourbrand.co.th",
+      "checkButton": "ตรวจสถานะ",
+      "checking": "กำลังตรวจสอบ…",
+      "resultsTitle": "สถานะของ \"{sld}\"",
+      "checkAgain": "ตรวจชื่ออื่น",
+      "selectButton": "เลือก",
+      "orderingTitle": "คุณกำลังขอจด",
+      "changeDomain": "เปลี่ยน",
+      "submitOrder": "ส่งคำขอ",
+      "manualNotice": "โดเมน .th จดผ่าน partner portal ของ THNIC F2 จะยืนยันสถานะและแจ้งราคากลับภายใน 1 วันทำการ",
+      "doneTitle": "รับคำขอแล้ว",
+      "doneBody": "ทีม F2 ได้รับแจ้งแล้ว เราจะติดต่อกลับทางอีเมลภายใน 1 วันทำการพร้อมใบเสนอราคาและรายละเอียดการจดทะเบียน",
+      "backToDomains": "กลับไปหน้าโดเมน",
+      "orderAnother": "ขอเพิ่ม",
+      "fields": {
+        "name": "ชื่อผู้จดทะเบียน",
+        "email": "อีเมลผู้จดทะเบียน",
+        "phone": "เบอร์โทร (ไม่บังคับ)",
+        "company": "บริษัท (ไม่บังคับ)",
+        "years": "จำนวนปี",
+        "privacy": "เปิดใช้ WHOIS Privacy",
+        "notes": "หมายเหตุ (ไม่บังคับ)",
+        "notesPlaceholder": "สิ่งที่อยากให้ F2 ทราบ — เช่น nameserver ที่ต้องการ, จุดประสงค์การใช้งาน"
+      },
+      "errorSearchRequired": "กรุณาพิมพ์ชื่อโดเมนที่ต้องการตรวจสอบ",
+      "errorContactRequired": "ต้องระบุชื่อและอีเมลผู้จดทะเบียน",
+      "errorCheckFailed": "ตรวจสอบสถานะไม่สำเร็จ กรุณาลองใหม่ในอีกสักครู่",
+      "errorSubmitFailed": "ส่งคำขอไม่สำเร็จ กรุณาลองใหม่หรือเปิดทิกเก็ต"
     }
   },
   "chat": {

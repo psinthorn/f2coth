@@ -11,10 +11,12 @@ import (
 
 	mw "github.com/f2cothai/f2-website/services/reseller-api/internal/middleware"
 	"github.com/f2cothai/f2-website/services/reseller-api/internal/models"
+	"github.com/f2cothai/f2-website/services/reseller-api/internal/registry"
 )
 
 type OrdersHandler struct {
-	DB *pgxpool.Pool
+	DB     *pgxpool.Pool
+	Router *registry.Router
 }
 
 type createOrderReq struct {
@@ -160,6 +162,109 @@ func (h *OrdersHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, o)
+}
+
+// Place is the registration step. We:
+//  1. Load the order; reject if not in 'pending' or 'approved' state.
+//  2. If registry_order_id is already set, return the existing order
+//     (idempotent — a double-click can't double-charge).
+//  3. Route to the matching registry adapter and call Register.
+//  4. Persist registry_order_id, status, and the raw response (audit trail).
+func (h *OrdersHandler) Place(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var existing models.DomainOrder
+	row := h.DB.QueryRow(r.Context(), `
+        SELECT id, sld, tld, fqdn, registry, customer_id, lead_id, requested_by_user_id,
+               contact_name, contact_email, contact_phone, contact_company,
+               years, privacy_enabled, status, registry_order_id, notes,
+               created_at, updated_at
+        FROM domain_orders WHERE id = $1`, id)
+	o, err := scanOrder(row)
+	if err == pgx.ErrNoRows {
+		writeErr(w, http.StatusNotFound, "not found")
+		return
+	}
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	existing = o
+
+	// Idempotency: if the registry already has an ID for this order, return as-is.
+	if existing.RegistryOrderID != nil && *existing.RegistryOrderID != "" {
+		writeJSON(w, http.StatusOK, existing)
+		return
+	}
+
+	// Only place orders that are in a placeable state.
+	if existing.Status != "pending" && existing.Status != "approved" {
+		writeErr(w, http.StatusConflict, "order is not in a placeable state")
+		return
+	}
+
+	adapter := h.Router.For(existing.TLD)
+	if adapter == nil {
+		writeErr(w, http.StatusInternalServerError, "no registry adapter for tld")
+		return
+	}
+
+	req := registry.PlaceRequest{
+		SLD:            existing.SLD,
+		TLD:            existing.TLD,
+		Years:          existing.Years,
+		PrivacyEnabled: existing.PrivacyEnabled,
+	}
+	if existing.ContactName != nil {
+		req.ContactName = *existing.ContactName
+	}
+	if existing.ContactEmail != nil {
+		req.ContactEmail = *existing.ContactEmail
+	}
+	if existing.ContactPhone != nil {
+		req.ContactPhone = *existing.ContactPhone
+	}
+	if existing.ContactCompany != nil {
+		req.ContactCompany = *existing.ContactCompany
+	}
+
+	result, registerErr := adapter.Register(r.Context(), req)
+	rawJSON, _ := json.Marshal(result.Raw)
+
+	// Always persist the response (success or failure) so the audit trail is
+	// complete. Failures keep registry_order_id null so a retry is possible.
+	persistStatus := result.Status
+	if registerErr != nil && persistStatus == "" {
+		persistStatus = "failed"
+	}
+
+	row = h.DB.QueryRow(r.Context(), `
+        UPDATE domain_orders SET
+            status            = $1,
+            registry_order_id = NULLIF($2, ''),
+            registry_response = $3::jsonb
+        WHERE id = $4
+        RETURNING id, sld, tld, fqdn, registry, customer_id, lead_id, requested_by_user_id,
+                  contact_name, contact_email, contact_phone, contact_company,
+                  years, privacy_enabled, status, registry_order_id, notes,
+                  created_at, updated_at`,
+		persistStatus, result.RegistryOrderID, rawJSON, id,
+	)
+	updated, scanErr := scanOrder(row)
+	if scanErr != nil {
+		writeErr(w, http.StatusInternalServerError, "db error after registry call")
+		return
+	}
+
+	if registerErr != nil {
+		// Surface the registry error message to the operator so they can act.
+		writeJSON(w, http.StatusBadGateway, map[string]any{
+			"error": registerErr.Error(),
+			"order": updated,
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
 }
 
 func (h *OrdersHandler) Update(w http.ResponseWriter, r *http.Request) {

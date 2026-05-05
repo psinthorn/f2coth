@@ -37,7 +37,7 @@ func main() {
 	cache := &store.AvailabilityCache{DB: pool, TTL: cfg.CacheTTL}
 
 	availability := &handlers.AvailabilityHandler{Router: router, Cache: cache}
-	orders := &handlers.OrdersHandler{DB: pool}
+	orders := &handlers.OrdersHandler{DB: pool, Router: router}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -68,6 +68,7 @@ func main() {
 			r.Post("/orders", orders.Create)
 			r.Get("/orders/{id}", orders.Get)
 			r.Patch("/orders/{id}", orders.Update)
+			r.Post("/orders/{id}/place", orders.Place)
 		})
 	})
 
@@ -108,10 +109,14 @@ func buildRegistryRouter(cfg config.Config, hc *http.Client) *registry.Router {
 	router.Adapters = append(router.Adapters, thnic)
 	if cfg.RCConfigured() {
 		router.Adapters = append(router.Adapters, &registry.ResellerClub{
-			BaseURL:    cfg.RCBaseURL,
-			AuthUserID: cfg.RCAuthUserID,
-			APIKey:     cfg.RCAPIKey,
-			HTTPClient: hc,
+			BaseURL:           cfg.RCBaseURL,
+			AuthUserID:        cfg.RCAuthUserID,
+			APIKey:            cfg.RCAPIKey,
+			HTTPClient:        hc,
+			DefaultCustomerID: cfg.RCDefaultCustomerID,
+			DefaultContactID:  cfg.RCDefaultContactID,
+			DefaultNS1:        cfg.RCDefaultNS1,
+			DefaultNS2:        cfg.RCDefaultNS2,
 		})
 	}
 	return router

@@ -3,34 +3,74 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
-  Loader2, Globe, ShieldCheck, Calendar, Clock, AlertCircle, Lock,
+  Loader2, Globe, ShieldCheck, Calendar, Clock, AlertCircle, Lock, Plus,
 } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import PortalShell from "@/components/PortalShell";
-import { portalApi, type PortalDomain } from "@/lib/portal-api";
+import { portalApi, type PortalDomain, type PortalDomainOrder } from "@/lib/portal-api";
 
 export default function PortalDomainsPage() {
   const t = useTranslations("portal.domains");
+  const to = useTranslations("portal.domains.orders");
   const tc = useTranslations("common");
   const [domains, setDomains] = useState<PortalDomain[] | null>(null);
+  const [orders, setOrders] = useState<PortalDomainOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
-    portalApi.listDomains()
-      .then((d) => setDomains(d.domains ?? []))
-      .catch((e: any) => {
+    Promise.all([
+      portalApi.listDomains().catch((e: any) => {
         if (e?.status === 404) setForbidden(true);
+        return { domains: [] as PortalDomain[] };
+      }),
+      portalApi.listDomainOrders().catch(() => ({ orders: [] as PortalDomainOrder[] })),
+    ])
+      .then(([d, o]) => {
+        setDomains(d.domains ?? []);
+        setOrders(o.orders ?? []);
       })
       .finally(() => setLoading(false));
   }, []);
 
+  // Pending orders are everything that hasn't been fulfilled yet.
+  const pendingOrders = orders.filter(
+    (o) => o.status !== "registered" && o.status !== "active" && o.status !== "cancelled" && o.status !== "rejected",
+  );
+
   return (
     <PortalShell>
-      <header className="mb-6">
-        <h1 className="font-display text-3xl text-navy-900">{t("title")}</h1>
-        <p className="mt-1 text-sm text-navy-600">{t("subtitle")}</p>
+      <header className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-navy-900">{t("title")}</h1>
+          <p className="mt-1 text-sm text-navy-600">{t("subtitle")}</p>
+        </div>
+        <Link href={"/portal/domains/new" as never} className="btn-accent shrink-0">
+          <Plus className="h-4 w-4" /> {to("requestNew")}
+        </Link>
       </header>
+
+      {pendingOrders.length > 0 && !loading && (
+        <section className="mb-6">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-navy-500">{to("pendingTitle")}</h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            {pendingOrders.map((o) => (
+              <div key={o.id} className="card">
+                <div className="flex items-center justify-between">
+                  <p className="flex items-center gap-2 font-medium text-navy-900">
+                    <Globe className="h-3.5 w-3.5 text-navy-400" /> {o.fqdn}
+                  </p>
+                  <OrderStatusPill status={o.status} label={to(`status.${o.status}`)} />
+                </div>
+                <p className="mt-1 text-xs text-navy-500">
+                  {to("requestedOn", { date: new Date(o.created_at).toLocaleDateString() })}
+                  {" · "}{o.years} {to("years")}{o.privacy_enabled ? ` · ${to("privacyOn")}` : ""}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {loading ? (
         <div className="flex items-center gap-2 text-navy-500"><Loader2 className="h-4 w-4 animate-spin" /> {tc("loading")}</div>
@@ -113,6 +153,16 @@ export default function PortalDomainsPage() {
       )}
     </PortalShell>
   );
+}
+
+function OrderStatusPill({ status, label }: { status: PortalDomainOrder["status"]; label: string }) {
+  const cls =
+    status === "active" || status === "registered" ? "bg-emerald-50 text-emerald-800" :
+    status === "approved" ? "bg-blue-50 text-blue-800" :
+    status === "quoted" ? "bg-violet-50 text-violet-800" :
+    status === "rejected" || status === "failed" || status === "cancelled" ? "bg-red-50 text-red-800" :
+    "bg-amber-50 text-amber-800";
+  return <span className={`rounded-full px-2 py-0.5 text-xs ${cls}`}>{label}</span>;
 }
 
 function fmtDate(s: string | null) {

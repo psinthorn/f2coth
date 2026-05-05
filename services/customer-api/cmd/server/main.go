@@ -70,6 +70,11 @@ func main() {
 		// doesn't have the underlying service contracted).
 		r.Get("/domains", assets.PortalListDomains)
 		r.Get("/sla", assets.PortalListSLA)
+
+		// Customer-initiated domain orders (no entitlement gate — any
+		// customer can request to add a domain).
+		r.Get("/domains/orders", assets.PortalListDomainOrders)
+		r.Post("/domains/orders", assets.PortalCreateDomainOrder)
 	})
 
 	// ---------- Staff-facing customer-management routes ----------

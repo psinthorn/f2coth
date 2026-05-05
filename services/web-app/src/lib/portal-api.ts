@@ -198,6 +198,25 @@ export const portalApi = {
 
   listDomains: () => request<{ domains: PortalDomain[] }>("/portal/domains"),
   listSLA: () => request<{ sla_contracts: PortalSLA[] }>("/portal/sla"),
+
+  listDomainOrders: () =>
+    request<{ orders: PortalDomainOrder[] }>("/portal/domains/orders"),
+  createDomainOrder: (input: NewPortalDomainOrder) =>
+    request<PortalDomainOrder>("/portal/domains/orders", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  // Availability search uses the public reseller-api endpoint (no auth needed).
+  checkAvailability: async (sld: string, tlds: string[]) => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+    const res = await fetch(`${apiBase}/reseller/availability`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sld, tlds }),
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    return (await res.json()) as { results: AvailabilityResult[] };
+  },
 };
 
 export interface PortalDomain {
@@ -210,6 +229,47 @@ export interface PortalDomain {
   auto_renew: boolean;
   notes: string | null;
   last_dns_change_at: string | null;
+}
+
+export type DomainOrderStatus =
+  | "pending" | "quoted" | "approved" | "registered"
+  | "active" | "rejected" | "cancelled" | "failed";
+
+export interface PortalDomainOrder {
+  id: string;
+  sld: string;
+  tld: string;
+  fqdn: string;
+  registry: "thnic" | "resellerclub";
+  years: number;
+  privacy_enabled: boolean;
+  status: DomainOrderStatus;
+  registry_order_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewPortalDomainOrder {
+  sld: string;
+  tld: string;
+  registry: "thnic" | "resellerclub";
+  contact_name: string;
+  contact_email: string;
+  contact_phone?: string;
+  contact_company?: string;
+  years: number;
+  privacy_enabled: boolean;
+  notes?: string;
+}
+
+export interface AvailabilityResult {
+  fqdn: string;
+  tld: string;
+  available: boolean;
+  classification: "available" | "registered" | "reserved" | "premium" | "manual" | "unknown";
+  source: string;
+  cached: boolean;
 }
 
 export interface PortalSLA {

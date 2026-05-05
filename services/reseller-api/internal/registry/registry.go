@@ -9,12 +9,29 @@ import (
 	"github.com/f2cothai/f2-website/services/reseller-api/internal/models"
 )
 
-// Registry knows how to answer availability and (eventually) place orders
-// for a set of TLDs. Each adapter declares which TLDs it owns via Owns.
+// Registry knows how to answer availability and place orders for a set of
+// TLDs. Each adapter declares which TLDs it owns via Owns.
+//
+// Register is the actual placement step: the adapter contacts the registry
+// (or simulates the call in the case of Mock) and returns what to persist
+// on the order row. PlaceRequest carries the minimum a registrar needs;
+// Years and PrivacyEnabled are passed straight through.
 type Registry interface {
 	Name() string
 	Owns(tld string) bool
 	CheckAvailability(ctx context.Context, sld string, tlds []string) ([]models.AvailabilityResult, error)
+	Register(ctx context.Context, req PlaceRequest) (models.PlacementResult, error)
+}
+
+type PlaceRequest struct {
+	SLD            string
+	TLD            string
+	Years          int
+	PrivacyEnabled bool
+	ContactName    string
+	ContactEmail   string
+	ContactPhone   string
+	ContactCompany string
 }
 
 // Router fans out to the adapter that owns each TLD. ResellerClub gets all

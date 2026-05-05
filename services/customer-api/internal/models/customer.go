@@ -74,6 +74,24 @@ type Domain struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
+// DomainOrder mirrors the reseller-api shape but only the fields portal
+// users care about. Customers see orders they own; staff see the full
+// admin view via reseller-api.
+type DomainOrder struct {
+	ID              string    `json:"id"`
+	SLD             string    `json:"sld"`
+	TLD             string    `json:"tld"`
+	FQDN            string    `json:"fqdn"`
+	Registry        string    `json:"registry"`
+	Years           int       `json:"years"`
+	PrivacyEnabled  bool      `json:"privacy_enabled"`
+	Status          string    `json:"status"`
+	RegistryOrderID *string   `json:"registry_order_id,omitempty"`
+	Notes           *string   `json:"notes,omitempty"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
 type SLAContract struct {
 	ID              string    `json:"id"`
 	CustomerID      string    `json:"customer_id"`

@@ -23,6 +23,18 @@ var thOwnedTLDs = map[string]struct{}{
 func (THNICStub) Name() string        { return "thnic_stub" }
 func (THNICStub) Owns(tld string) bool { _, ok := thOwnedTLDs[strings.ToLower(tld)]; return ok }
 
+func (THNICStub) Register(_ context.Context, _ PlaceRequest) (models.PlacementResult, error) {
+	// THNIC EPP integration isn't wired yet — clicking "Place" moves the
+	// order to "approved" with a note that F2 staff must complete the
+	// registration via the THNIC partner portal. Once they have the
+	// portal's order id they enter it via the Update endpoint and bump
+	// status to "registered". registry_order_id stays empty here.
+	return models.PlacementResult{
+		Status: "approved",
+		Raw:    map[string]any{"thnic_stub": true, "note": "F2 to complete via THNIC partner portal"},
+	}, nil
+}
+
 func (THNICStub) CheckAvailability(_ context.Context, sld string, tlds []string) ([]models.AvailabilityResult, error) {
 	now := time.Now().UTC()
 	out := make([]models.AvailabilityResult, 0, len(tlds))

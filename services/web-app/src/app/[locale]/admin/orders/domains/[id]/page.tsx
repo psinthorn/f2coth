@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Loader2, Save, Info } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Info, Send, AlertTriangle } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import AdminShell from "@/components/AdminShell";
 import { adminApi, type AdminDomainOrder, type DomainOrderStatus } from "@/lib/admin-api";
@@ -28,6 +28,8 @@ export default function AdminDomainOrderDetailPage() {
   const [status, setStatus] = useState<DomainOrderStatus>("pending");
   const [registryOrderID, setRegistryOrderID] = useState("");
   const [notes, setNotes] = useState("");
+  const [placing, setPlacing] = useState(false);
+  const [placeConfirm, setPlaceConfirm] = useState(false);
 
   async function load() {
     if (!id) return;
@@ -65,6 +67,36 @@ export default function AdminDomainOrderDetailPage() {
       setBusy(false);
     }
   }
+
+  async function place() {
+    if (!id) return;
+    setPlacing(true);
+    setErr("");
+    try {
+      const updated = await adminApi.placeDomainOrder(id);
+      setOrder(updated);
+      setStatus(updated.status);
+      setRegistryOrderID(updated.registry_order_id ?? "");
+      setPlaceConfirm(false);
+    } catch (e: any) {
+      // The 502 error path includes both the message and the updated order;
+      // fall back to a string body for non-JSON failures.
+      try {
+        const parsed = JSON.parse(e?.body ?? "{}");
+        setErr(parsed.error ?? e?.body ?? e?.message ?? "error");
+        if (parsed.order) setOrder(parsed.order);
+      } catch {
+        setErr(e?.body ?? e?.message ?? "error");
+      }
+    } finally {
+      setPlacing(false);
+    }
+  }
+
+  const canPlace =
+    !!order &&
+    !order.registry_order_id &&
+    (order.status === "pending" || order.status === "approved");
 
   return (
     <AdminShell>
@@ -126,6 +158,42 @@ export default function AdminDomainOrderDetailPage() {
                 {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {tc("saving")}</> : <><Save className="h-4 w-4" /> {td("save")}</>}
               </button>
               {saved && <p className="text-xs text-emerald-700">{td("saved")}</p>}
+
+              {canPlace && (
+                <div className="border-t border-navy-100 pt-3">
+                  {!placeConfirm ? (
+                    <button
+                      onClick={() => setPlaceConfirm(true)}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
+                    >
+                      <Send className="h-4 w-4" /> {td("placeButton")}
+                    </button>
+                  ) : (
+                    <div className="space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                      <p className="flex items-start gap-2 text-xs text-emerald-900">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>{td("placeConfirm", { fqdn: order!.fqdn, years: order!.years })}</span>
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setPlaceConfirm(false)}
+                          disabled={placing}
+                          className="flex-1 rounded-lg border border-navy-200 bg-white px-3 py-1.5 text-xs text-navy-700 hover:bg-navy-50"
+                        >
+                          {tc("cancel")}
+                        </button>
+                        <button
+                          onClick={place}
+                          disabled={placing}
+                          className="flex-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+                        >
+                          {placing ? <Loader2 className="mx-auto h-3.5 w-3.5 animate-spin" /> : td("placeConfirmYes")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <p className="flex items-start gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
                 <Info className="mt-0.5 h-3 w-3 shrink-0" />

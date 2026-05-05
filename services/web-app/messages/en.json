@@ -732,7 +732,10 @@
         "noteAddPlaceholder": "Internal note",
         "save": "Save",
         "saved": "Saved",
-        "modeNoticeMock": "reseller-api is in mock mode (no live registry creds). Status changes here are bookkeeping only."
+        "modeNoticeMock": "reseller-api is in mock mode (no live registry creds). Status changes here are bookkeeping only.",
+        "placeButton": "Place registration",
+        "placeConfirm": "This will register {fqdn} for {years} year(s) via the registry. For ResellerClub it incurs a real charge against your reseller balance. Continue?",
+        "placeConfirmYes": "Yes, place it"
       },
       "create": {
         "title": "New domain order",
@@ -851,7 +854,24 @@
       "yes": "Yes",
       "no": "No",
       "footnote": "Source of truth: F2's ResellerClub management console. Need a change?",
-      "openTicket": "Open a ticket"
+      "openTicket": "Open a ticket",
+      "orders": {
+        "requestNew": "Request a domain",
+        "pendingTitle": "Pending requests",
+        "requestedOn": "Requested {date}",
+        "years": "yr",
+        "privacyOn": "WHOIS privacy",
+        "status": {
+          "pending": "Pending",
+          "quoted": "Quoted",
+          "approved": "Approved",
+          "registered": "Registered",
+          "active": "Active",
+          "rejected": "Rejected",
+          "cancelled": "Cancelled",
+          "failed": "Failed"
+        }
+      }
     },
     "sla": {
       "title": "SLA",
@@ -864,6 +884,39 @@
       "daysOverdue": "{days} days overdue",
       "footnote": "Detailed performance reporting is shared quarterly. Need a copy or have questions?",
       "openTicket": "Open a ticket"
+    },
+    "domainsNew": {
+      "back": "Back to domains",
+      "title": "Request a new domain",
+      "subtitle": "Search availability and submit a request — F2 staff will review and complete the registration on your behalf.",
+      "searchPlaceholder": "Try yourbrand or yourbrand.co.th",
+      "checkButton": "Check availability",
+      "checking": "Checking…",
+      "resultsTitle": "Availability for \"{sld}\"",
+      "checkAgain": "Check another name",
+      "selectButton": "Select",
+      "orderingTitle": "You're requesting",
+      "changeDomain": "Change",
+      "submitOrder": "Submit request",
+      "manualNotice": "Thai .th domains are placed manually via the THNIC partner portal. F2 will confirm availability and send you a quote within 1 business day.",
+      "doneTitle": "Request received",
+      "doneBody": "F2 staff has been notified. We'll review your request and follow up by email within 1 business day with a quote and registration details.",
+      "backToDomains": "Back to domains",
+      "orderAnother": "Request another",
+      "fields": {
+        "name": "Registrant name",
+        "email": "Registrant email",
+        "phone": "Phone (optional)",
+        "company": "Company (optional)",
+        "years": "Registration years",
+        "privacy": "Enable WHOIS privacy",
+        "notes": "Notes (optional)",
+        "notesPlaceholder": "Anything F2 should know — preferred nameservers, intended use, etc."
+      },
+      "errorSearchRequired": "Please enter a domain name to check.",
+      "errorContactRequired": "Registrant name and email are required.",
+      "errorCheckFailed": "We couldn't check availability right now — try again in a moment.",
+      "errorSubmitFailed": "We couldn't submit your request — try again or open a ticket."
     }
   },
   "chat": {

@@ -19,6 +19,14 @@ type Config struct {
 	RCAuthUserID string
 	RCAPIKey     string
 
+	// Required for live ResellerClub Register. With creds set but these
+	// missing, the place endpoint returns a clear "set ENV_VAR_X" error
+	// rather than failing at the registry call.
+	RCDefaultCustomerID string
+	RCDefaultContactID  string
+	RCDefaultNS1        string
+	RCDefaultNS2        string
+
 	// HTTP client timeout for outbound registry calls.
 	OutboundTimeout time.Duration
 
@@ -36,6 +44,11 @@ func Load() Config {
 		RCBaseURL:    getenv("RESELLERCLUB_BASE_URL", "https://test.httpapi.com"),
 		RCAuthUserID: getenv("RESELLERCLUB_AUTH_USERID", ""),
 		RCAPIKey:     getenv("RESELLERCLUB_API_KEY", ""),
+
+		RCDefaultCustomerID: getenv("RESELLERCLUB_DEFAULT_CUSTOMER_ID", ""),
+		RCDefaultContactID:  getenv("RESELLERCLUB_DEFAULT_CONTACT_ID", ""),
+		RCDefaultNS1:        getenv("RESELLERCLUB_DEFAULT_NS1", ""),
+		RCDefaultNS2:        getenv("RESELLERCLUB_DEFAULT_NS2", ""),
 
 		OutboundTimeout: parseDuration("RESELLER_OUTBOUND_TIMEOUT", 8*time.Second),
 		CacheTTL:        parseDuration("RESELLER_CACHE_TTL", 15*time.Minute),

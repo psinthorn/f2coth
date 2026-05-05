@@ -395,3 +395,116 @@ func ptrOrEmpty(p *string) string {
 	}
 	return *p
 }
+
+// ----- Portal /domains/orders -----
+//
+// Customers can request a domain registration from inside the portal.
+// We write directly to domain_orders (the shared table also used by
+// reseller-api admin) tagged with the customer_id from the JWT. F2
+// staff fulfills via /admin/orders/domains.
+
+type portalCreateOrderReq struct {
+	SLD            string `json:"sld"`
+	TLD            string `json:"tld"`
+	Registry       string `json:"registry"`
+	ContactName    string `json:"contact_name"`
+	ContactEmail   string `json:"contact_email"`
+	ContactPhone   string `json:"contact_phone"`
+	ContactCompany string `json:"contact_company"`
+	Years          int    `json:"years"`
+	PrivacyEnabled bool   `json:"privacy_enabled"`
+	Notes          string `json:"notes"`
+}
+
+func (h *AssetHandler) PortalListDomainOrders(w http.ResponseWriter, r *http.Request) {
+	cid := customerID(r)
+	if cid == "" {
+		writeErr(w, http.StatusUnauthorized, "no customer in token")
+		return
+	}
+	rows, err := h.DB.Query(r.Context(), `
+        SELECT id, sld, tld, fqdn, registry, years, privacy_enabled,
+               status, registry_order_id, notes, created_at, updated_at
+        FROM domain_orders
+        WHERE customer_id = $1
+        ORDER BY created_at DESC
+        LIMIT 50
+    `, cid)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer rows.Close()
+	out := make([]models.DomainOrder, 0, 8)
+	for rows.Next() {
+		var o models.DomainOrder
+		if err := rows.Scan(&o.ID, &o.SLD, &o.TLD, &o.FQDN, &o.Registry,
+			&o.Years, &o.PrivacyEnabled, &o.Status, &o.RegistryOrderID,
+			&o.Notes, &o.CreatedAt, &o.UpdatedAt); err != nil {
+			writeErr(w, http.StatusInternalServerError, "scan error")
+			return
+		}
+		out = append(out, o)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"orders": out})
+}
+
+func (h *AssetHandler) PortalCreateDomainOrder(w http.ResponseWriter, r *http.Request) {
+	cid := customerID(r)
+	if cid == "" {
+		writeErr(w, http.StatusUnauthorized, "no customer in token")
+		return
+	}
+
+	var req portalCreateOrderReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid body")
+		return
+	}
+	req.SLD = strings.ToLower(strings.TrimSpace(req.SLD))
+	req.TLD = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(req.TLD)), ".")
+	if req.SLD == "" || req.TLD == "" {
+		writeErr(w, http.StatusBadRequest, "sld and tld are required")
+		return
+	}
+	if req.Registry != "thnic" && req.Registry != "resellerclub" {
+		writeErr(w, http.StatusBadRequest, "invalid registry")
+		return
+	}
+	if req.Years < 1 {
+		req.Years = 1
+	}
+	if req.Years > 10 {
+		req.Years = 10
+	}
+	if req.ContactEmail == "" || req.ContactName == "" {
+		writeErr(w, http.StatusBadRequest, "contact_name and contact_email are required")
+		return
+	}
+
+	var o models.DomainOrder
+	err := h.DB.QueryRow(r.Context(), `
+        INSERT INTO domain_orders (
+            sld, tld, registry, customer_id,
+            contact_name, contact_email, contact_phone, contact_company,
+            years, privacy_enabled, notes
+        ) VALUES (
+            $1, $2, $3, $4::uuid,
+            NULLIF($5,''), NULLIF($6,''), NULLIF($7,''), NULLIF($8,''),
+            $9, $10, NULLIF($11,'')
+        )
+        RETURNING id, sld, tld, fqdn, registry, years, privacy_enabled,
+                  status, registry_order_id, notes, created_at, updated_at
+    `,
+		req.SLD, req.TLD, req.Registry, cid,
+		req.ContactName, req.ContactEmail, req.ContactPhone, req.ContactCompany,
+		req.Years, req.PrivacyEnabled, req.Notes,
+	).Scan(&o.ID, &o.SLD, &o.TLD, &o.FQDN, &o.Registry,
+		&o.Years, &o.PrivacyEnabled, &o.Status, &o.RegistryOrderID,
+		&o.Notes, &o.CreatedAt, &o.UpdatedAt)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "could not create order")
+		return
+	}
+	writeJSON(w, http.StatusCreated, o)
+}

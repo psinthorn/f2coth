@@ -24,6 +24,16 @@ type AvailabilityResult struct {
 	CheckedAt      time.Time      `json:"checked_at"`
 }
 
+// PlacementResult captures everything we want to persist after asking a
+// registry to actually create the registration. RegistryOrderID is what the
+// registry returns (or a synthetic ID when running through Mock); Raw is the
+// full response stored as JSONB on domain_orders for audit.
+type PlacementResult struct {
+	RegistryOrderID string         `json:"registry_order_id"`
+	Status          string         `json:"status"` // 'registered' | 'failed' | 'manual'
+	Raw             map[string]any `json:"raw"`
+}
+
 type DomainOrder struct {
 	ID                string    `json:"id"`
 	SLD               string    `json:"sld"`

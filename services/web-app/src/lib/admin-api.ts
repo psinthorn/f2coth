@@ -301,6 +301,8 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify(patch),
     }),
+  placeDomainOrder: (id: string) =>
+    request<AdminDomainOrder>(`/reseller/orders/${id}/place`, { method: "POST" }),
 };
 
 // ----- Customer / ticket admin types -----

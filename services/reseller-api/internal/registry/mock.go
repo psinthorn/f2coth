@@ -2,6 +2,8 @@ package registry
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"hash/fnv"
 	"strings"
 	"time"
@@ -37,6 +39,24 @@ func (Mock) CheckAvailability(_ context.Context, sld string, tlds []string) ([]m
 		})
 	}
 	return out, nil
+}
+
+func (Mock) Register(_ context.Context, req PlaceRequest) (models.PlacementResult, error) {
+	// Synthetic order ID, deterministic per run (timestamp + rand). The "MOCK-"
+	// prefix makes it obvious in the admin queue that this isn't a live order.
+	b := make([]byte, 4)
+	_, _ = rand.Read(b)
+	id := "MOCK-" + strings.ToUpper(hex.EncodeToString(b))
+	return models.PlacementResult{
+		RegistryOrderID: id,
+		Status:          "registered",
+		Raw: map[string]any{
+			"mock":            true,
+			"fqdn":            req.SLD + "." + req.TLD,
+			"years":           req.Years,
+			"privacy_enabled": req.PrivacyEnabled,
+		},
+	}, nil
 }
 
 func mockClassify(fqdn string) models.Classification {
