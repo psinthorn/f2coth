@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import ChatWidget from "@/components/ChatWidget";
+import ConditionalChrome from "@/components/ConditionalChrome";
 import { routing } from "@/i18n/routing";
 
 export function generateStaticParams() {
@@ -51,10 +49,7 @@ export default async function PublicLayout({
 
   return (
     <NextIntlClientProvider>
-      <Header />
-      <main>{children}</main>
-      <Footer />
-      <ChatWidget />
+      <ConditionalChrome>{children}</ConditionalChrome>
     </NextIntlClientProvider>
   );
 }
