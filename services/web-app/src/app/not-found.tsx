@@ -1,18 +1,14 @@
-import { getLocale, getTranslations } from "next-intl/server";
-import { Link } from "@/i18n/routing";
-
-// Top-level 404. Renders within the root layout (no Header/Footer/ChatWidget).
-// Locale resolution falls back to the default; admins/portal also land here
-// for any URL that doesn't match a configured route.
-export default async function NotFound() {
-  const locale = await getLocale();
-  const t = await getTranslations({ locale, namespace: "notFound" });
+// Top-level 404. Renders without i18n context, since unmatched routes never
+// reach setRequestLocale in [locale]/layout.tsx. The translated variant at
+// [locale]/not-found.tsx is reserved for explicit notFound() calls inside
+// the locale segment.
+export default function NotFound() {
   return (
     <section className="container-page py-24 text-center">
-      <p className="font-display text-7xl text-accent-600">{t("code")}</p>
-      <h1 className="mt-4 font-display text-3xl text-navy-900">{t("title")}</h1>
-      <p className="mt-3 text-navy-600">{t("body")}</p>
-      <Link href="/" className="mt-8 inline-flex btn-accent">{t("cta")}</Link>
+      <p className="font-display text-7xl text-accent-600">404</p>
+      <h1 className="mt-4 font-display text-3xl text-navy-900">Page not found</h1>
+      <p className="mt-3 text-navy-600">The page you&rsquo;re looking for doesn&rsquo;t exist or has been moved.</p>
+      <a href="/" className="mt-8 inline-flex btn-accent">Back to home</a>
     </section>
   );
 }
