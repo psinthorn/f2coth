@@ -61,6 +61,7 @@ func main() {
 		r.Get("/pages/{slug}", h.GetPage)
 		r.Get("/domain-pricing", h.ListDomainPricing)
 		r.Get("/hosting-plans", h.ListHostingPlans)
+		r.Get("/modules", h.ListModules)
 
 		// Admin-only write endpoints (require admin or editor JWT).
 		r.Route("/admin", func(r chi.Router) {
@@ -70,6 +71,8 @@ func main() {
 			r.Get("/blog/{slug}", h.AdminGetBlogPost)
 			r.Patch("/blog/{slug}", h.AdminUpdateBlogPost)
 			r.Delete("/blog/{slug}", h.AdminDeleteBlogPost)
+			r.Get("/modules", h.AdminListModules)
+			r.Patch("/modules/{key}", h.AdminToggleModule)
 		})
 	})
 

@@ -26,7 +26,9 @@ export default function middleware(request: NextRequest) {
     "object-src 'none'",
   ].join("; ");
 
-  // Let next-intl handle locale routing first (may return a redirect).
+  // Let next-intl handle locale routing first (may return a redirect or
+  // an INTERNAL rewrite, e.g. /blog → /en/blog for the default locale with
+  // `localePrefix: "as-needed"`).
   const intlResponse = intlMiddleware(request);
 
   // For redirects (e.g. /en/... → /...) just attach the CSP and return.
@@ -35,14 +37,18 @@ export default function middleware(request: NextRequest) {
     return intlResponse;
   }
 
-  // For pass-through responses, rebuild via NextResponse.next() so the nonce
-  // is forwarded in the request headers. Next.js reads x-nonce from the
-  // incoming request to automatically attach the nonce to its own inline
-  // hydration <script> tags.
+  // For pass-through and rewrite responses we still need to add the nonce to
+  // the REQUEST headers (so Next.js stamps inline hydration scripts) — which
+  // means rebuilding the response. If next-intl emitted an internal rewrite
+  // (signalled by `x-middleware-rewrite`), preserve that target URL so we
+  // don't strip the rewrite by accident.
   const reqHeaders = new Headers(request.headers);
   reqHeaders.set("x-nonce", nonce);
 
-  const response = NextResponse.next({ request: { headers: reqHeaders } });
+  const rewriteTarget = intlResponse.headers.get("x-middleware-rewrite");
+  const response = rewriteTarget
+    ? NextResponse.rewrite(rewriteTarget, { request: { headers: reqHeaders } })
+    : NextResponse.next({ request: { headers: reqHeaders } });
 
   // Carry over any Set-Cookie headers next-intl set (locale persistence).
   intlResponse.headers.forEach((value, key) => {

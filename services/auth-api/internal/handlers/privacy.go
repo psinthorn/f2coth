@@ -338,7 +338,7 @@ func (h *PrivacyHandler) GetDSR(w http.ResponseWriter, r *http.Request) {
 
 // UpdateDSR — admin only. Updates status, assignment, response notes with
 // PATCH semantics (see dsrUpdateReq for the nil/empty/value convention).
-// Wrapped in a transaction together with a dsr_audit_log INSERT so the
+// Wrapped in a transaction together with an audit_log INSERT so the
 // state change and its audit record commit atomically.
 // PATCH /api/privacy/dsr/{id}
 func (h *PrivacyHandler) UpdateDSR(w http.ResponseWriter, r *http.Request) {
@@ -513,33 +513,42 @@ func timePtrEq(a, b *time.Time) bool {
 	return a.Equal(*b)
 }
 
-// writeAuditEntry appends a row to dsr_audit_log. The user's email is snapshotted
-// at write time (via a JOIN) so the trail survives later user deletion / email
-// change. actorID may be empty for system-driven events ('submit', 'verify');
-// in that case actor_id and actor_email are stored as NULL.
-func writeAuditEntry(ctx context.Context, tx pgx.Tx, dsrID, actorID, action string, changes map[string]any) error {
+// writeAudit appends a row to the generic audit_log keyed on
+// (resource_type, resource_id) so any handler (DSR, module toggles, users, …)
+// can share the same trail. The user's email is snapshotted at write time via
+// a JOIN so it survives later user deletion / email change. actorID may be
+// empty for system-driven events ('submit', 'verify'); in that case actor_id
+// and actor_email are stored as NULL.
+func writeAudit(ctx context.Context, tx pgx.Tx, resourceType, resourceID, actorID, action string, changes map[string]any) error {
 	payload, err := json.Marshal(changes)
 	if err != nil {
 		return err
 	}
 	if actorID == "" {
 		_, err = tx.Exec(ctx, `
-			INSERT INTO dsr_audit_log (dsr_id, actor_id, actor_email, action, changes)
-			VALUES ($1, NULL, NULL, $2, $3::jsonb)`,
-			dsrID, action, string(payload),
+			INSERT INTO audit_log (resource_type, resource_id, actor_id, actor_email, action, changes)
+			VALUES ($1, $2, NULL, NULL, $3, $4::jsonb)`,
+			resourceType, resourceID, action, string(payload),
 		)
 		return err
 	}
-	// Snapshot actor_email from users; LEFT JOIN style so the row still
-	// writes even if the actor_id has been removed between JWT issue and now.
+	// LEFT JOIN against users so the row still writes even if the actor_id has
+	// been removed between JWT issue and now (actor_email becomes NULL).
 	_, err = tx.Exec(ctx, `
-		INSERT INTO dsr_audit_log (dsr_id, actor_id, actor_email, action, changes)
-		SELECT $1, u.id, u.email, $3, $4::jsonb
-		FROM (SELECT $2::uuid AS id) src
+		INSERT INTO audit_log (resource_type, resource_id, actor_id, actor_email, action, changes)
+		SELECT $1, $2, u.id, u.email, $4, $5::jsonb
+		FROM (SELECT $3::uuid AS id) src
 		LEFT JOIN users u ON u.id = src.id`,
-		dsrID, actorID, action, string(payload),
+		resourceType, resourceID, actorID, action, string(payload),
 	)
 	return err
+}
+
+// writeAuditEntry is the DSR-specific wrapper preserving the prior call shape.
+// New DSR call sites should continue using this; non-DSR resources call
+// writeAudit directly with the appropriate resource_type.
+func writeAuditEntry(ctx context.Context, tx pgx.Tx, dsrID, actorID, action string, changes map[string]any) error {
+	return writeAudit(ctx, tx, "dsr", dsrID, actorID, action, changes)
 }
 
 // slaResp summarises DSR queue health for the admin dashboard. The counts

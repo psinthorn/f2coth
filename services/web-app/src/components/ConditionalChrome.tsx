@@ -14,7 +14,15 @@ import CookieBanner from "./CookieBanner";
 export default function ConditionalChrome({
   children,
   locale,
-}: { children: React.ReactNode; locale: string }) {
+  enabledModules,
+}: {
+  children: React.ReactNode;
+  locale: string;
+  // Plain object (not Map) so it serializes from the server component layout
+  // into this client component. Empty object = fetch failed → render all
+  // items (fail-open). See lib/modules.ts isEnabledIn().
+  enabledModules: Record<string, boolean>;
+}) {
   const pathname = usePathname() ?? "";
   const isAppRoute =
     pathname === "/admin" || pathname.startsWith("/admin/") ||
@@ -26,9 +34,9 @@ export default function ConditionalChrome({
 
   return (
     <>
-      <Header />
+      <Header enabledModules={enabledModules} />
       <main>{children}</main>
-      <Footer />
+      <Footer enabledModules={enabledModules} />
       <ChatWidget />
       <CookieBanner locale={locale} />
     </>

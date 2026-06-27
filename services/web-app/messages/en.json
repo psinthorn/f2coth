@@ -573,7 +573,8 @@
         "pricing": "Pricing",
         "orders": "Domain Orders",
         "dsr": "DSR Queue",
-        "blog": "Blog"
+        "blog": "Blog",
+        "features": "Feature inventory"
       },
       "signedInAs": "Signed in as",
       "signOut": "Sign out",
@@ -988,6 +989,28 @@
       "section": {
         "settings": "Post settings",
         "completeness": "Content completeness"
+      }
+    },
+    "features": {
+      "title": "Feature inventory",
+      "leadLive": "{enabled} enabled · {disabled} disabled — toggle any non-core module to hide it from the public site / portal / admin sidebar.",
+      "searchLabel": "Search features",
+      "searchPlaceholder": "Search by name, key, or description…",
+      "emptyState": "No features match your search.",
+      "loadErrorTitle": "Could not load modules",
+      "areas": {
+        "publicSite": "Public site",
+        "customerPortal": "Customer portal",
+        "adminConsole": "Admin console",
+        "api": "APIs"
+      },
+      "col": {
+        "feature": "Feature",
+        "key": "Module key",
+        "status": "Status"
+      },
+      "status": {
+        "core": "Core"
       }
     }
   },

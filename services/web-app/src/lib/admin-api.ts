@@ -331,7 +331,30 @@ export const adminApi = {
     }),
   deleteBlogPost: (slug: string) =>
     request<{ status: string }>(`/cms/admin/blog/${slug}`, { method: "DELETE" }),
+
+  // Modules (toggle architecture — see memories/feature_module_toggle_architecture.md).
+  listModules: () => request<AdminModule[]>("/cms/admin/modules"),
+  toggleModule: (key: string, enabled: boolean) =>
+    request<AdminModule>(`/cms/admin/modules/${encodeURIComponent(key)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    }),
 };
+
+export type ModuleArea = "public" | "portal" | "admin" | "api";
+
+export interface AdminModule {
+  key: string;
+  area: ModuleArea;
+  name_en: string;
+  name_th: string;
+  description: string | null;
+  enabled: boolean;
+  core: boolean;
+  sort_order: number;
+  updated_at: string;
+  updated_by: string | null;
+}
 
 // ----- Customer / ticket admin types -----
 

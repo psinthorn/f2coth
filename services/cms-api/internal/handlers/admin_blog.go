@@ -14,6 +14,7 @@ package handlers
 //   DELETE /{slug}   — hard-delete (irreversible; editor UI should confirm)
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -22,6 +23,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
+)
+
+// Context keys for values populated by RequireAdminOrEditor. Other handlers in
+// this package read these via ctx.Value to identify the actor (for audit_log).
+type ctxKey string
+
+const (
+	CtxUserID ctxKey = "cms.user_id"
+	CtxRole   ctxKey = "cms.role"
 )
 
 // ── Auth middleware ──────────────────────────────────────────────────────────
@@ -57,7 +67,12 @@ func (h *CMSHandler) RequireAdminOrEditor(next http.Handler) http.Handler {
 			writeErr(w, http.StatusForbidden, "admin or editor required")
 			return
 		}
-		next.ServeHTTP(w, r)
+		ctx := r.Context()
+		if sub, ok := claims["sub"].(string); ok {
+			ctx = context.WithValue(ctx, CtxUserID, sub)
+		}
+		ctx = context.WithValue(ctx, CtxRole, role)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import {
-  LayoutDashboard, Users, Inbox, LogOut, Menu, X, Loader2, Building2, Ticket, DollarSign, Globe, ShieldCheck, FileText,
+  LayoutDashboard, Users, Inbox, LogOut, Menu, X, Loader2, Building2, Ticket, DollarSign, Globe, ShieldCheck, FileText, ListChecks,
 } from "lucide-react";
 import { adminApi, clearAuth, redirectToLogin, type User } from "@/lib/admin-api";
+import { isEnabledIn } from "@/lib/modules";
 
 type GroupKey = "workspace" | "pipeline" | "infrastructure" | "system";
 
@@ -20,11 +21,16 @@ type NavItem = {
     | "/admin/blog"
     | "/admin/users"
     | "/admin/pricing"
-    | "/admin/orders/domains";
-  labelKey: "dashboard" | "leads" | "tickets" | "customers" | "dsr" | "blog" | "users" | "pricing" | "orders";
+    | "/admin/orders/domains"
+    | "/admin/features";
+  labelKey: "dashboard" | "leads" | "tickets" | "customers" | "dsr" | "blog" | "users" | "pricing" | "orders" | "features";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   adminOnly?: boolean;
+  // The corresponding row in the modules table. Items with `core: true` in
+  // that row (login/dashboard/users/features) are never hidden, matching the
+  // backend's PATCH guard.
+  moduleKey?: string;
 };
 
 type NavGroup = { key: GroupKey; items: NavItem[] };
@@ -33,30 +39,31 @@ const NAV: NavGroup[] = [
   {
     key: "workspace",
     items: [
-      { href: "/admin", labelKey: "dashboard", icon: LayoutDashboard, exact: true },
+      { href: "/admin", labelKey: "dashboard", icon: LayoutDashboard, exact: true, moduleKey: "admin.dashboard" },
     ],
   },
   {
     key: "pipeline",
     items: [
-      { href: "/admin/leads", labelKey: "leads", icon: Inbox },
-      { href: "/admin/tickets", labelKey: "tickets", icon: Ticket },
-      { href: "/admin/customers", labelKey: "customers", icon: Building2 },
-      { href: "/admin/dsr", labelKey: "dsr", icon: ShieldCheck },
-      { href: "/admin/blog", labelKey: "blog", icon: FileText },
+      { href: "/admin/leads",     labelKey: "leads",     icon: Inbox,       moduleKey: "admin.leads" },
+      { href: "/admin/tickets",   labelKey: "tickets",   icon: Ticket,      moduleKey: "admin.tickets" },
+      { href: "/admin/customers", labelKey: "customers", icon: Building2,   moduleKey: "admin.customers" },
+      { href: "/admin/dsr",       labelKey: "dsr",       icon: ShieldCheck, moduleKey: "admin.dsr" },
+      { href: "/admin/blog",      labelKey: "blog",      icon: FileText,    moduleKey: "admin.blog" },
     ],
   },
   {
     key: "infrastructure",
     items: [
-      { href: "/admin/orders/domains", labelKey: "orders", icon: Globe },
-      { href: "/admin/pricing", labelKey: "pricing", icon: DollarSign },
+      { href: "/admin/orders/domains", labelKey: "orders",  icon: Globe,      moduleKey: "admin.orders_domains" },
+      { href: "/admin/pricing",        labelKey: "pricing", icon: DollarSign, moduleKey: "admin.pricing" },
     ],
   },
   {
     key: "system",
     items: [
-      { href: "/admin/users", labelKey: "users", icon: Users, adminOnly: true },
+      { href: "/admin/users",    labelKey: "users",    icon: Users,      adminOnly: true, moduleKey: "admin.users" },
+      { href: "/admin/features", labelKey: "features", icon: ListChecks, moduleKey: "admin.features" },
     ],
   },
 ];
@@ -68,6 +75,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  // Fetched once at mount alongside `me()`. Empty object means "fetch failed"
+  // or "still loading" — fail-open per isEnabledIn(), so admin sees the full
+  // nav rather than a half-empty one if cms-api is briefly unreachable.
+  const [enabledModules, setEnabledModules] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -77,12 +88,18 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       return;
     }
 
-    adminApi
-      .me()
-      .then((u) => {
+    Promise.all([
+      adminApi.me(),
+      fetch("/api/cms/modules")
+        .then((r) => (r.ok ? (r.json() as Promise<Array<{ key: string; enabled: boolean }>>) : []))
+        .then((rows) => Object.fromEntries(rows.map((r) => [r.key, r.enabled])))
+        .catch(() => ({} as Record<string, boolean>)),
+    ])
+      .then(([u, mods]) => {
         if (!cancelled) {
           setUser(u);
           sessionStorage.setItem("f2_user", JSON.stringify(u));
+          setEnabledModules(mods);
           setLoading(false);
         }
       })
@@ -129,7 +146,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const isActive = (n: NavItem) => (n.exact ? pathname === n.href : pathname.startsWith(n.href));
   const visibleGroups = NAV.map((g) => ({
     ...g,
-    items: g.items.filter((n) => !n.adminOnly || user.role === "admin"),
+    items: g.items.filter(
+      (n) =>
+        (!n.adminOnly || user.role === "admin") &&
+        (!n.moduleKey || isEnabledIn(enabledModules, n.moduleKey)),
+    ),
   })).filter((g) => g.items.length > 0);
 
   const initials = (user.full_name || user.email).slice(0, 2).toUpperCase();

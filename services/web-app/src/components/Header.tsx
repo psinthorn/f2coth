@@ -5,33 +5,53 @@ import { ChevronDown, LogIn, Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/routing";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { isEnabledIn } from "@/lib/modules";
 
-type NavLeaf = { kind: "leaf"; href: string; labelKey: string };
-type NavGroup = { kind: "group"; labelKey: string; items: { href: string; labelKey: string }[] };
+type NavLeaf = { kind: "leaf"; href: string; labelKey: string; moduleKey: string };
+type NavGroup = {
+  kind: "group";
+  labelKey: string;
+  items: { href: string; labelKey: string; moduleKey: string }[];
+};
 type NavItem = NavLeaf | NavGroup;
 
-export default function Header() {
+export default function Header({
+  enabledModules = {},
+}: {
+  enabledModules?: Record<string, boolean>;
+}) {
   const t = useTranslations("header");
   const tc = useTranslations("common");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
-  const nav: NavItem[] = [
-    { kind: "leaf", href: "/services", labelKey: "services" },
-    { kind: "leaf", href: "/case-studies", labelKey: "caseStudies" },
-    { kind: "leaf", href: "/products", labelKey: "products" },
+  const allNav: NavItem[] = [
+    { kind: "leaf", href: "/services",     labelKey: "services",    moduleKey: "public.services" },
+    { kind: "leaf", href: "/case-studies", labelKey: "caseStudies", moduleKey: "public.case_studies" },
+    { kind: "leaf", href: "/products",     labelKey: "products",    moduleKey: "public.products" },
     {
       kind: "group", labelKey: "infrastructure",
       items: [
-        { href: "/domains", labelKey: "domains" },
-        { href: "/hosting", labelKey: "hosting" },
+        { href: "/domains", labelKey: "domains", moduleKey: "public.domains" },
+        { href: "/hosting", labelKey: "hosting", moduleKey: "public.hosting" },
       ],
     },
-    { kind: "leaf", href: "/blog", labelKey: "blog" },
-    { kind: "leaf", href: "/about", labelKey: "about" },
-    { kind: "leaf", href: "/contact", labelKey: "contact" },
+    { kind: "leaf", href: "/blog",    labelKey: "blog",    moduleKey: "public.blog" },
+    { kind: "leaf", href: "/about",   labelKey: "about",   moduleKey: "public.about" },
+    { kind: "leaf", href: "/contact", labelKey: "contact", moduleKey: "public.contact" },
   ];
+
+  // Filter out disabled modules; collapse groups that have lost all children.
+  const nav: NavItem[] = allNav
+    .map((item) => {
+      if (item.kind === "leaf") {
+        return isEnabledIn(enabledModules, item.moduleKey) ? item : null;
+      }
+      const subs = item.items.filter((s) => isEnabledIn(enabledModules, s.moduleKey));
+      return subs.length > 0 ? { ...item, items: subs } : null;
+    })
+    .filter((x): x is NavItem => x !== null);
 
   const isActive = (href: string) =>
     pathname === href || (href !== "/" && pathname.startsWith(href));

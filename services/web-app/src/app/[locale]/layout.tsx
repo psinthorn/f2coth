@@ -4,6 +4,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import ConditionalChrome from "@/components/ConditionalChrome";
 import { routing } from "@/i18n/routing";
+import { getEnabledModulesRecord } from "@/lib/modules";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -47,9 +48,17 @@ export default async function PublicLayout({
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
 
+  // Fetch the enabled-modules map server-side and pass it down to the chrome
+  // so Header / Footer can hide links for disabled sections without flashing
+  // them first. React.cache dedups this with any page that also calls
+  // isModuleEnabled() during the same render.
+  const enabledModules = await getEnabledModulesRecord();
+
   return (
     <NextIntlClientProvider>
-      <ConditionalChrome locale={locale}>{children}</ConditionalChrome>
+      <ConditionalChrome locale={locale} enabledModules={enabledModules}>
+        {children}
+      </ConditionalChrome>
     </NextIntlClientProvider>
   );
 }
