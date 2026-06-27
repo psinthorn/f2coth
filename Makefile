@@ -64,7 +64,13 @@ web-dev: ## Run the Next.js app locally (outside docker)
 i18n-check: ## Verify EN and TH translation key parity
 	cd services/web-app && node scripts/i18n-check.mjs
 
-ci: tidy fmt test i18n-check ## Run the full local CI check (matches GitHub Actions)
+sync-modulegate: ## Copy pkg/modulegate canonical source to each consumer service
+	@bash scripts/sync-modulegate.sh
+
+sync-modulegate-check: ## Fail if any service's modulegate.go has drifted from pkg/modulegate
+	@bash scripts/sync-modulegate.sh --check
+
+ci: tidy fmt test i18n-check sync-modulegate-check ## Run the full local CI check (matches GitHub Actions)
 	@echo "✅  All CI checks passed locally."
 
 prod-up: ## Start the stack with production overrides (Traefik dashboard off, restart=always)

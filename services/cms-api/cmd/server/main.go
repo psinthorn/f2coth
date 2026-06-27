@@ -52,18 +52,30 @@ func main() {
 	r.Route("/api/cms", func(r chi.Router) {
 		r.Use(mw.Locale)
 
-		r.Get("/services", h.ListServices)
-		r.Get("/services/{slug}", h.GetService)
-		r.Get("/case-studies", h.ListCaseStudies)
-		r.Get("/case-studies/{slug}", h.GetCaseStudy)
-		r.Get("/blog", h.ListBlogPosts)
-		r.Get("/blog/{slug}", h.GetBlogPost)
-		r.Get("/pages/{slug}", h.GetPage)
-		r.Get("/domain-pricing", h.ListDomainPricing)
-		r.Get("/hosting-plans", h.ListHostingPlans)
+		// /api/cms/modules is the gate's own dependency — it MUST stay
+		// always-on so other services can fetch the enabled map. Register
+		// it before the gate-wrapped group so it bypasses the api.cms check.
 		r.Get("/modules", h.ListModules)
 
-		// Admin-only write endpoints (require admin or editor JWT).
+		// Public read endpoints gated by api.cms (services, blog, case
+		// studies, pricing). Disable to take the marketing site's content
+		// API offline without affecting the admin or the gate itself.
+		r.Group(func(r chi.Router) {
+			r.Use(mw.GateModule("api.cms"))
+			r.Get("/services", h.ListServices)
+			r.Get("/services/{slug}", h.GetService)
+			r.Get("/case-studies", h.ListCaseStudies)
+			r.Get("/case-studies/{slug}", h.GetCaseStudy)
+			r.Get("/blog", h.ListBlogPosts)
+			r.Get("/blog/{slug}", h.GetBlogPost)
+			r.Get("/pages/{slug}", h.GetPage)
+			r.Get("/domain-pricing", h.ListDomainPricing)
+			r.Get("/hosting-plans", h.ListHostingPlans)
+		})
+
+		// Admin-only write endpoints (require admin or editor JWT). Not
+		// gated by api.cms — admins must always be able to manage content
+		// and toggles regardless of whether the public read API is paused.
 		r.Route("/admin", func(r chi.Router) {
 			r.Use(h.RequireAdminOrEditor)
 			r.Get("/blog", h.AdminListBlogPosts)

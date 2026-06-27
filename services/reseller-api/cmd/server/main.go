@@ -58,10 +58,16 @@ func main() {
 	})
 
 	r.Route("/api/reseller", func(r chi.Router) {
-		// Public.
-		r.Post("/availability", availability.Check)
+		// Public — domain availability lookup used by the marketplace.
+		// Gated by api.reseller so admins can pause new searches without
+		// taking the admin order queue offline.
+		r.Group(func(r chi.Router) {
+			r.Use(mw.GateModule("api.reseller"))
+			r.Post("/availability", availability.Check)
+		})
 
-		// Admin only.
+		// Admin only — not gated so operators can still process existing
+		// orders while public availability is paused.
 		r.Group(func(r chi.Router) {
 			r.Use(mw.RequireStaffJWT(cfg.JWTSecret))
 			r.Get("/orders", orders.List)

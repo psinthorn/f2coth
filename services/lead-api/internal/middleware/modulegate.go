@@ -5,11 +5,13 @@ package middleware
 // gating in services/web-app/src/lib/modules.ts; ensures direct API
 // callers (curl, scripts) honour the same toggles a user would see.
 //
-// COPY-PASTE WARNING: this file is duplicated verbatim in
-// services/auth-api/internal/middleware/modulegate.go. When changing the
-// shape, update both. When a 3rd service needs the same shape, extract
-// to a shared module (pkg/modulegate with its own go.mod) before adding
-// a third copy — per the reuse mandate in MEMORY.md.
+// CANONICAL SOURCE. This file is the single source of truth for the
+// module-gate middleware. Each Go service that uses it gets a copy
+// dropped into its own `internal/middleware/modulegate.go` via
+// `make sync-modulegate` (or `scripts/sync-modulegate.sh` directly).
+// Edit this file, then run the sync — never edit the per-service
+// copies directly. CI runs the same sync in --check mode to fail PRs
+// that drift.
 //
 // Behaviour:
 //   • 30-second in-memory cache (sync.RWMutex) so we don't hit cms-api

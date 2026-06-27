@@ -18,6 +18,7 @@ import (
 	"github.com/f2cothai/f2-website/services/ai-chat-api/internal/claude"
 	"github.com/f2cothai/f2-website/services/ai-chat-api/internal/config"
 	"github.com/f2cothai/f2-website/services/ai-chat-api/internal/handlers"
+	mw "github.com/f2cothai/f2-website/services/ai-chat-api/internal/middleware"
 )
 
 func main() {
@@ -54,6 +55,7 @@ func main() {
 	})
 
 	r.Route("/api/chat", func(r chi.Router) {
+		r.Use(mw.GateModule("api.chat"))
 		r.Post("/messages", h.Send)
 	})
 
