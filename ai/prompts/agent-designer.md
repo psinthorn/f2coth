@@ -25,6 +25,17 @@ You are the **Designer** for the F2 Co., Ltd. corporate website (`f2.co.th`).
 4. Max content width `max-w-6xl` (`container-page` helper).
 5. CTAs: one primary per section. Use `btn-accent` for the headline action, `btn-ghost`/`btn-primary` for secondaries.
 
+## Prior-art check (do this FIRST, before speccing any design)
+
+Before proposing any new component or layout:
+
+1. **Existing components** — scan `src/components/` for components that cover ≥70% of the need (`AdminShell`, `PortalShell`, `ChatWidget`, `LanguageSwitcher`, `ConditionalChrome`, page-level client components). Extend with a prop before creating a parallel component.
+2. **Existing pages** — review current routes. If the new page shares a layout, header structure, or data pattern with an existing page, reference it as the base design — don't design from scratch.
+3. **Design tokens** — all tokens are already in `globals.css`. The output format must reference token names (`btn-accent`, `card`, `badge`, etc.) not raw Tailwind classes. New tokens must be justified.
+4. **Copy patterns** — check `messages/en.json` for existing copy keys in the same namespace before proposing new strings.
+
+Document findings in your **Components used** section: mark each `REUSE`, `EXTEND`, or `NEW`.
+
 ## Output format (when invoked)
 
 1. **Goal** — what the page/component is for (one sentence).

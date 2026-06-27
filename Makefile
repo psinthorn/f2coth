@@ -1,6 +1,6 @@
 .PHONY: help up down build rebuild logs ps clean db-shell migrate seed test fmt tidy
 
-SERVICES := cms-api lead-api ai-chat-api auth-api notification-api customer-api
+SERVICES := cms-api lead-api ai-chat-api auth-api notification-api customer-api reseller-api
 COMPOSE  := docker compose
 
 help: ## Show this help
@@ -60,3 +60,12 @@ test: ## Run go test across all Go services
 
 web-dev: ## Run the Next.js app locally (outside docker)
 	cd services/web-app && npm install && npm run dev
+
+i18n-check: ## Verify EN and TH translation key parity
+	cd services/web-app && node scripts/i18n-check.mjs
+
+ci: tidy fmt test i18n-check ## Run the full local CI check (matches GitHub Actions)
+	@echo "✅  All CI checks passed locally."
+
+prod-up: ## Start the stack with production overrides (Traefik dashboard off, restart=always)
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml up -d

@@ -32,6 +32,7 @@ func main() {
 	h := &handlers.AuthHandler{DB: pool, Cfg: cfg}
 	uh := &handlers.UserHandler{DB: pool, Cfg: cfg}
 	ch := &handlers.CustomerAuthHandler{DB: pool, Cfg: cfg}
+	ph := &handlers.PrivacyHandler{DB: pool, Cfg: cfg}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -81,6 +82,21 @@ func main() {
 		})
 	})
 
+	// Privacy / PDPA endpoints.
+	r.Route("/api/privacy", func(r chi.Router) {
+		// Public — any visitor can submit a data subject request.
+		r.Post("/dsr", ph.SubmitDSR)
+
+		// Admin — manage and respond to DSRs.
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.RequireJWT(cfg.JWTSecret))
+			r.Use(authmw.RequireRole("admin"))
+			r.Get("/dsr", ph.ListDSRs)
+			r.Get("/dsr/{id}", ph.GetDSR)
+			r.Patch("/dsr/{id}", ph.UpdateDSR)
+		})
+	})
+
 	srv := &http.Server{
 		Addr:              ":" + cfg.ServicePort,
 		Handler:           r,
@@ -96,6 +112,40 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	// Refresh-token janitor: purge expired rows from both token tables every 24 h.
+	// Runs immediately at startup, then on a 24-hour ticker.
+	// Cancelled automatically when the shutdown signal arrives.
+	janitorCtx, janitorCancel := context.WithCancel(context.Background())
+	defer janitorCancel()
+	go func() {
+		purge := func() {
+			ctx, cancel := context.WithTimeout(janitorCtx, 30*time.Second)
+			defer cancel()
+			n1, err1 := pool.Exec(ctx,
+				`DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked_at IS NOT NULL`)
+			n2, err2 := pool.Exec(ctx,
+				`DELETE FROM customer_refresh_tokens WHERE expires_at < NOW() OR revoked_at IS NOT NULL`)
+			if err1 != nil || err2 != nil {
+				log.Printf("janitor: error purging tokens: staff=%v customer=%v", err1, err2)
+			} else {
+				log.Printf("janitor: purged %d staff + %d customer refresh tokens",
+					n1.RowsAffected(), n2.RowsAffected())
+			}
+		}
+		purge()
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				purge()
+			case <-janitorCtx.Done():
+				return
+			}
+		}
+	}()
+
 	<-stop
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

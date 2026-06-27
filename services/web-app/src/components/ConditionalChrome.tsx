@@ -4,6 +4,7 @@ import { usePathname } from "@/i18n/routing";
 import Header from "./Header";
 import Footer from "./Footer";
 import ChatWidget from "./ChatWidget";
+import CookieBanner from "./CookieBanner";
 
 // Renders the public site chrome (Header / Footer / ChatWidget) on marketing
 // routes, but NOT on /admin/* or /portal/*. Those areas have their own shells
@@ -12,7 +13,8 @@ import ChatWidget from "./ChatWidget";
 // to an already-signed-in customer).
 export default function ConditionalChrome({
   children,
-}: { children: React.ReactNode }) {
+  locale,
+}: { children: React.ReactNode; locale: string }) {
   const pathname = usePathname() ?? "";
   const isAppRoute =
     pathname === "/admin" || pathname.startsWith("/admin/") ||
@@ -28,6 +30,7 @@ export default function ConditionalChrome({
       <main>{children}</main>
       <Footer />
       <ChatWidget />
+      <CookieBanner locale={locale} />
     </>
   );
 }

@@ -30,6 +30,7 @@ func main() {
 	defer pool.Close()
 
 	h := &handlers.LeadHandler{DB: pool, Cfg: cfg}
+	ch := &handlers.ConsentHandler{DB: pool, Cfg: cfg}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -67,6 +68,13 @@ func main() {
 		})
 	})
 
+	// Cookie consent endpoints (PDPA).
+	r.Route("/api/consent", func(r chi.Router) {
+		r.Post("/", ch.RecordConsent)
+		r.Get("/{visitorId}", ch.GetConsent)
+		r.Post("/{visitorId}/withdraw", ch.WithdrawConsent)
+	})
+
 	srv := &http.Server{
 		Addr:              ":" + cfg.ServicePort,
 		Handler:           r,
@@ -82,6 +90,51 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	// PDPA anonymisation janitor: redact PII from leads whose retention period
+	// has expired (2 years from creation, per migration 015). Runs immediately at
+	// startup then every 24 h so stale PII is purged without manual intervention.
+	anonCtx, anonCancel := context.WithCancel(context.Background())
+	defer anonCancel()
+	go func() {
+		anonymise := func() {
+			ctx, cancel := context.WithTimeout(anonCtx, 60*time.Second)
+			defer cancel()
+			tag, err := pool.Exec(ctx, `
+				UPDATE leads SET
+					full_name     = '[redacted]',
+					email         = 'redacted-' || id::text || '@f2.co.th',
+					phone         = NULL,
+					company       = NULL,
+					property_name = NULL,
+					message       = '[redacted]',
+					ip_address    = NULL,
+					user_agent    = NULL,
+					utm_source    = NULL,
+					utm_medium    = NULL,
+					utm_campaign  = NULL,
+					notes         = NULL,
+					anonymised_at = NOW()
+				WHERE retention_expires_at < NOW() AND anonymised_at IS NULL`)
+			if err != nil {
+				log.Printf("pdpa-janitor: leads anonymisation error: %v", err)
+			} else {
+				log.Printf("pdpa-janitor: anonymised %d expired leads", tag.RowsAffected())
+			}
+		}
+		anonymise()
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				anonymise()
+			case <-anonCtx.Done():
+				return
+			}
+		}
+	}()
+
 	<-stop
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

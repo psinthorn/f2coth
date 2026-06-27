@@ -9,14 +9,17 @@ import (
 )
 
 type Config struct {
-	ServicePort      string
-	DatabaseURL      string
-	JWTSecret        string
-	JWTIssuer        string
-	JWTTTL           time.Duration
-	RefreshTTL       time.Duration
-	BcryptCost       int
-	CORSAllowedHosts []string
+	ServicePort        string
+	DatabaseURL        string
+	JWTSecret          string
+	JWTIssuer          string
+	JWTTTL             time.Duration
+	RefreshTTL         time.Duration
+	BcryptCost         int
+	CORSAllowedHosts   []string
+	NotificationAPIURL string
+	PrivacyNotifyTo    string
+	SiteURL            string
 }
 
 func Load() Config {
@@ -40,14 +43,17 @@ func Load() Config {
 	}
 
 	return Config{
-		ServicePort:      getenv("SERVICE_PORT", "8004"),
-		DatabaseURL:      getenv("DATABASE_URL", ""),
-		JWTSecret:        secret,
-		JWTIssuer:        getenv("JWT_ISSUER", "f2.co.th"),
-		JWTTTL:           time.Duration(jwtTTLMin) * time.Minute,
-		RefreshTTL:       time.Duration(refTTLHr) * time.Hour,
-		BcryptCost:       bcryptCost,
-		CORSAllowedHosts: cors,
+		ServicePort:        getenv("SERVICE_PORT", "8004"),
+		DatabaseURL:        getenv("DATABASE_URL", ""),
+		JWTSecret:          secret,
+		JWTIssuer:          getenv("JWT_ISSUER", "f2.co.th"),
+		JWTTTL:             time.Duration(jwtTTLMin) * time.Minute,
+		RefreshTTL:         time.Duration(refTTLHr) * time.Hour,
+		BcryptCost:         bcryptCost,
+		CORSAllowedHosts:   cors,
+		NotificationAPIURL: getenv("NOTIFICATION_API_URL", "http://notification-api:8005"),
+		PrivacyNotifyTo:    getenv("PRIVACY_NOTIFY_TO", "privacy@f2.co.th"),
+		SiteURL:            getenv("SITE_URL", "https://f2.co.th"),
 	}
 }
 

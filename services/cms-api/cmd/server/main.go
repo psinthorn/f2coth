@@ -29,7 +29,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	h := &handlers.CMSHandler{DB: pool}
+	h := &handlers.CMSHandler{DB: pool, JWTSecret: cfg.JWTSecret}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -39,8 +39,8 @@ func main() {
 	r.Use(chimw.Timeout(15 * time.Second))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.CORSAllowedHosts,
-		AllowedMethods:   []string{"GET", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type"},
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
@@ -61,6 +61,16 @@ func main() {
 		r.Get("/pages/{slug}", h.GetPage)
 		r.Get("/domain-pricing", h.ListDomainPricing)
 		r.Get("/hosting-plans", h.ListHostingPlans)
+
+		// Admin-only write endpoints (require admin or editor JWT).
+		r.Route("/admin", func(r chi.Router) {
+			r.Use(h.RequireAdminOrEditor)
+			r.Get("/blog", h.AdminListBlogPosts)
+			r.Post("/blog", h.AdminCreateBlogPost)
+			r.Get("/blog/{slug}", h.AdminGetBlogPost)
+			r.Patch("/blog/{slug}", h.AdminUpdateBlogPost)
+			r.Delete("/blog/{slug}", h.AdminDeleteBlogPost)
+		})
 	})
 
 	srv := &http.Server{

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import {
-  LayoutDashboard, Users, Inbox, LogOut, Menu, X, Loader2, Building2, Ticket, DollarSign, Globe,
+  LayoutDashboard, Users, Inbox, LogOut, Menu, X, Loader2, Building2, Ticket, DollarSign, Globe, ShieldCheck, FileText,
 } from "lucide-react";
 import { adminApi, clearAuth, redirectToLogin, type User } from "@/lib/admin-api";
 
@@ -16,10 +16,12 @@ type NavItem = {
     | "/admin/leads"
     | "/admin/tickets"
     | "/admin/customers"
+    | "/admin/dsr"
+    | "/admin/blog"
     | "/admin/users"
     | "/admin/pricing"
     | "/admin/orders/domains";
-  labelKey: "dashboard" | "leads" | "tickets" | "customers" | "users" | "pricing" | "orders";
+  labelKey: "dashboard" | "leads" | "tickets" | "customers" | "dsr" | "blog" | "users" | "pricing" | "orders";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   adminOnly?: boolean;
@@ -40,6 +42,8 @@ const NAV: NavGroup[] = [
       { href: "/admin/leads", labelKey: "leads", icon: Inbox },
       { href: "/admin/tickets", labelKey: "tickets", icon: Ticket },
       { href: "/admin/customers", labelKey: "customers", icon: Building2 },
+      { href: "/admin/dsr", labelKey: "dsr", icon: ShieldCheck },
+      { href: "/admin/blog", labelKey: "blog", icon: FileText },
     ],
   },
   {

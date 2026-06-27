@@ -13,7 +13,8 @@ import (
 )
 
 type CMSHandler struct {
-	DB *pgxpool.Pool
+	DB        *pgxpool.Pool
+	JWTSecret string
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

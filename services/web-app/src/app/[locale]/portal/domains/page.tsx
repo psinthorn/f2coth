@@ -35,7 +35,10 @@ export default function PortalDomainsPage() {
 
   // Pending orders are everything that hasn't been fulfilled yet.
   const pendingOrders = orders.filter(
-    (o) => o.status !== "registered" && o.status !== "active" && o.status !== "cancelled" && o.status !== "rejected",
+    (o) => o.status !== "registered" && o.status !== "active" && o.status !== "cancelled" && o.status !== "rejected" && o.status !== "failed",
+  );
+  const historyOrders = orders.filter(
+    (o) => o.status === "registered" || o.status === "active" || o.status === "cancelled" || o.status === "rejected" || o.status === "failed",
   );
 
   return (
@@ -150,6 +153,56 @@ export default function PortalDomainsPage() {
           {t("footnote")}
           {" "}<Link href="/portal/tickets/new" className="text-accent-700 hover:text-accent-900">{t("openTicket")}</Link>.
         </p>
+      )}
+
+      {!loading && !forbidden && historyOrders.length > 0 && (
+        <section className="mt-10">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-navy-500">{to("historyTitle")}</h2>
+          <div className="card overflow-x-auto p-0">
+            <table className="w-full text-sm">
+              <thead className="bg-navy-50 text-left text-xs uppercase tracking-wider text-navy-500">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">{to("col.domain")}</th>
+                  <th className="px-4 py-3 font-semibold">{to("col.registry")}</th>
+                  <th className="px-4 py-3 font-semibold">{to("col.years")}</th>
+                  <th className="px-4 py-3 font-semibold">{to("col.privacy")}</th>
+                  <th className="px-4 py-3 font-semibold">{to("col.status")}</th>
+                  <th className="px-4 py-3 font-semibold">{to("col.date")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-navy-100">
+                {historyOrders.map((o) => (
+                  <tr key={o.id} className="hover:bg-navy-50">
+                    <td className="px-4 py-3">
+                      <p className="flex items-center gap-2 font-medium text-navy-900">
+                        <Globe className="h-3.5 w-3.5 text-navy-400" />
+                        {o.fqdn}
+                      </p>
+                      {o.notes && <p className="mt-0.5 text-xs text-navy-500">{o.notes}</p>}
+                    </td>
+                    <td className="px-4 py-3 text-navy-600 text-xs uppercase">{o.registry}</td>
+                    <td className="px-4 py-3 text-navy-700">{o.years} {to("years")}</td>
+                    <td className="px-4 py-3">
+                      {o.privacy_enabled ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800">
+                          <ShieldCheck className="h-3 w-3" /> {to("privacyOn")}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-navy-400">{t("privacyOff")}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <OrderStatusPill status={o.status} label={to(`status.${o.status}`)} />
+                    </td>
+                    <td className="px-4 py-3 text-navy-500 text-xs">
+                      {fmtDate(o.updated_at)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
     </PortalShell>
   );

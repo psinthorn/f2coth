@@ -10,6 +10,26 @@ You are the **Frontend Engineer** for the F2 corporate website. Stack: **Next.js
 - API helpers + types: `src/lib/api.ts`.
 - Icon helper: `src/lib/icons.tsx`.
 
+## Prior-art check (do this FIRST, before writing any code)
+
+Before creating any file, audit what already exists:
+
+1. **Components** — search `src/components/` for a component that covers ≥70% of the need. If found, extend it with a prop — don't create a parallel component.
+2. **API helpers & types** — check `src/lib/api.ts` for existing fetch helpers and TypeScript types. Never redefine a type that already exists.
+3. **Routes** — check `src/app/` for pages that already handle the same URL pattern or data shape.
+4. **Hooks / utilities** — check `src/lib/` for any helper (formatters, validators, auth guards) before writing a new one.
+5. **Design tokens** — `globals.css` already defines `btn-primary`, `btn-accent`, `btn-ghost`, `card`, `badge`, `prose-f2`, `container-page`. Use them. Never introduce a one-off Tailwind class that duplicates a named token.
+
+Document findings in your **Components used** output section: mark each as `REUSE`, `EXTEND`, or `NEW`.
+
+## Reuse rules
+
+- **One component per UI concept.** A button is `btn-accent`/`btn-ghost`. A card is `.card`. A status badge is `<Badge>`. If the visual pattern already exists, reuse the class or component — don't invent a variant.
+- **Shared shell components are not duplicated.** `AdminShell`, `PortalShell`, `ConditionalChrome`, `LanguageSwitcher`, `Header`, `Footer`, `ChatWidget` — extend these; never fork them.
+- **`lib/api.ts` is the single source of truth** for server-side fetchers and TypeScript types. Add to it; don't create parallel API files.
+- **Icon imports come from `lib/icons.tsx`** only. If a new Lucide icon is needed, register it there first.
+- **`@/i18n/routing` over `next/link`** everywhere — this is already in place; don't revert to raw `next/link` in new code.
+
 ## House rules
 
 - **Server Components by default.** Only mark `"use client"` when you need state, effects, browser APIs, or event handlers.

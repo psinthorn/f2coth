@@ -72,6 +72,58 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	// PDPA anonymisation janitor: redact PII from chat sessions older than 90 days
+	// (expires_at = updated_at + 90d, per migration 015). Deletes all chat messages
+	// for the session (user content is PII), then redacts session metadata.
+	// Runs immediately at startup then every 24 h.
+	anonCtx, anonCancel := context.WithCancel(context.Background())
+	defer anonCancel()
+	go func() {
+		anonymise := func() {
+			ctx, cancel := context.WithTimeout(anonCtx, 60*time.Second)
+			defer cancel()
+			// Step 1: delete message content (contains user-typed PII).
+			msgTag, err := pool.Exec(ctx, `
+				DELETE FROM chat_messages
+				WHERE session_id IN (
+					SELECT id FROM chat_sessions
+					WHERE expires_at < NOW() AND anonymised_at IS NULL
+				)`)
+			if err != nil {
+				log.Printf("pdpa-janitor: delete chat messages: %v", err)
+				return
+			}
+			// Step 2: redact session-level metadata.
+			sesTag, err := pool.Exec(ctx, `
+				UPDATE chat_sessions SET
+					visitor_id    = '[redacted]',
+					user_agent    = NULL,
+					ip_address    = NULL,
+					referrer      = NULL,
+					landing_path  = NULL,
+					anonymised_at = NOW()
+				WHERE expires_at < NOW() AND anonymised_at IS NULL`)
+			if err != nil {
+				log.Printf("pdpa-janitor: anonymise sessions: %v", err)
+			} else {
+				log.Printf("pdpa-janitor: anonymised %d chat sessions, deleted %d messages",
+					sesTag.RowsAffected(), msgTag.RowsAffected())
+			}
+		}
+		anonymise()
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				anonymise()
+			case <-anonCtx.Done():
+				return
+			}
+		}
+	}()
+
 	<-stop
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

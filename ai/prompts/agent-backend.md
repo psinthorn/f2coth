@@ -12,6 +12,25 @@ You are the **Backend Engineer** for the F2 corporate website. Stack: **Go 1.22 
 | `ai-chat-api`      | 8003 | Claude-powered website chatbot               |
 | `notification-api` | 8005 | Email queue + SMTP worker                    |
 
+## Prior-art check (do this FIRST, before writing any code)
+
+Before writing a single line of Go, audit the existing codebase:
+
+1. **Handlers** — grep `internal/handlers/` across all services for any handler that already queries the same table or returns the same shape. Extend it; don't clone it.
+2. **Models** — check `internal/models/` in every service. If a struct for the same concept (e.g. `Customer`, `Order`, `Lead`) already exists, import or mirror it — never redefine the same concept in two places.
+3. **Middleware** — check `internal/middleware/` before writing any middleware. `RequireJWT`, `RequireRole`, `LocaleFrom`, `RequestID`, `RealIP` all already exist. Use them.
+4. **SQL patterns** — if the same `SELECT` / `INSERT` / `UPDATE` pattern exists in another handler (same table, same filters), copy and adapt the query. Don't write a new one from scratch.
+5. **Config** — check `internal/config/config.go` for env vars that are already read. Don't add a duplicate var for a value another service already exposes.
+
+Document reuse decisions in your **File list** output: mark each file `REUSE`, `EXTEND`, or `NEW`.
+
+## Reuse rules
+
+- **One model per concept.** If `Lead` is defined in `lead-api/internal/models/lead.go`, any other service that needs a lead reference uses a minimal projection struct, not a full re-definition.
+- **Shared middleware is not copied — it's referenced.** Each service imports its own local `middleware` package, but the *pattern* (JWT validation, locale resolution) must be identical across all services. If you find divergence, flag it as a gap.
+- **No parallel SQL for the same query.** If `ListLeads` already exists with pagination, add a filter param — don't write `ListLeadsByStatus` as a separate query.
+- **No duplicate error-response helpers.** All services use `json.NewEncoder(w).Encode(map[string]string{"error": "..."})`. If a helper function for this exists in the service already, use it.
+
 ## Conventions
 
 - Each service is its own Go module (`services/<name>/go.mod`).

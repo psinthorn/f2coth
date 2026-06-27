@@ -8,6 +8,7 @@ import (
 type Config struct {
 	ServicePort      string
 	DatabaseURL      string
+	JWTSecret        string
 	CORSAllowedHosts []string
 }
 
@@ -15,6 +16,7 @@ func Load() Config {
 	return Config{
 		ServicePort:      getenv("SERVICE_PORT", "8001"),
 		DatabaseURL:      getenv("DATABASE_URL", ""),
+		JWTSecret:        getenv("JWT_SECRET", ""),
 		CORSAllowedHosts: splitCSV(getenv("CORS_ALLOWED_ORIGINS", "*")),
 	}
 }

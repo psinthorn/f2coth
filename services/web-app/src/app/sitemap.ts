@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [services, studies] = await Promise.all([cms.listServices(), cms.listCaseStudies()]);
   const now = new Date();
 
-  const staticPaths = ["/", "/services", "/case-studies", "/products", "/blog", "/about", "/contact", "/privacy", "/terms"];
+  const staticPaths = ["/", "/services", "/case-studies", "/products", "/blog", "/about", "/contact", "/privacy", "/terms", "/dpa"];
   const dynamicPaths = [
     ...services.map((s) => `/services/${s.slug}`),
     ...studies.map((c) => `/case-studies/${c.slug}`),

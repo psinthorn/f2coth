@@ -1,0 +1,64 @@
+# docker-compose.prod.yml
+#
+# Production overrides — apply on top of docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Changes from dev baseline:
+#   • Traefik dashboard disabled (api.dashboard=false, api.insecure removed)
+#   • Traefik port 8080 not exposed
+#   • Log level raised to WARN to reduce noise
+#   • restart: always on every service
+#
+# All application env vars (POSTGRES_*, JWT_SECRET, ANTHROPIC_API_KEY, …)
+# are still loaded from the .env file you create from .env.example.
+
+services:
+  traefik:
+    restart: always
+    command:
+      - --api.dashboard=false
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --log.level=WARN
+    ports:
+      - "80:80"
+      - "443:443"
+      # Port 8080 (insecure dashboard) is intentionally NOT published in prod
+    volumes:
+      - traefik-letsencrypt:/letsencrypt
+
+  postgres:
+    restart: always
+
+  cms-api:
+    restart: always
+
+  lead-api:
+    restart: always
+
+  ai-chat-api:
+    restart: always
+
+  auth-api:
+    restart: always
+
+  notification-api:
+    restart: always
+
+  customer-api:
+    restart: always
+
+  reseller-api:
+    restart: always
+
+  web-app:
+    restart: always
+
+volumes:
+  traefik-letsencrypt:

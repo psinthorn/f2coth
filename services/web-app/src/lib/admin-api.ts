@@ -303,6 +303,34 @@ export const adminApi = {
     }),
   placeDomainOrder: (id: string) =>
     request<AdminDomainOrder>(`/reseller/orders/${id}/place`, { method: "POST" }),
+
+  // PDPA Data Subject Requests
+  listDSRs: (status?: string) =>
+    request<DSR[]>(`/privacy/dsr${status ? `?status=${encodeURIComponent(status)}` : ""}`),
+  getDSR: (id: string) => request<DSR>(`/privacy/dsr/${id}`),
+  updateDSR: (id: string, patch: { status?: string; assigned_to?: string; response_notes?: string }) =>
+    request<DSR>(`/privacy/dsr/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+
+  // Blog posts (admin CRUD via cms-api)
+  listAdminBlogPosts: () =>
+    request<{ posts: AdminBlogPost[] }>("/cms/admin/blog"),
+  getAdminBlogPost: (slug: string) =>
+    request<AdminBlogPost>(`/cms/admin/blog/${slug}`),
+  createBlogPost: (input: BlogPostWriteInput) =>
+    request<AdminBlogPost>("/cms/admin/blog", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateBlogPost: (slug: string, input: Partial<BlogPostWriteInput>) =>
+    request<AdminBlogPost>(`/cms/admin/blog/${slug}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteBlogPost: (slug: string) =>
+    request<{ status: string }>(`/cms/admin/blog/${slug}`, { method: "DELETE" }),
 };
 
 // ----- Customer / ticket admin types -----
@@ -434,4 +462,52 @@ export interface NewDomainOrder {
   years: number;
   privacy_enabled: boolean;
   notes?: string;
+}
+
+export type DSRStatus = "pending" | "in_progress" | "completed" | "rejected" | "withdrawn";
+export type DSRRequestType = "access" | "rectification" | "erasure" | "portability" | "objection" | "restrict";
+
+export interface DSR {
+  id: string;
+  requester_email: string;
+  requester_name: string;
+  request_type: DSRRequestType;
+  description: string | null;
+  locale: string;
+  status: DSRStatus;
+  assigned_to: string | null;
+  due_date: string;
+  response_notes: string | null;
+  fulfilled_at: string | null;
+  created_at: string;
+}
+
+// Blog posts (admin — raw JSONB for both locales)
+export interface AdminBlogPost {
+  id: string;
+  slug: string;
+  title: { en: string; th?: string };
+  excerpt: { en: string; th?: string };
+  body_md: { en: string; th?: string };
+  cover_image_url: string | null;
+  author_id: string | null;
+  tags: string[];
+  is_published: boolean;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogPostWriteInput {
+  slug?: string;
+  title_en?: string;
+  title_th?: string;
+  excerpt_en?: string;
+  excerpt_th?: string;
+  body_md_en?: string;
+  body_md_th?: string;
+  cover_image_url?: string | null;
+  tags?: string[];
+  is_published?: boolean;
+  published_at?: string | null;
 }

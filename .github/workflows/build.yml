@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # Go services — build + vet + test (matrix, parallel)
+  # ──────────────────────────────────────────────────────────
+  go:
+    name: Go — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - ai-chat-api
+          - auth-api
+          - cms-api
+          - customer-api
+          - lead-api
+          - notification-api
+          - reseller-api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: services/${{ matrix.service }}/go.mod
+          cache-dependency-path: services/${{ matrix.service }}/go.sum
+
+      - name: go mod tidy (no drift)
+        working-directory: services/${{ matrix.service }}
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum || \
+            (echo "::error::go.mod/go.sum out of sync — run 'make tidy' and commit" && exit 1)
+
+      - name: go vet
+        working-directory: services/${{ matrix.service }}
+        run: go vet ./...
+
+      - name: go test
+        working-directory: services/${{ matrix.service }}
+        run: go test -race -timeout 60s ./...
+
+      - name: govulncheck
+        working-directory: services/${{ matrix.service }}
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+  # ──────────────────────────────────────────────────────────
+  # Next.js — type-check + lint + i18n parity + build
+  # ──────────────────────────────────────────────────────────
+  web:
+    name: Web App
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: services/web-app/.nvmrc
+          cache: npm
+          cache-dependency-path: services/web-app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/web-app
+        run: npm ci
+
+      - name: Type check
+        working-directory: services/web-app
+        run: npm run type-check
+
+      - name: Lint
+        working-directory: services/web-app
+        run: npm run lint
+
+      - name: i18n key parity (EN ↔ TH)
+        working-directory: services/web-app
+        run: npm run i18n-check
+
+      - name: Build
+        working-directory: services/web-app
+        env:
+          # Provide dummy public vars so next build doesn't error on missing envs
+          NEXT_PUBLIC_API_BASE: /api
+        run: npm run build
+
+      - name: npm audit
+        working-directory: services/web-app
+        run: npm audit --audit-level=high

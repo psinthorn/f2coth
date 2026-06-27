@@ -15,24 +15,8 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
   },
-  // CSP: 'unsafe-inline' is currently required for Next.js's hydration scripts
-  // and Tailwind's runtime style injection. Switch to a nonce-based CSP via
-  // middleware when you want to tighten this further.
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https:",
-      "font-src 'self' data:",
-      "connect-src 'self' https://api.anthropic.com",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "object-src 'none'",
-    ].join("; "),
-  },
+  // Content-Security-Policy is set per-request in middleware.ts using a
+  // cryptographic nonce, eliminating 'unsafe-inline' for script-src.
 ];
 
 const nextConfig = {

@@ -49,7 +49,7 @@ export default async function PublicLayout({
 
   return (
     <NextIntlClientProvider>
-      <ConditionalChrome>{children}</ConditionalChrome>
+      <ConditionalChrome locale={locale}>{children}</ConditionalChrome>
     </NextIntlClientProvider>
   );
 }

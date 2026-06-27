@@ -54,6 +54,7 @@ export default function Footer() {
           <div className="flex gap-4">
             <Link href="/privacy" className="hover:text-white">{t("privacy")}</Link>
             <Link href="/terms" className="hover:text-white">{t("terms")}</Link>
+            <Link href={'/dpa' as never} className="hover:text-white">{t("dpa")}</Link>
           </div>
         </div>
       </div>

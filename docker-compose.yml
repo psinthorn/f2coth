@@ -91,6 +91,14 @@ services:
       - traefik.http.middlewares.lead-ratelimit.ratelimit.burst=10
       - traefik.http.middlewares.lead-ratelimit.ratelimit.period=1m
       - traefik.http.services.lead.loadbalancer.server.port=8002
+      # /api/consent — tighter limit (public DSR-adjacent endpoint)
+      - traefik.http.routers.consent.rule=PathPrefix(`/api/consent`)
+      - traefik.http.routers.consent.entrypoints=web
+      - traefik.http.routers.consent.service=lead
+      - traefik.http.routers.consent.middlewares=consent-ratelimit
+      - traefik.http.middlewares.consent-ratelimit.ratelimit.average=5
+      - traefik.http.middlewares.consent-ratelimit.ratelimit.burst=3
+      - traefik.http.middlewares.consent-ratelimit.ratelimit.period=1m
     networks:
       - f2-net
 
@@ -141,6 +149,14 @@ services:
       - traefik.http.middlewares.auth-ratelimit.ratelimit.burst=5
       - traefik.http.middlewares.auth-ratelimit.ratelimit.period=1m
       - traefik.http.services.auth.loadbalancer.server.port=8004
+      # /api/privacy — tighter limit for public DSR submit
+      - traefik.http.routers.privacy.rule=PathPrefix(`/api/privacy`)
+      - traefik.http.routers.privacy.entrypoints=web
+      - traefik.http.routers.privacy.service=auth
+      - traefik.http.routers.privacy.middlewares=privacy-ratelimit
+      - traefik.http.middlewares.privacy-ratelimit.ratelimit.average=5
+      - traefik.http.middlewares.privacy-ratelimit.ratelimit.burst=3
+      - traefik.http.middlewares.privacy-ratelimit.ratelimit.period=1m
     networks:
       - f2-net
 

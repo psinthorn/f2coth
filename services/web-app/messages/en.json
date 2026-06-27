@@ -36,6 +36,9 @@
     },
     "terms": {
       "title": "Terms of service"
+    },
+    "dpa": {
+      "title": "Data Processor Agreement"
     }
   },
   "common": {
@@ -48,7 +51,7 @@
     "back": "Back",
     "cancel": "Cancel",
     "save": "Save",
-    "saving": "Saving…",
+    "saving": "Saving...",
     "create": "Create",
     "creating": "Creating…",
     "delete": "Delete",
@@ -97,7 +100,10 @@
       "active": "active",
       "renewing": "renewing",
       "expired": "expired"
-    }
+    },
+    "current": "current",
+    "errorLoad": "Failed to load. Please refresh.",
+    "all": "All"
   },
   "header": {
     "nav": {
@@ -133,6 +139,7 @@
     "rights": "All rights reserved.",
     "privacy": "Privacy",
     "terms": "Terms",
+    "dpa": "DPA",
     "partners": {
       "title": "Partners & accreditations",
       "lines": [
@@ -399,17 +406,142 @@
   },
   "privacy": {
     "title": "Privacy policy",
-    "lead": "F2 Co., Ltd. respects your privacy. This page describes what data we collect from visitors to f2.co.th and how we use it.",
+    "lastUpdated": "Last updated: June 2026",
+    "lead": "F2 Co., Ltd. respects your privacy and is committed to protecting your personal data in accordance with Thailand's Personal Data Protection Act B.E. 2562 (PDPA) and applicable international standards.",
+    "controllerTitle": "Data controller",
+    "controllerBody": "F2 Co., Ltd., registered in Thailand. Privacy contact: privacy@f2.co.th.",
     "collectTitle": "What we collect",
-    "collectBody": "Contact form submissions, anonymous analytics, and chatbot conversation transcripts.",
+    "collectBody": "We collect personal data only when you interact with us:",
+    "collectItem1": "Contact form: name, email, phone, company, and message.",
+    "collectItem2": "Chat: conversation transcripts (used to answer your questions; retained 90 days, then anonymised).",
+    "collectItem3": "Portal / account: name, email, locale preference, and support ticket history.",
+    "collectItem4": "Technical: IP address, browser type, and page visits (essential session cookies only).",
+    "basisTitle": "Lawful basis (PDPA Section 24)",
+    "basisBody": "We process your data on the basis of: (1) contract; (2) legitimate interest; (3) consent for optional cookies, which you may withdraw at any time.",
     "useTitle": "How we use it",
-    "useBody": "Solely to respond to enquiries and improve our service.",
+    "useBody": "To respond to enquiries, deliver contracted IT services, send service notifications, and improve our website. We do not sell your data to third parties.",
+    "retentionTitle": "Retention",
+    "retentionBody": "Contact form leads: 2 years then anonymised. Chat transcripts: 90 days then anonymised. Portal account data: retained while active, deleted within 30 days of a verified erasure request.",
+    "crossBorderTitle": "International transfers",
+    "crossBorderBody": "Our AI chatbot is powered by Anthropic (USA). Conversation text is processed under Anthropic's data processing terms with standard contractual clauses. You may opt out by not using the chat feature.",
+    "cookieTitle": "Cookies",
+    "cookieBody": "We use strictly necessary cookies (session, locale preference) without consent. Optional analytics and marketing cookies are only set after explicit consent via the cookie banner.",
+    "rightsTitle": "Your rights (PDPA)",
+    "rightsBody": "Under Thai PDPA you have the right to:",
+    "right1": "Access — request a copy of your personal data.",
+    "right2": "Rectification — correct inaccurate or incomplete data.",
+    "right3": "Erasure — request deletion of your data.",
+    "right4": "Portability — receive your data in a machine-readable format.",
+    "right5": "Object — object to processing based on legitimate interest.",
+    "right6": "Restriction — request that processing be limited.",
+    "dsrTitle": "Submit a data request",
+    "dsrBody": "Use the form below to exercise any of the rights above. We will respond within 30 days as required by PDPA.",
+    "dsr": {
+      "nameLabel": "Full name",
+      "emailLabel": "Email address",
+      "typeLabel": "Request type",
+      "type_access": "Access — I want to see what data you hold about me",
+      "type_rectification": "Rectification — I want to correct my data",
+      "type_erasure": "Erasure — I want my data deleted",
+      "type_portability": "Portability — I want a copy of my data",
+      "type_objection": "Objection — I object to how my data is being used",
+      "type_restrict": "Restriction — I want processing restricted",
+      "descLabel": "Additional details (optional)",
+      "submit": "Submit request",
+      "submitting": "Submitting...",
+      "successTitle": "Request received",
+      "successBody": "We have received your request and will respond within 30 days.",
+      "errorMsg": "Something went wrong. Please try again or email privacy@f2.co.th.",
+      "disclaimer": "We may ask you to verify your identity before fulfilling the request."
+    },
     "contactTitle": "Contact",
-    "contactBody": "Questions? Email "
+    "contactBody": "Privacy questions? Email ",
+    "breachTitle": "Data breach notification",
+    "breachBody": "In the event of a personal data breach that poses a risk to your rights and freedoms, we will notify the Thai Personal Data Protection Committee (PDPC) within 72 hours and notify affected individuals without undue delay, as required by PDPA Section 37."
   },
   "terms": {
     "title": "Terms of service",
-    "body": "These terms govern your use of f2.co.th. By using this site you agree to use it lawfully and not to attempt to disrupt, reverse engineer, or compromise the service."
+    "lastUpdated": "Last updated: June 2026",
+    "acceptanceTitle": "Acceptance",
+    "acceptanceBody": "By accessing f2.co.th or using F2's services, you agree to these terms.",
+    "servicesTitle": "Services",
+    "servicesBody": "F2 Co., Ltd. provides IT management, Microsoft 365, domain registration, hosting, cloud infrastructure, and related services to hospitality businesses.",
+    "accountTitle": "Accounts",
+    "accountBody": "You are responsible for keeping your credentials confidential. Notify us immediately at support@f2.co.th if you suspect unauthorised access.",
+    "conductTitle": "Acceptable use",
+    "conductBody": "You agree not to violate any applicable law (including Thailand's Computer Crimes Act), infringe third-party rights, or attempt to gain unauthorised access to our systems.",
+    "ipTitle": "Intellectual property",
+    "ipBody": "All content on f2.co.th is owned by F2 Co., Ltd. or its licensors. You may not reproduce or distribute it without written permission.",
+    "liabilityTitle": "Limitation of liability",
+    "liabilityBody": "To the extent permitted by Thai law, F2's liability for indirect losses is excluded. Total liability shall not exceed the amount paid to F2 in the preceding 12 months.",
+    "governingLawTitle": "Governing law",
+    "governingLawBody": "These terms are governed by the laws of Thailand. Disputes shall be resolved in the courts of Bangkok.",
+    "changesTitle": "Changes",
+    "changesBody": "We may update these terms. Continued use after an update constitutes acceptance.",
+    "contactTitle": "Contact",
+    "contactBody": "Legal questions? Email "
+  },
+  "dpa": {
+    "title": "Data Processor Agreement",
+    "lastUpdated": "Version 1.0 · Effective June 2026",
+    "lead": "This agreement is incorporated by reference into F2's Service Agreement with each hotel client. To obtain a countersigned copy, email legal@f2.co.th.",
+    "partiesTitle": "1. Parties",
+    "partiesBody": "This Data Processor Agreement (\"DPA\") is entered into between F2 Co., Ltd. (\"F2\" or \"Processor\"), a company registered in Thailand, and the hotel, resort, or villa operator who has engaged F2's services under a Service Agreement (\"Controller\"). The Controller determines the purposes and means of personal data processing; F2 processes personal data solely on the Controller's behalf and documented instructions.",
+    "definitionsTitle": "2. Definitions",
+    "definitionsBody": "\"Personal Data\", \"Processing\", \"Data Subject\", \"Data Controller\", and \"Data Processor\" have the meanings given in Thailand's Personal Data Protection Act B.E. 2562 (PDPA). \"Sub-processor\" means any third party engaged by F2 to process personal data on behalf of the Controller.",
+    "subjectTitle": "3. Subject matter, nature and purpose",
+    "subjectBody": "F2 processes personal data on behalf of the Controller to deliver IT services described in the applicable Service Agreement. These may include: AI chat and guest enquiry handling, contact-form lead management, IT infrastructure operation, domain registration, hosting, and managed Microsoft 365.",
+    "dataTypesTitle": "4. Types of personal data",
+    "dataTypesBody": "Depending on the services engaged, F2 may process:",
+    "dataTypesItem1": "Identity and contact data: name, email address, phone number.",
+    "dataTypesItem2": "Property-related data: company or property name, role.",
+    "dataTypesItem3": "Technical data: IP address, browser type, session identifiers.",
+    "dataTypesItem4": "Communication content: chat transcripts, support ticket content, email correspondence.",
+    "subjectsTitle": "5. Categories of data subjects",
+    "subjectsBody": "Data subjects include hotel guests, employees of the Controller, and business contacts who interact with services operated by F2 on the Controller's behalf.",
+    "durationTitle": "6. Duration",
+    "durationBody": "This DPA applies for the duration of the Service Agreement and terminates automatically upon its termination, subject to the retention and deletion obligations in Section 11.",
+    "processorObligTitle": "7. Processor obligations",
+    "p1Title": "7.1 Documented instructions",
+    "p1Body": "F2 processes personal data only on documented instructions from the Controller, including international transfers, unless required to do so by Thai law. F2 will promptly inform the Controller if it considers an instruction to infringe applicable data protection law.",
+    "p2Title": "7.2 Confidentiality",
+    "p2Body": "F2 ensures that personnel authorised to process personal data are bound by enforceable confidentiality obligations and that access is limited to those who need it to perform their duties.",
+    "p3Title": "7.3 Security",
+    "p3Body": "F2 implements appropriate technical and organisational measures to protect personal data, including encryption in transit (TLS 1.2+), role-based access controls, audit logging, and a vulnerability management programme.",
+    "p4Title": "7.4 Sub-processors",
+    "p4Body": "F2 may engage the sub-processors listed in Section 9. F2 will notify the Controller of any intended addition or replacement of sub-processors and allow a reasonable opportunity to object. F2 imposes equivalent data protection obligations on all sub-processors.",
+    "p5Title": "7.5 Assistance",
+    "p5Body": "F2 will assist the Controller, to the extent technically possible, in fulfilling its obligations to respond to data subject requests under the PDPA, and in ensuring compliance with security, breach notification, and data protection impact assessment requirements.",
+    "p6Title": "7.6 Audit rights",
+    "p6Body": "F2 will make available all information reasonably necessary to demonstrate compliance and will allow and contribute to audits or inspections conducted by the Controller or an authorised auditor, with reasonable advance notice.",
+    "controllerTitle": "8. Controller obligations",
+    "controllerBody": "The Controller is responsible for maintaining a lawful basis for processing, complying with its own PDPA obligations, notifying F2 of changes to processing instructions, and ensuring that personal data provided to F2 is accurate and collected lawfully.",
+    "subProcTitle": "9. Approved sub-processors",
+    "subProcIntro": "As of the effective date, F2 uses the following sub-processors in connection with the services:",
+    "spColName": "Sub-processor",
+    "spColPurpose": "Purpose",
+    "spColTransfer": "Safeguard",
+    "sp1Name": "Anthropic, PBC (USA)",
+    "sp1Purpose": "AI language model powering the chatbot feature",
+    "sp1Transfer": "Anthropic Data Processing Addendum (standard contractual clauses)",
+    "sp2Name": "DigitalOcean, LLC (USA / Singapore)",
+    "sp2Purpose": "Cloud infrastructure and managed PostgreSQL databases",
+    "sp2Transfer": "DigitalOcean Data Processing Agreement (standard contractual clauses)",
+    "sp3Name": "Cloudflare, Inc. (USA)",
+    "sp3Purpose": "DNS, CDN, and DDoS protection",
+    "sp3Transfer": "Cloudflare Data Processing Addendum (standard contractual clauses)",
+    "transfersTitle": "10. International transfers",
+    "transfersBody": "Where F2 transfers personal data outside Thailand, it ensures appropriate safeguards are in place — including standard contractual clauses or an adequacy determination — as required by PDPA Section 28.",
+    "deletionTitle": "11. Return and deletion of data",
+    "deletionBody": "At the Controller's request and no later than 30 days after termination of the Service Agreement, F2 will securely delete or return all personal data processed under this DPA, unless Thai law requires continued storage.",
+    "breachTitle": "12. Data breach notification",
+    "breachBody": "F2 will notify the Controller without undue delay, and no later than 48 hours, after becoming aware of a personal data breach affecting data processed under this DPA, providing sufficient information for the Controller to meet its own PDPA notification obligations.",
+    "governingLawTitle": "13. Governing law",
+    "governingLawBody": "This DPA is governed by the laws of Thailand. Any dispute arising out of or in connection with this DPA shall be resolved in the competent courts of Bangkok.",
+    "signaturesTitle": "Execution",
+    "signaturesBody": "This DPA is incorporated by reference into the Service Agreement signed by both parties. Where a separate execution page is required, both the Controller and F2 must sign and date it. The countersigned document is the binding version.",
+    "contactTitle": "Request a countersigned copy",
+    "contactBody": "To receive a countersigned DPA for your records, email "
   },
   "notFound": {
     "code": "404",
@@ -427,7 +559,9 @@
         "customers": "Customers",
         "users": "Users",
         "pricing": "Pricing",
-        "orders": "Domain Orders"
+        "orders": "Domain Orders",
+        "dsr": "DSR Queue",
+        "blog": "Blog"
       },
       "signedInAs": "Signed in as",
       "signOut": "Sign out",
@@ -752,6 +886,97 @@
         "submit": "Create order",
         "errorRequired": "Domain, TLD, registry, and contact name/email are required."
       }
+    },
+    "dsr": {
+      "title": "Data Subject Requests",
+      "subtitle": "PDPA requests from visitors and customers. All must be resolved within 30 days.",
+      "overdueWarning": "{count, plural, one {# request is overdue} other {# requests are overdue}}",
+      "noneAll": "No data subject requests yet.",
+      "noneFiltered": "No requests matching this filter.",
+      "backToQueue": "Back to queue",
+      "notFound": "Request not found.",
+      "terminalStatus": "no further action required",
+      "saveBtn": "Save changes",
+      "saveError": "Failed to save. Please try again.",
+      "notesPlaceholder": "Internal notes about how this request was handled…",
+      "notesHint": "These notes are internal only and are not sent to the requester.",
+      "col": {
+        "requester": "Requester",
+        "type": "Request type",
+        "status": "Status",
+        "due": "Due date",
+        "submitted": "Submitted"
+      },
+      "field": {
+        "name": "Name",
+        "email": "Email",
+        "type": "Type",
+        "locale": "Locale",
+        "submitted": "Submitted",
+        "due": "Due by",
+        "fulfilledAt": "Fulfilled",
+        "status": "Status",
+        "responseNotes": "Response notes"
+      },
+      "section": {
+        "requester": "Requester details",
+        "description": "Request details",
+        "actions": "Manage request"
+      },
+      "status": {
+        "pending": "Pending",
+        "in_progress": "In progress",
+        "completed": "Completed",
+        "rejected": "Rejected",
+        "withdrawn": "Withdrawn"
+      },
+      "type": {
+        "access": "Access",
+        "rectification": "Rectification",
+        "erasure": "Erasure",
+        "portability": "Portability",
+        "objection": "Objection",
+        "restrict": "Restriction"
+      }
+    },
+    "blog": {
+      "title": "Blog posts",
+      "subtitle": "{total, plural, one {# post} other {# posts}} total",
+      "newTitle": "New blog post",
+      "editTitle": "Edit blog post",
+      "newPost": "New post",
+      "noneYet": "No blog posts yet. Write your first article.",
+      "savePublish": "Save & publish",
+      "saveDraft": "Save as draft",
+      "deletePost": "Delete post",
+      "deleteConfirm": "Delete this post? This cannot be undone.",
+      "saveError": "Failed to save. Please try again.",
+      "deleteError": "Failed to delete. Please try again.",
+      "col": {
+        "title": "Title",
+        "slug": "Slug",
+        "status": "Status",
+        "tags": "Tags",
+        "published": "Published"
+      },
+      "status": {
+        "published": "Published",
+        "draft": "Draft"
+      },
+      "field": {
+        "title": "Title",
+        "titleTHHint": "Thai title (optional — falls back to EN)",
+        "excerpt": "Excerpt",
+        "body": "Body",
+        "slug": "URL slug",
+        "coverImageURL": "Cover image URL",
+        "tags": "Tags",
+        "tagsHint": "Comma-separated: hospitality, microsoft-365"
+      },
+      "section": {
+        "settings": "Post settings",
+        "completeness": "Content completeness"
+      }
     }
   },
   "portal": {
@@ -870,6 +1095,15 @@
           "rejected": "Rejected",
           "cancelled": "Cancelled",
           "failed": "Failed"
+        },
+        "historyTitle": "Order history",
+        "col": {
+          "domain": "Domain",
+          "registry": "Registry",
+          "years": "Years",
+          "privacy": "WHOIS privacy",
+          "status": "Status",
+          "date": "Last updated"
         }
       }
     },
@@ -1049,5 +1283,20 @@
       "body": "If your traffic, plug-in stack, or compliance posture has outgrown shared hosting, look at our managed Cloud & VPS service — built on DigitalOcean and run by the same F2 team.",
       "button": "Cloud & VPS"
     }
+  },
+  "cookieBanner": {
+    "ariaLabel": "Cookie consent",
+    "intro": "We use cookies to make our site work. With your consent, we may also use analytics cookies. Read our",
+    "privacyLink": "Privacy Policy",
+    "essential": "Essential",
+    "alwaysOn": "always on",
+    "analytics": "Analytics",
+    "analyticsDesc": "help us understand how visitors use the site",
+    "marketing": "Marketing",
+    "marketingDesc": "used for personalised communications",
+    "acceptAll": "Accept all",
+    "essentialOnly": "Essential only",
+    "manage": "Manage",
+    "savePreferences": "Save preferences"
   }
 }
