@@ -4,6 +4,8 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { ArrowLeft, ArrowRight, CheckCircle2, Quote } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { cms } from "@/lib/api";
+import { pageAlternates, pageOpenGraph, pageBreadcrumb, localizedUrl } from "@/lib/seo";
+import { JsonLd, breadcrumbList } from "@/lib/schema";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -11,7 +13,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const c = await cms.getCaseStudy(slug, locale);
   if (!c) return { title: "Case study" };
-  return { title: `${c.client_name} — case study`, description: c.summary };
+  const title = `${c.client_name} — case study`;
+  return {
+    title,
+    description: c.summary,
+    alternates: pageAlternates(locale, `/case-studies/${slug}`),
+    ...pageOpenGraph({
+      locale,
+      path: `/case-studies/${slug}`,
+      title,
+      description: c.summary,
+      imageUrl: c.hero_image_url ?? undefined,
+    }),
+  };
 }
 
 export default async function CaseStudyPage({ params }: Props) {
@@ -19,12 +33,39 @@ export default async function CaseStudyPage({ params }: Props) {
   setRequestLocale(locale);
   const t = await getTranslations("caseStudies.detail");
   const tc = await getTranslations("common");
+  const tCaseStudies = await getTranslations("caseStudies");
 
   const c = await cms.getCaseStudy(slug, locale);
   if (!c) notFound();
 
+  const breadcrumbs = pageBreadcrumb(
+    locale,
+    [
+      { name: tCaseStudies("title"), path: "/case-studies" },
+      { name: c.client_name, path: `/case-studies/${slug}` },
+    ],
+    tc("home"),
+  );
+
+  // Emit Article schema with a Person author (the named client provides
+  // the testimonial when c.quote_author exists). hero_image_url + summary
+  // feed AI Overviews and image search.
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    mainEntityOfPage: { "@type": "WebPage", "@id": localizedUrl(locale, `/case-studies/${slug}`) },
+    headline: `${c.client_name} — case study`,
+    description: c.summary,
+    image: c.hero_image_url ?? undefined,
+    publisher: { "@id": `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://f2.co.th"}/#organization` },
+    about: c.industry,
+    inLanguage: locale,
+  };
+
   return (
     <>
+      <JsonLd data={breadcrumbList(breadcrumbs)} />
+      <JsonLd data={articleSchema} />
       <section className="bg-gradient-to-br from-navy-900 to-accent-800 text-white">
         <div className="container-page py-16">
           <Link href="/case-studies" className="inline-flex items-center gap-1 text-sm text-navy-200 hover:text-white">

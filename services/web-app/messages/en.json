@@ -32,18 +32,22 @@
       "description": "Talk to F2. We respond to enquiries within one business day."
     },
     "privacy": {
-      "title": "Privacy policy"
+      "title": "Privacy policy",
+      "description": "How F2 Co., Ltd. collects, uses, stores, and shares personal data under Thailand's PDPA. Includes our Data Subject Request form."
     },
     "terms": {
-      "title": "Terms of service"
+      "title": "Terms of service",
+      "description": "Customer agreement governing the use of F2 Co., Ltd. services. Governed by Thai law, jurisdiction Bangkok."
     },
     "dpa": {
-      "title": "Data Processor Agreement"
+      "title": "Data Processor Agreement",
+      "description": "Standard Data Processor Agreement template for hotel clients where F2 processes guest PII on the client's behalf under PDPA."
     }
   },
   "common": {
     "talkToF2": "Talk to F2",
     "talkToF2About": "Talk to F2 about {topic}",
+    "home": "Home",
     "learnMore": "Learn more",
     "readMore": "Read more",
     "viewAll": "View all",

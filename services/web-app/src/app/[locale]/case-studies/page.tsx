@@ -3,13 +3,22 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { ArrowRight } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { cms } from "@/lib/api";
+import { pageAlternates, pageOpenGraph, pageBreadcrumb } from "@/lib/seo";
+import { JsonLd, breadcrumbList } from "@/lib/schema";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.caseStudies" });
-  return { title: t("title"), description: t("description") };
+  const title = t("title");
+  const description = t("description");
+  return {
+    title,
+    description,
+    alternates: pageAlternates(locale, "/case-studies"),
+    ...pageOpenGraph({ locale, path: "/case-studies", title, description }),
+  };
 }
 
 export default async function CaseStudiesPage({
@@ -21,8 +30,14 @@ export default async function CaseStudiesPage({
   const tc = await getTranslations("common");
 
   const studies = await cms.listCaseStudies(locale);
+  const breadcrumbs = pageBreadcrumb(
+    locale,
+    [{ name: t("title"), path: "/case-studies" }],
+    tc("home"),
+  );
   return (
     <>
+      <JsonLd data={breadcrumbList(breadcrumbs)} />
       <section className="bg-navy-50">
         <div className="container-page py-16">
           <p className="text-sm font-semibold uppercase tracking-wider text-accent-700">{t("kicker")}</p>

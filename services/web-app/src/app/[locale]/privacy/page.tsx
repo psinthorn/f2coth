@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import DSRForm from "./DSRForm";
+import { pageAlternates, pageOpenGraph, pageBreadcrumb } from "@/lib/seo";
+import { JsonLd, breadcrumbList } from "@/lib/schema";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.privacy" });
+  const title = t("title");
+  const description = t("description");
   return {
-    title: t("title"),
+    title,
+    description,
+    alternates: pageAlternates(locale, "/privacy"),
+    ...pageOpenGraph({ locale, path: "/privacy", title, description }),
     robots: { index: true, follow: true },
   };
 }
@@ -19,9 +26,16 @@ export default async function PrivacyPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("privacy");
+  const tCommon = await getTranslations("common");
+  const breadcrumbs = pageBreadcrumb(
+    locale,
+    [{ name: t("title"), path: "/privacy" }],
+    tCommon("home"),
+  );
 
   return (
     <section className="container-page py-16">
+      <JsonLd data={breadcrumbList(breadcrumbs)} />
       <div className="prose-f2 mx-auto max-w-3xl">
         <h1 className="font-display text-4xl text-navy-900">{t("title")}</h1>
         <p className="text-slate-500 text-sm">{t("lastUpdated")}</p>

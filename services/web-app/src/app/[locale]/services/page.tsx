@@ -4,13 +4,22 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { cms } from "@/lib/api";
 import { ServiceIcon } from "@/lib/icons";
+import { pageAlternates, pageOpenGraph, pageBreadcrumb, localizedUrl } from "@/lib/seo";
+import { JsonLd, breadcrumbList, service as serviceSchema } from "@/lib/schema";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.services" });
-  return { title: t("title"), description: t("description") };
+  const title = t("title");
+  const description = t("description");
+  return {
+    title,
+    description,
+    alternates: pageAlternates(locale, "/services"),
+    ...pageOpenGraph({ locale, path: "/services", title, description }),
+  };
 }
 
 export default async function ServicesPage({
@@ -26,9 +35,28 @@ export default async function ServicesPage({
     cat,
     items: services.filter((s) => s.category === cat),
   }));
+  const breadcrumbs = pageBreadcrumb(
+    locale,
+    [{ name: t("title"), path: "/services" }],
+    tc("home"),
+  );
 
   return (
     <>
+      <JsonLd data={breadcrumbList(breadcrumbs)} />
+      {/* Emit a Service schema per listed item so the list page surfaces
+          all services to crawlers in one pass (each /services/{slug}
+          emits its own canonical block too). */}
+      {services.map((s) => (
+        <JsonLd
+          key={s.slug}
+          data={serviceSchema({
+            name: s.title,
+            description: s.short_summary,
+            url: localizedUrl(locale, `/services/${s.slug}`),
+          })}
+        />
+      ))}
       <section className="bg-navy-50">
         <div className="container-page py-16">
           <p className="text-sm font-semibold uppercase tracking-wider text-accent-700">{t("kicker")}</p>

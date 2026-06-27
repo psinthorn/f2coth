@@ -2,13 +2,22 @@ import type { Metadata } from "next";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Building2, MapPin, Handshake, Users } from "lucide-react";
 import { Link } from "@/i18n/routing";
+import { pageAlternates, pageOpenGraph, pageBreadcrumb } from "@/lib/seo";
+import { JsonLd, breadcrumbList } from "@/lib/schema";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.about" });
-  return { title: t("title"), description: t("description") };
+  const title = t("title");
+  const description = t("description");
+  return {
+    title,
+    description,
+    alternates: pageAlternates(locale, "/about"),
+    ...pageOpenGraph({ locale, path: "/about", title, description }),
+  };
 }
 
 export default async function AboutPage({
@@ -17,9 +26,16 @@ export default async function AboutPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("about");
+  const tCommon = await getTranslations("common");
+  const breadcrumbs = pageBreadcrumb(
+    locale,
+    [{ name: t("title"), path: "/about" }],
+    tCommon("home"),
+  );
 
   return (
     <>
+      <JsonLd data={breadcrumbList(breadcrumbs)} />
       <section className="bg-navy-50">
         <div className="container-page py-16">
           <p className="text-sm font-semibold uppercase tracking-wider text-accent-700">{t("kicker")}</p>

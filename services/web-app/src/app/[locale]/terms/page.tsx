@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 import { setRequestLocale, getTranslations } from "next-intl/server";
+import { pageAlternates, pageOpenGraph, pageBreadcrumb } from "@/lib/seo";
+import { JsonLd, breadcrumbList } from "@/lib/schema";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.terms" });
-  return { title: t("title") };
+  const title = t("title");
+  const description = t("description");
+  return {
+    title,
+    description,
+    alternates: pageAlternates(locale, "/terms"),
+    ...pageOpenGraph({ locale, path: "/terms", title, description }),
+  };
 }
 
 export default async function TermsPage({
@@ -15,9 +24,16 @@ export default async function TermsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("terms");
+  const tCommon = await getTranslations("common");
+  const breadcrumbs = pageBreadcrumb(
+    locale,
+    [{ name: t("title"), path: "/terms" }],
+    tCommon("home"),
+  );
 
   return (
     <section className="container-page py-16">
+      <JsonLd data={breadcrumbList(breadcrumbs)} />
       <div className="prose-f2 mx-auto max-w-3xl">
         <h1 className="font-display text-4xl text-navy-900">{t("title")}</h1>
         <p className="text-slate-500 text-sm">{t("lastUpdated")}</p>

@@ -5,6 +5,8 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { cms } from "@/lib/api";
 import { ServiceIcon } from "@/lib/icons";
+import { pageAlternates, pageOpenGraph, pageBreadcrumb, localizedUrl } from "@/lib/seo";
+import { JsonLd, breadcrumbList, service as serviceSchema } from "@/lib/schema";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -13,7 +15,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const services = await cms.listServices(locale);
   const s = services.find((x) => x.slug === slug);
   if (!s) return { title: "Service" };
-  return { title: s.title, description: s.short_summary };
+  return {
+    title: s.title,
+    description: s.short_summary,
+    alternates: pageAlternates(locale, `/services/${slug}`),
+    ...pageOpenGraph({ locale, path: `/services/${slug}`, title: s.title, description: s.short_summary }),
+  };
 }
 
 export default async function ServiceDetailPage({ params }: Props) {
@@ -21,15 +28,32 @@ export default async function ServiceDetailPage({ params }: Props) {
   setRequestLocale(locale);
   const t = await getTranslations("services.detail");
   const tc = await getTranslations("common");
+  const tServices = await getTranslations("services");
 
   const services = await cms.listServices(locale);
   const s = services.find((x) => x.slug === slug);
   if (!s) notFound();
 
   const related = services.filter((x) => x.slug !== s.slug).slice(0, 3);
+  const breadcrumbs = pageBreadcrumb(
+    locale,
+    [
+      { name: tServices("title"), path: "/services" },
+      { name: s.title, path: `/services/${slug}` },
+    ],
+    tc("home"),
+  );
 
   return (
     <>
+      <JsonLd data={breadcrumbList(breadcrumbs)} />
+      <JsonLd
+        data={serviceSchema({
+          name: s.title,
+          description: s.description || s.short_summary,
+          url: localizedUrl(locale, `/services/${slug}`),
+        })}
+      />
       <section className="bg-gradient-to-br from-navy-900 to-accent-800 text-white">
         <div className="container-page py-16">
           <Link href="/services" className="inline-flex items-center gap-1 text-sm text-navy-200 hover:text-white">

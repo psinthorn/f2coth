@@ -5,13 +5,22 @@ import {
   MapPin, Car, ShoppingBag, CheckCircle2, Sparkles,
 } from "lucide-react";
 import { Link } from "@/i18n/routing";
+import { pageAlternates, pageOpenGraph, pageBreadcrumb } from "@/lib/seo";
+import { JsonLd, breadcrumbList } from "@/lib/schema";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.products" });
-  return { title: t("title"), description: t("description") };
+  const title = t("title");
+  const description = t("description");
+  return {
+    title,
+    description,
+    alternates: pageAlternates(locale, "/products"),
+    ...pageOpenGraph({ locale, path: "/products", title, description }),
+  };
 }
 
 export default async function ProductsPage({
@@ -20,6 +29,13 @@ export default async function ProductsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("products");
+  const tCommon = await getTranslations("common");
+  const tMeta = await getTranslations({ locale, namespace: "metadata.products" });
+  const breadcrumbs = pageBreadcrumb(
+    locale,
+    [{ name: tMeta("title"), path: "/products" }],
+    tCommon("home"),
+  );
 
   const accountingItems = t.raw("core.accounting.items") as string[];
   const operationsItems = t.raw("core.operations.items") as string[];
@@ -30,6 +46,7 @@ export default async function ProductsPage({
 
   return (
     <>
+      <JsonLd data={breadcrumbList(breadcrumbs)} />
       {/* Hero */}
       <section className="bg-gradient-to-br from-navy-900 via-navy-800 to-accent-800 text-white">
         <div className="container-page py-20">

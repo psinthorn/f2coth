@@ -3,13 +3,22 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Mail, MapPin, Clock } from "lucide-react";
 import { cms } from "@/lib/api";
 import ContactForm from "./ContactForm";
+import { pageAlternates, pageOpenGraph, pageBreadcrumb } from "@/lib/seo";
+import { JsonLd, breadcrumbList } from "@/lib/schema";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.contact" });
-  return { title: t("title"), description: t("description") };
+  const title = t("title");
+  const description = t("description");
+  return {
+    title,
+    description,
+    alternates: pageAlternates(locale, "/contact"),
+    ...pageOpenGraph({ locale, path: "/contact", title, description }),
+  };
 }
 
 type Props = {
@@ -21,12 +30,19 @@ export default async function ContactPage({ params, searchParams }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("contact");
+  const tCommon = await getTranslations("common");
 
   const { service, module } = await searchParams;
   const services = await cms.listServices(locale);
+  const breadcrumbs = pageBreadcrumb(
+    locale,
+    [{ name: t("title"), path: "/contact" }],
+    tCommon("home"),
+  );
 
   return (
     <>
+      <JsonLd data={breadcrumbList(breadcrumbs)} />
       <section className="bg-navy-50">
         <div className="container-page py-16">
           <p className="text-sm font-semibold uppercase tracking-wider text-accent-700">{t("kicker")}</p>
