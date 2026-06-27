@@ -51,8 +51,14 @@ func main() {
 	})
 
 	r.Route("/api/leads", func(r chi.Router) {
-		// Public — contact form intake.
-		r.Post("/", h.Create)
+		// Public — contact form intake. Gated by the api.leads module so
+		// admins can disable lead intake without taking the whole service
+		// down. Admin queue routes below are NOT gated so an operator can
+		// still triage the existing pipeline while intake is paused.
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("api.leads"))
+			r.Post("/", h.Create)
+		})
 
 		// Admin — JWT-required + admin/editor role only.
 		r.Group(func(r chi.Router) {
@@ -68,9 +74,14 @@ func main() {
 		})
 	})
 
-	// Cookie consent endpoints (PDPA).
+	// Cookie consent endpoints (PDPA). Gated by api.consent — disabling
+	// stops new consents being recorded but lookup/withdraw still work so
+	// the banner can resolve existing visitors.
 	r.Route("/api/consent", func(r chi.Router) {
-		r.Post("/", ch.RecordConsent)
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("api.consent"))
+			r.Post("/", ch.RecordConsent)
+		})
 		r.Get("/{visitorId}", ch.GetConsent)
 		r.Post("/{visitorId}/withdraw", ch.WithdrawConsent)
 	})

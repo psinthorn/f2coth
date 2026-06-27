@@ -85,8 +85,14 @@ func main() {
 	// Privacy / PDPA endpoints.
 	r.Route("/api/privacy", func(r chi.Router) {
 		// Public — any visitor can submit or verify a data subject request.
-		r.Post("/dsr", ph.SubmitDSR)
-		r.Get("/dsr/verify", ph.VerifyDSR)
+		// Gated by the api.dsr module so disabling it stops new submissions
+		// and the verification link, but admins below can still process the
+		// existing queue and audit trail.
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("api.dsr"))
+			r.Post("/dsr", ph.SubmitDSR)
+			r.Get("/dsr/verify", ph.VerifyDSR)
+		})
 
 		// Admin — manage and respond to DSRs.
 		r.Group(func(r chi.Router) {
