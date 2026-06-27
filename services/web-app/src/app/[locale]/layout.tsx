@@ -5,6 +5,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import ConditionalChrome from "@/components/ConditionalChrome";
 import { routing } from "@/i18n/routing";
 import { getEnabledModulesRecord } from "@/lib/modules";
+import { JsonLd, organization, localBusiness, webSite } from "@/lib/schema";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -56,6 +57,14 @@ export default async function PublicLayout({
 
   return (
     <NextIntlClientProvider>
+      {/* Site-wide JSON-LD — Organization, LocalBusiness, WebSite. Emitted
+          from the root layout so every page inherits the same entity
+          identity (LLMs / Knowledge Graph dedupe by exact match). See
+          lib/schema.tsx and docs/seo-specs.md §12. */}
+      <JsonLd data={organization()} />
+      <JsonLd data={localBusiness()} />
+      <JsonLd data={webSite()} />
+
       <ConditionalChrome locale={locale} enabledModules={enabledModules}>
         {children}
       </ConditionalChrome>
