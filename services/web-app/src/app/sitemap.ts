@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { cms } from "@/lib/api";
 import { routing } from "@/i18n/routing";
+import { getEnabledModulesRecord, isEnabledIn } from "@/lib/modules";
 
 // Emit both EN and TH URLs for every translatable route.
 // Default locale: no prefix (`/services`). Non-default: `/th/services`.
@@ -10,19 +11,47 @@ function p(locale: string, path: string): string {
   return `${base}/${locale}${path === "/" ? "" : path}`;
 }
 
+// Each entry maps a sitemap path to the module that gates it. Disabled
+// modules are omitted from the sitemap so Googlebot doesn't accumulate
+// 404s for soft-launched sections. Core modules (home/contact/privacy/
+// terms) are listed too — their entry is always-on per modules.core but
+// reading from the same map keeps a single source of truth.
+const STATIC_PATHS: Array<[string, string]> = [
+  ["/",             "public.home"],
+  ["/services",     "public.services"],
+  ["/case-studies", "public.case_studies"],
+  ["/products",     "public.products"],
+  ["/blog",         "public.blog"],
+  ["/about",        "public.about"],
+  ["/contact",      "public.contact"],
+  ["/privacy",      "public.privacy"],
+  ["/terms",        "public.terms"],
+  ["/dpa",          "public.dpa"],
+];
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [services, studies] = await Promise.all([cms.listServices(), cms.listCaseStudies()]);
+  const enabled = await getEnabledModulesRecord();
+
+  // Skip the cms-api round-trips entirely when their parent section is
+  // off — saves a query and keeps the sitemap snappy for crawlers.
+  const wantServices    = isEnabledIn(enabled, "public.services");
+  const wantCaseStudies = isEnabledIn(enabled, "public.case_studies");
+
+  const [services, studies] = await Promise.all([
+    wantServices    ? cms.listServices()     : Promise.resolve([]),
+    wantCaseStudies ? cms.listCaseStudies()  : Promise.resolve([]),
+  ]);
   const now = new Date();
 
-  const staticPaths = ["/", "/services", "/case-studies", "/products", "/blog", "/about", "/contact", "/privacy", "/terms", "/dpa"];
-  const dynamicPaths = [
-    ...services.map((s) => `/services/${s.slug}`),
-    ...studies.map((c) => `/case-studies/${c.slug}`),
+  const dynamicPaths: Array<[string, string]> = [
+    ...services.map((s) => [`/services/${s.slug}`,         "public.services"] as [string, string]),
+    ...studies.map((c) =>  [`/case-studies/${c.slug}`,     "public.case_studies"] as [string, string]),
   ];
-  const allPaths = [...staticPaths, ...dynamicPaths];
+  const allPaths: Array<[string, string]> = [...STATIC_PATHS, ...dynamicPaths];
 
   const out: MetadataRoute.Sitemap = [];
-  for (const path of allPaths) {
+  for (const [path, moduleKey] of allPaths) {
+    if (!isEnabledIn(enabled, moduleKey)) continue;
     for (const locale of routing.locales) {
       out.push({
         url: p(locale, path),

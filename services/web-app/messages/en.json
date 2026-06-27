@@ -998,6 +998,8 @@
       "searchPlaceholder": "Search by name, key, or description…",
       "emptyState": "No features match your search.",
       "loadErrorTitle": "Could not load modules",
+      "forbiddenTitle": "Admin access required",
+      "forbiddenBody": "Editing module toggles is restricted to admin role. Ask an admin to make the change or to grant you the role.",
       "areas": {
         "publicSite": "Public site",
         "customerPortal": "Customer portal",
@@ -1007,11 +1009,18 @@
       "col": {
         "feature": "Feature",
         "key": "Module key",
-        "status": "Status"
+        "status": "Status",
+        "history": "History"
       },
       "status": {
         "core": "Core"
-      }
+      },
+      "history": "History",
+      "openAuditFor": "Open audit history",
+      "closeAudit": "Close",
+      "auditTitle": "Audit history",
+      "auditEmpty": "No audit entries yet for this module.",
+      "systemActor": "system"
     }
   },
   "portal": {

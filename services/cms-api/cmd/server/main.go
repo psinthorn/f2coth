@@ -85,6 +85,7 @@ func main() {
 			r.Delete("/blog/{slug}", h.AdminDeleteBlogPost)
 			r.Get("/modules", h.AdminListModules)
 			r.Patch("/modules/{key}", h.AdminToggleModule)
+			r.Get("/modules/{key}/audit", h.AdminListModuleAudit)
 		})
 	})
 

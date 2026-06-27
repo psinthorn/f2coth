@@ -52,11 +52,13 @@ tidy: ## Run go mod tidy across all Go services
 fmt: ## gofmt all Go services
 	@for s in $(SERVICES); do (cd services/$$s && gofmt -w .); done
 
-test: ## Run go test across all Go services
+test: ## Run go test across all Go services + shared pkg/ modules
 	@for s in $(SERVICES); do \
 		echo ">>> testing $$s"; \
 		(cd services/$$s && go test ./...) || exit 1; \
 	done
+	@echo ">>> testing pkg/modulegate"
+	@(cd pkg/modulegate && go test ./...) || exit 1
 
 web-dev: ## Run the Next.js app locally (outside docker)
 	cd services/web-app && npm install && npm run dev
@@ -69,6 +71,9 @@ sync-modulegate: ## Copy pkg/modulegate canonical source to each consumer servic
 
 sync-modulegate-check: ## Fail if any service's modulegate.go has drifted from pkg/modulegate
 	@bash scripts/sync-modulegate.sh --check
+
+smoke-modules: ## End-to-end smoke: toggle public.blog and verify page + sitemap react (needs stack running, JWT_SECRET + ADMIN_USER_ID env)
+	@bash scripts/smoke-module-toggle.sh
 
 ci: tidy fmt test i18n-check sync-modulegate-check ## Run the full local CI check (matches GitHub Actions)
 	@echo "✅  All CI checks passed locally."

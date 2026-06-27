@@ -339,7 +339,16 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify({ enabled }),
     }),
+  listModuleAudit: (key: string) =>
+    request<ModuleAuditEntry[]>(`/cms/admin/modules/${encodeURIComponent(key)}/audit`),
 };
+
+export interface ModuleAuditEntry {
+  actor_email: string | null;
+  action: string;
+  changes: Record<string, unknown>;
+  at: string;
+}
 
 export type ModuleArea = "public" | "portal" | "admin" | "api";
 

@@ -1,6 +1,6 @@
 # CLAUDE.md — F2 Website Project Manifest
 <!-- Auto-loaded by Claude Code and GitHub Copilot on session start -->
-<!-- Last updated: 2026-06-12 -->
+<!-- Last updated: 2026-06-27 -->
 
 This file is the **single entry point** for any AI agent (Claude, Copilot, GPT) working on this repo.
 Read this first. Then load the memory files listed under § Memory.
@@ -14,13 +14,14 @@ Corporate website + customer portal + admin console, built as a microservices mo
 
 | Layer | Tech |
 |---|---|
-| Frontend | Next.js 15 (App Router) · TypeScript · Tailwind · Lucide |
+| Frontend | Next.js 16 (App Router) · TypeScript · Tailwind · Lucide |
 | Backend | Go 1.22 · Chi · pgx/v5 · JWT HS256 |
-| Database | PostgreSQL 16 · 14 migrations |
+| Database | PostgreSQL 16 · 19 migrations |
 | Gateway | Traefik v2.11 |
-| i18n | next-intl v3 · EN (default) + TH · 740 keys |
+| i18n | next-intl v4 (pinned) · EN (default) + TH · 982 keys |
 | AI chatbot | Claude `claude-sonnet-4-6` via `ai-chat-api` |
 | CI | GitHub Actions · `.github/workflows/build.yml` |
+| Module toggles | `modules` table + `pkg/modulegate` middleware + `/admin/features` UI |
 
 ---
 
@@ -64,13 +65,14 @@ memories/copilot-notes.md   → Working notes, common mistakes, quick-start
 | What you need | Where to look |
 |---|---|
 | Existing API endpoint | `services/*/internal/handlers/*.go` + `cmd/server/main.go` |
-| Existing DB table/column | `database/migrations/*.sql` (14 files, read in order) |
+| Existing DB table/column | `database/migrations/*.sql` (19 files, read in order) |
 | Existing UI component | `services/web-app/src/components/*.tsx` |
 | Existing route/page | `services/web-app/src/app/[locale]/` |
-| Existing API helper/type | `services/web-app/src/lib/api.ts` |
-| Existing middleware | `services/*/internal/middleware/*.go` |
+| Existing API helper/type | `services/web-app/src/lib/api.ts`, `admin-api.ts`, `modules.ts` |
+| Existing middleware | `services/*/internal/middleware/*.go` (canonical `pkg/modulegate/`) |
 | Existing translation key | `services/web-app/messages/en.json` |
-| Next migration number | `database/migrations/` — currently at `014_orders.sql` → next is `015_` |
+| Live feature inventory | `/admin/features` page (live data from `modules` table) — check before building any new feature |
+| Next migration number | `database/migrations/` — currently at `019_modules_and_audit_log.sql` → next is `020_` |
 
 ---
 

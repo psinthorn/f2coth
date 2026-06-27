@@ -28,12 +28,17 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 const (
 	moduleCacheTTL     = 30 * time.Second
 	moduleFetchTimeout = 3 * time.Second
+	// How often to flush per-key block counters to the log. Coarse-grained on
+	// purpose — gate hits are administratively interesting, not request-rate
+	// material, so a 5-minute heartbeat is plenty for visibility.
+	blockMetricFlushInterval = 5 * time.Minute
 )
 
 type moduleRow struct {
@@ -112,6 +117,54 @@ func (c *moduleCache) isEnabled(key string) bool {
 	return !ok || v
 }
 
+// blockCounter accumulates how many requests each gated module key has
+// rejected since the last flush. Per-key sub-counters use atomic.Uint64 so
+// the hot path stays lock-free.
+type blockCounter struct {
+	mu      sync.Mutex
+	counts  map[string]*atomic.Uint64
+	started bool
+}
+
+var globalBlockCounter = &blockCounter{counts: map[string]*atomic.Uint64{}}
+
+func (b *blockCounter) inc(key string) {
+	b.mu.Lock()
+	c, ok := b.counts[key]
+	if !ok {
+		c = &atomic.Uint64{}
+		b.counts[key] = c
+	}
+	started := b.started
+	b.started = true
+	b.mu.Unlock()
+	c.Add(1)
+	if !started {
+		// Lazily kick off the flush goroutine on first ever block. Avoids
+		// spinning a ticker in services that never reject a request.
+		go b.flushLoop()
+	}
+}
+
+func (b *blockCounter) flushLoop() {
+	t := time.NewTicker(blockMetricFlushInterval)
+	defer t.Stop()
+	for range t.C {
+		b.mu.Lock()
+		out := make(map[string]uint64, len(b.counts))
+		for k, c := range b.counts {
+			n := c.Swap(0)
+			if n > 0 {
+				out[k] = n
+			}
+		}
+		b.mu.Unlock()
+		if len(out) > 0 {
+			log.Printf("modulegate: blocked-in-last-%v %v", blockMetricFlushInterval, out)
+		}
+	}
+}
+
 // GateModule returns a chi-compatible middleware that 404s any request whose
 // module key is disabled. Use sparingly — wrap whole route groups, not every
 // handler, to keep the call graph readable.
@@ -119,6 +172,7 @@ func GateModule(moduleKey string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !globalModuleCache.isEnabled(moduleKey) {
+				globalBlockCounter.inc(moduleKey)
 				http.NotFound(w, r)
 				return
 			}

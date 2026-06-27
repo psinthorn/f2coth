@@ -102,6 +102,49 @@ type toggleReq struct {
 	Enabled *bool `json:"enabled"` // nil = no-op; only PATCH-able field
 }
 
+// auditEntry is the slim row shape returned to the admin UI when expanding
+// a module's history. Pulls from the generic audit_log (resource_type='module').
+type auditEntry struct {
+	ActorEmail *string        `json:"actor_email,omitempty"`
+	Action     string         `json:"action"`
+	Changes    map[string]any `json:"changes"`
+	At         string         `json:"at"`
+}
+
+// AdminListModuleAudit — admin/editor. Returns the last N audit_log rows for
+// a single module key so the toggle UI can render a per-row history panel.
+// GET /api/cms/admin/modules/{key}/audit?limit=20
+func (h *CMSHandler) AdminListModuleAudit(w http.ResponseWriter, r *http.Request) {
+	key := strings.TrimSpace(chi.URLParam(r, "key"))
+	if !moduleKeyRE.MatchString(key) {
+		writeErr(w, http.StatusBadRequest, "invalid module key")
+		return
+	}
+	limit := 20
+	rows, err := h.DB.Query(r.Context(), `
+		SELECT actor_email, action, changes, at::text
+		FROM audit_log
+		WHERE resource_type = 'module' AND resource_id = $1
+		ORDER BY at DESC
+		LIMIT $2`, key, limit)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "query failed")
+		return
+	}
+	defer rows.Close()
+	out := []auditEntry{}
+	for rows.Next() {
+		var e auditEntry
+		var changesRaw []byte
+		if err := rows.Scan(&e.ActorEmail, &e.Action, &changesRaw, &e.At); err != nil {
+			continue
+		}
+		_ = json.Unmarshal(changesRaw, &e.Changes)
+		out = append(out, e)
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
 // AdminToggleModule — admin-only. Editors are forbidden from toggling so the
 // operational control plane stays narrow. Writes the change atomically with an
 // audit_log row (resource_type='module').

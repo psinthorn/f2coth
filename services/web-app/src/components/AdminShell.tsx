@@ -63,7 +63,7 @@ const NAV: NavGroup[] = [
     key: "system",
     items: [
       { href: "/admin/users",    labelKey: "users",    icon: Users,      adminOnly: true, moduleKey: "admin.users" },
-      { href: "/admin/features", labelKey: "features", icon: ListChecks, moduleKey: "admin.features" },
+      { href: "/admin/features", labelKey: "features", icon: ListChecks, adminOnly: true, moduleKey: "admin.features" },
     ],
   },
 ];
