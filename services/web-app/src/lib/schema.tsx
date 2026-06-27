@@ -25,14 +25,15 @@ export const F2_ORG = {
   url: SITE_URL,
   logo: `${SITE_URL}/logo.png`,
   email: "hello@f2.co.th",
-  // Address — update centrally if HQ moves.
-  street: "—",                  // TODO: real street address before launch
-  locality: "Bangkok",
-  region: "Bangkok",
-  postalCode: "—",              // TODO
+  // Registered office. Bophut tambon, Ko Samui amphoe, Surat Thani province.
+  street: "9/38 Moo 6, Bophut",
+  locality: "Koh Samui",
+  region: "Surat Thani",
+  postalCode: "84320",
   country: "TH",
-  // Contact channels.
-  phone: "+66-2-000-0000",      // TODO: real number before launch
+  // Contact channels. Phone in E.164 with country code so click-to-call
+  // works internationally and so LLMs / Knowledge Graph can normalise it.
+  phone: "+66-64-027-0528",
   privacyEmail: "privacy@f2.co.th",
   supportEmail: "support@f2.co.th",
   // Social / partner sameAs links help LLMs disambiguate the entity.
@@ -40,8 +41,8 @@ export const F2_ORG = {
     "https://www.linkedin.com/company/f2-co-ltd",
     // Add Facebook / YouTube / Microsoft Partner / THNIC partner pages as those exist.
   ],
-  // Service areas (drives Local SEO query coverage).
-  areaServed: ["Bangkok", "Phuket", "Hua Hin", "Koh Samui", "Krabi"],
+  // Service areas (drives Local SEO query coverage). Home market first.
+  areaServed: ["Koh Samui", "Surat Thani", "Phuket", "Krabi", "Hua Hin", "Bangkok"],
   // Founding year, used in copyright and Organization.foundingDate.
   foundingYear: 2003,
 } as const;
