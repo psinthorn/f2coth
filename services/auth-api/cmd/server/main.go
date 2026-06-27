@@ -84,14 +84,16 @@ func main() {
 
 	// Privacy / PDPA endpoints.
 	r.Route("/api/privacy", func(r chi.Router) {
-		// Public — any visitor can submit a data subject request.
+		// Public — any visitor can submit or verify a data subject request.
 		r.Post("/dsr", ph.SubmitDSR)
+		r.Get("/dsr/verify", ph.VerifyDSR)
 
 		// Admin — manage and respond to DSRs.
 		r.Group(func(r chi.Router) {
 			r.Use(authmw.RequireJWT(cfg.JWTSecret))
 			r.Use(authmw.RequireRole("admin"))
 			r.Get("/dsr", ph.ListDSRs)
+			r.Get("/dsr/sla", ph.GetSLA)
 			r.Get("/dsr/{id}", ph.GetDSR)
 			r.Patch("/dsr/{id}", ph.UpdateDSR)
 		})
@@ -140,6 +142,49 @@ func main() {
 			select {
 			case <-ticker.C:
 				purge()
+			case <-janitorCtx.Done():
+				return
+			}
+		}
+	}()
+
+	// DSR SLA & verification cleanup: every 6 h, emit a one-line summary of
+	// at-risk DSRs (overdue, due within 7 days) so ops alerting can scrape
+	// stdout, and purge unverified rows whose 7-day token already lapsed.
+	go func() {
+		check := func() {
+			ctx, cancel := context.WithTimeout(janitorCtx, 30*time.Second)
+			defer cancel()
+			var overdue, dueSoon int
+			err := pool.QueryRow(ctx, `
+				SELECT
+				  COUNT(*) FILTER (WHERE due_date < NOW()),
+				  COUNT(*) FILTER (WHERE due_date BETWEEN NOW() AND NOW() + INTERVAL '7 days')
+				FROM data_subject_requests
+				WHERE status IN ('pending', 'in_progress')`,
+			).Scan(&overdue, &dueSoon)
+			if err != nil {
+				log.Printf("dsr-sla: count query failed: %v", err)
+			} else {
+				log.Printf("dsr-sla: overdue=%d due_within_7d=%d", overdue, dueSoon)
+			}
+			tag, err := pool.Exec(ctx, `
+				DELETE FROM data_subject_requests
+				WHERE status = 'unverified'
+				  AND verification_expires_at < NOW()`)
+			if err != nil {
+				log.Printf("dsr-sla: cleanup unverified failed: %v", err)
+			} else if n := tag.RowsAffected(); n > 0 {
+				log.Printf("dsr-sla: purged %d expired-unverified DSRs", n)
+			}
+		}
+		check()
+		ticker := time.NewTicker(6 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				check()
 			case <-janitorCtx.Done():
 				return
 			}

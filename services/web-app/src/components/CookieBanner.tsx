@@ -55,18 +55,28 @@ export default function CookieBanner({ locale }: { locale: string }) {
       }
       fetch(`/api/consent/${encodeURIComponent(visitorId)}`)
         .then(async (res) => {
-          if (res.status === 200) {
-            const data = await res.json() as { analytics: boolean; marketing: boolean };
-            // Server has a record: restore it locally so banner stays hidden.
+          if (!res.ok) {
+            setShow(true);
+            return;
+          }
+          const data = (await res.json()) as {
+            status: "active" | "withdrawn" | "none";
+            analytics?: boolean;
+            marketing?: boolean;
+          };
+          if (data.status === "active") {
+            // Server has a live consent record: restore it locally so the
+            // banner stays hidden.
             const payload: ConsentState = {
-              analytics: data.analytics,
-              marketing: data.marketing,
+              analytics: !!data.analytics,
+              marketing: !!data.marketing,
               decided: true,
             };
             localStorage.setItem(CONSENT_KEY, JSON.stringify(payload));
             setShow(false);
           } else {
-            // 404 (no record) or withdrawn — show banner.
+            // "none" (first visit) or "withdrawn" (explicitly opted out earlier):
+            // either way the visitor needs to make a fresh choice.
             setShow(true);
           }
         })

@@ -31,11 +31,13 @@ type consentReq struct {
 }
 
 type consentResp struct {
-	ID          string `json:"id"`
-	VisitorID   string `json:"visitor_id"`
-	Analytics   bool   `json:"analytics"`
-	Marketing   bool   `json:"marketing"`
-	ConsentedAt string `json:"consented_at"`
+	ID          string  `json:"id"`
+	VisitorID   string  `json:"visitor_id"`
+	Status      string  `json:"status"` // "active" | "withdrawn" | "none"
+	Analytics   bool    `json:"analytics"`
+	Marketing   bool    `json:"marketing"`
+	ConsentedAt string  `json:"consented_at,omitempty"`
+	WithdrawnAt *string `json:"withdrawn_at,omitempty"`
 }
 
 // RecordConsent stores or updates a visitor's consent. Upserts on visitor_id so
@@ -61,13 +63,15 @@ func (h *ConsentHandler) RecordConsent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Capture IP and user-agent at the consent boundary (PDPA evidentiary requirement).
-	ipAddr := r.RemoteAddr // chi RealIP middleware already normalised this
+	// NULLIF + cast lets us store NULL when the address is missing or unparseable
+	// rather than letting the whole insert error out and losing the consent record.
+	ipAddr := clientIP(r)
 	ua := r.UserAgent()
 
 	var id, consentedAt string
 	err := h.DB.QueryRow(r.Context(), `
 		INSERT INTO cookie_consents (visitor_id, locale, analytics, marketing, ip_address, user_agent)
-		VALUES ($1, $2, $3, $4, $5::inet, $6)
+		VALUES ($1, $2, $3, $4, NULLIF($5,'')::inet, $6)
 		ON CONFLICT (visitor_id) DO UPDATE
 			SET analytics    = EXCLUDED.analytics,
 			    marketing    = EXCLUDED.marketing,
@@ -76,7 +80,7 @@ func (h *ConsentHandler) RecordConsent(w http.ResponseWriter, r *http.Request) {
 			    user_agent   = EXCLUDED.user_agent,
 			    consented_at = NOW(),
 			    withdrawn_at = NULL
-		RETURNING id, consented_at`,
+		RETURNING id, consented_at::text`,
 		req.VisitorID, req.Locale, req.Analytics, req.Marketing, ipAddr, ua,
 	).Scan(&id, &consentedAt)
 	if err != nil {
@@ -87,6 +91,7 @@ func (h *ConsentHandler) RecordConsent(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, consentResp{
 		ID:          id,
 		VisitorID:   req.VisitorID,
+		Status:      "active",
 		Analytics:   req.Analytics,
 		Marketing:   req.Marketing,
 		ConsentedAt: consentedAt,
@@ -118,8 +123,15 @@ func (h *ConsentHandler) WithdrawConsent(w http.ResponseWriter, r *http.Request)
 }
 
 // GetConsent retrieves the current stored consent for a visitor by their UUID.
-// Returns 404 if no consent record exists (visitor has never consented — banner should show).
-// Returns 200 with Analytics/Marketing booleans and withdrawn_at if applicable.
+// Always returns 200 with a `status` discriminator so the frontend can tell
+// "first visit" from "previously withdrew" — the banner needs both cases but
+// shows different copy:
+//
+//   status = "none"      → no record at all; show first-visit banner
+//   status = "withdrawn" → existing record with withdrawn_at set; re-prompt
+//                          with "you previously withdrew" context
+//   status = "active"    → live consent; banner stays hidden
+//
 // GET /api/consent/{visitorId}
 func (h *ConsentHandler) GetConsent(w http.ResponseWriter, r *http.Request) {
 	visitorID := chi.URLParam(r, "visitorId")
@@ -129,23 +141,23 @@ func (h *ConsentHandler) GetConsent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resp consentResp
-	var withdrawnAt *string
 	err := h.DB.QueryRow(r.Context(), `
 		SELECT id, visitor_id, analytics, marketing, consented_at::text, withdrawn_at::text
 		FROM cookie_consents
 		WHERE visitor_id = $1`, visitorID,
-	).Scan(&resp.ID, &resp.VisitorID, &resp.Analytics, &resp.Marketing, &resp.ConsentedAt, &withdrawnAt)
+	).Scan(&resp.ID, &resp.VisitorID, &resp.Analytics, &resp.Marketing, &resp.ConsentedAt, &resp.WithdrawnAt)
 	if err != nil {
-		// No record — visitor has not consented yet; banner should show.
-		writeJSON(w, http.StatusNotFound, map[string]string{"status": "no_record"})
+		writeJSON(w, http.StatusOK, consentResp{VisitorID: visitorID, Status: "none"})
 		return
 	}
 
-	// If withdrawn, treat as no consent.
-	if withdrawnAt != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"status": "withdrawn"})
-		return
+	if resp.WithdrawnAt != nil {
+		// Withdrawn rows zero out the consent flags on POST /withdraw, so
+		// returning them as-is is accurate. Status discriminator carries the
+		// "explicitly withdrew" signal the banner needs.
+		resp.Status = "withdrawn"
+	} else {
+		resp.Status = "active"
 	}
-
 	writeJSON(w, http.StatusOK, resp)
 }

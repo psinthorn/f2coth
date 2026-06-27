@@ -100,7 +100,7 @@ func (h *LeadHandler) Create(w http.ResponseWriter, r *http.Request) {
                   created_at, updated_at
     `,
 		req.FullName, req.Email, req.Phone, req.Company, req.PropertyName, req.PropertyType,
-		req.Interest, req.Message, req.Source, r.RemoteAddr, r.UserAgent(),
+		req.Interest, req.Message, req.Source, clientIP(r), r.UserAgent(),
 		req.UTMSource, req.UTMMedium, req.UTMCampaign,
 	).Scan(&lead.ID, &lead.FullName, &lead.Email, &lead.Phone, &lead.Company,
 		&lead.PropertyName, &lead.PropertyType, &lead.Interest, &lead.Message,

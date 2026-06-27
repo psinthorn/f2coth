@@ -39,9 +39,10 @@ export default function DSRForm({ locale }: { locale: string }) {
 
   if (status === "success") {
     return (
-      <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-green-800">
+      <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 text-blue-900" role="status">
         <p className="font-semibold">{t("successTitle")}</p>
         <p className="text-sm mt-1">{t("successBody")}</p>
+        <p className="text-xs mt-3 text-blue-700">{t("successHint")}</p>
       </div>
     );
   }

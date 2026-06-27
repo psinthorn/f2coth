@@ -28,7 +28,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_cookie_consents_visitor
 CREATE INDEX IF NOT EXISTS idx_cookie_consents_consented_at
     ON cookie_consents (consented_at);
 
-CREATE TRIGGER set_cookie_consents_updated_at
+CREATE OR REPLACE TRIGGER set_cookie_consents_updated_at
     BEFORE UPDATE ON cookie_consents
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
@@ -66,8 +66,11 @@ CREATE TABLE IF NOT EXISTS data_subject_requests (
                                 'withdrawn'       -- requester withdrew
                             )),
     assigned_to         UUID        REFERENCES users(id) ON DELETE SET NULL,
-    due_date            TIMESTAMPTZ NOT NULL
-                            GENERATED ALWAYS AS (created_at + INTERVAL '30 days') STORED,
+    -- PDPA s.30 sets a 30-day response deadline. Not a GENERATED column because
+    -- (a) timestamptz + interval is not immutable (rejected by Postgres) and
+    -- (b) staff must be able to extend the deadline by one further 30-day period
+    -- when the request is complex (PDPA permits a single extension).
+    due_date            TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '30 days'),
     response_notes      TEXT,                     -- internal staff notes
     fulfilled_at        TIMESTAMPTZ,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -79,21 +82,41 @@ CREATE INDEX IF NOT EXISTS idx_dsr_status  ON data_subject_requests (status);
 CREATE INDEX IF NOT EXISTS idx_dsr_due     ON data_subject_requests (due_date) WHERE status IN ('pending','in_progress');
 CREATE INDEX IF NOT EXISTS idx_dsr_due_all ON data_subject_requests (due_date, created_at);
 
-CREATE TRIGGER set_dsr_updated_at
+CREATE OR REPLACE TRIGGER set_dsr_updated_at
     BEFORE UPDATE ON data_subject_requests
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ─────────────────────────────────────────────
 -- 3. Chat session retention: add expires_at
 --    PDPA requires a defined retention period.
---    Recommend: 90 days from last activity, then anonymise.
+--    Policy: 90 days from last activity (last_activity_at), then anonymise.
+--
+--    Not a GENERATED column: timestamptz + interval is non-immutable so
+--    Postgres rejects it. A BEFORE INSERT/UPDATE trigger rolls expires_at
+--    forward whenever the session is touched, preserving the original intent.
 -- ─────────────────────────────────────────────
 ALTER TABLE chat_sessions
-    ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ
-        GENERATED ALWAYS AS (updated_at + INTERVAL '90 days') STORED;
+    ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 
 ALTER TABLE chat_sessions
     ADD COLUMN IF NOT EXISTS anonymised_at TIMESTAMPTZ;
+
+-- Backfill existing rows.
+UPDATE chat_sessions
+   SET expires_at = last_activity_at + INTERVAL '90 days'
+ WHERE expires_at IS NULL;
+
+CREATE OR REPLACE FUNCTION chat_sessions_set_expires_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.expires_at := COALESCE(NEW.last_activity_at, NOW()) + INTERVAL '90 days';
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER set_chat_sessions_expires_at
+    BEFORE INSERT OR UPDATE ON chat_sessions
+    FOR EACH ROW EXECUTE FUNCTION chat_sessions_set_expires_at();
 
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_expires
     ON chat_sessions (expires_at)
@@ -102,14 +125,23 @@ CREATE INDEX IF NOT EXISTS idx_chat_sessions_expires
 -- ─────────────────────────────────────────────
 -- 4. Leads retention: add retention_expires_at
 --    Leads (contact form submissions) contain PII — name, email, phone, message.
---    Recommend: retain for 2 years (reasonable B2B sales cycle), then anonymise.
+--    Policy: retain for 2 years (reasonable B2B sales cycle), then anonymise.
+--
+--    Not a GENERATED column: timestamptz + interval is non-immutable.
+--    A simple DEFAULT is sufficient since leads.created_at is fixed at insert
+--    and not expected to change after that.
 -- ─────────────────────────────────────────────
 ALTER TABLE leads
     ADD COLUMN IF NOT EXISTS retention_expires_at TIMESTAMPTZ
-        GENERATED ALWAYS AS (created_at + INTERVAL '2 years') STORED;
+        DEFAULT (NOW() + INTERVAL '2 years');
 
 ALTER TABLE leads
     ADD COLUMN IF NOT EXISTS anonymised_at TIMESTAMPTZ;
+
+-- Backfill existing rows.
+UPDATE leads
+   SET retention_expires_at = created_at + INTERVAL '2 years'
+ WHERE retention_expires_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_leads_retention_expires
     ON leads (retention_expires_at)
@@ -117,25 +149,12 @@ CREATE INDEX IF NOT EXISTS idx_leads_retention_expires
 
 -- ─────────────────────────────────────────────
 -- 5. Notification templates — DSR acknowledgement + confirmation emails
+--    Originally inserted here, but the INSERT referenced a column ('name')
+--    that does not exist (the column is 'code'), and wrote plain-text JSON
+--    into columns that became JSONB in migration 012. Both bugs made the
+--    statement fail on a fresh `make migrate`.
+--
+--    The templates are now seeded by migration 016_dsr_notifications.sql,
+--    which uses the correct schema and is idempotent via
+--    ON CONFLICT (code) DO UPDATE. Do not re-add the INSERT here.
 -- ─────────────────────────────────────────────
-INSERT INTO notification_templates (id, name, subject_tmpl, body_tmpl)
-VALUES
-(
-    gen_random_uuid(),
-    'dsr_received_requester',
-    '{"en": "Your data request has been received — F2 Co., Ltd.", "th": "เราได้รับคำขอข้อมูลของท่านแล้ว — บริษัท เอฟทู จำกัด"}',
-    '{"en": "Dear {{.Name}},\n\nWe have received your {{.RequestType}} request (Ref: {{.ID}}).\n\nUnder Thailand''s Personal Data Protection Act (PDPA), we will respond within 30 days (by {{.DueDate}}).\n\nIf you have questions, contact us at privacy@f2.co.th.\n\nF2 Co., Ltd.", "th": "เรียน คุณ{{.Name}}\n\nเราได้รับคำขอ{{.RequestTypeTH}}ของท่านแล้ว (อ้างอิง: {{.ID}})\n\nภายใต้พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล (PDPA) เราจะตอบสนองภายใน 30 วัน (ภายในวันที่ {{.DueDate}})\n\nหากมีคำถาม ติดต่อเราได้ที่ privacy@f2.co.th\n\nบริษัท เอฟทู จำกัด"}'
-),
-(
-    gen_random_uuid(),
-    'dsr_fulfilled_requester',
-    '{"en": "Your data request is complete — F2 Co., Ltd.", "th": "คำขอข้อมูลของท่านเสร็จสมบูรณ์แล้ว — บริษัท เอฟทู จำกัด"}',
-    '{"en": "Dear {{.Name}},\n\nYour {{.RequestType}} request (Ref: {{.ID}}) has been completed.\n\n{{.ResponseNotes}}\n\nF2 Co., Ltd.", "th": "เรียน คุณ{{.Name}}\n\nคำขอ{{.RequestTypeTH}}ของท่าน (อ้างอิง: {{.ID}}) เสร็จสมบูรณ์แล้ว\n\n{{.ResponseNotes}}\n\nบริษัท เอฟทู จำกัด"}'
-),
-(
-    gen_random_uuid(),
-    'dsr_received_staff',
-    '{"en": "New DSR received: {{.RequestType}} from {{.Email}}", "th": "ได้รับ DSR ใหม่: {{.RequestType}} จาก {{.Email}}"}',
-    '{"en": "A new Data Subject Request has been submitted.\n\nRef: {{.ID}}\nType: {{.RequestType}}\nFrom: {{.Name}} <{{.Email}}>\nDue: {{.DueDate}}\n\nReview at: {{.AdminURL}}", "th": "มีคำขอสิทธิ์ข้อมูลส่วนบุคคลใหม่\n\nอ้างอิง: {{.ID}}\nประเภท: {{.RequestTypeTH}}\nจาก: {{.Name}} <{{.Email}}>\nกำหนด: {{.DueDate}}\n\nดูได้ที่: {{.AdminURL}}"}'
-)
-ON CONFLICT DO NOTHING;
