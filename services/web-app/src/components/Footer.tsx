@@ -63,7 +63,7 @@ export default function Footer({
           <h4 className="text-sm font-semibold text-white">{t("contact")}</h4>
           <ul className="mt-3 space-y-2 text-sm text-navy-300">
             <li className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {t("officesValue")}</li>
-            <li className="flex items-start gap-2"><Mail className="mt-0.5 h-4 w-4 shrink-0" /> hello@f2.co.th</li>
+            <li className="flex items-start gap-2"><Mail className="mt-0.5 h-4 w-4 shrink-0" /> info@f2.co.th</li>
           </ul>
           <Link href="/contact" className="mt-4 inline-block btn-accent">{t("startProject")}</Link>
         </div>

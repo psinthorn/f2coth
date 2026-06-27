@@ -24,7 +24,7 @@ export const F2_ORG = {
   brandName: "F2",
   url: SITE_URL,
   logo: `${SITE_URL}/logo.png`,
-  email: "hello@f2.co.th",
+  email: "info@f2.co.th",
   // Registered office. Bophut tambon, Ko Samui amphoe, Surat Thani province.
   street: "9/38 Moo 6, Bophut",
   locality: "Koh Samui",

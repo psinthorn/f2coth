@@ -26,7 +26,7 @@ func Load() Config {
 		SMTPPort:         port,
 		SMTPUser:         getenv("SMTP_USER", ""),
 		SMTPPassword:     getenv("SMTP_PASSWORD", ""),
-		SMTPFrom:         getenv("SMTP_FROM", "F2 Co., Ltd. <hello@f2.co.th>"),
+		SMTPFrom:         getenv("SMTP_FROM", "F2 Co., Ltd. <info@f2.co.th>"),
 		CORSAllowedHosts: splitCSV(getenv("CORS_ALLOWED_ORIGINS", "*")),
 	}
 }

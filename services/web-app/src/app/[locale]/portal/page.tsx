@@ -84,8 +84,8 @@ export default function PortalHome() {
               ) : (
                 <p className="mt-1 text-sm text-navy-500">{t("noManager")}</p>
               )}
-              <a href="mailto:hello@f2.co.th" className="mt-4 flex items-center gap-1.5 text-sm text-navy-700 hover:text-accent-700">
-                <Mail className="h-3.5 w-3.5" /> hello@f2.co.th
+              <a href="mailto:info@f2.co.th" className="mt-4 flex items-center gap-1.5 text-sm text-navy-700 hover:text-accent-700">
+                <Mail className="h-3.5 w-3.5" /> info@f2.co.th
               </a>
             </div>
           </section>

@@ -394,7 +394,7 @@
       "submit": "Send enquiry",
       "submitting": "Sending…",
       "errorRequired": "Name, email, and message are required.",
-      "errorGeneric": "We couldn't submit your enquiry. Please email hello@f2.co.th directly.",
+      "errorGeneric": "We couldn't submit your enquiry. Please email info@f2.co.th directly.",
       "successTitle": "Thank you.",
       "successBody": "We've received your enquiry and one of our consultants will be in touch within one business day. A confirmation email is on its way to your inbox.",
       "privacyNotice": "We'll only use your details to respond to your enquiry. See our ",
@@ -1207,7 +1207,7 @@
     "greeting": "Hi — I'm F2 Concierge. Ask me about IT for your hotel, villa, or resort, or tell me about your property and I'll suggest where F2 can help.",
     "placeholder": "Ask about IT for your property…",
     "thinking": "thinking…",
-    "errorOffline": "Sorry — the assistant is offline right now. Please email hello@f2.co.th and we'll get back within one business day.",
+    "errorOffline": "Sorry — the assistant is offline right now. Please email info@f2.co.th and we'll get back within one business day.",
     "open": "Open chat",
     "send": "Send"
   },

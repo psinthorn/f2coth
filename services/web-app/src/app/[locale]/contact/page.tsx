@@ -49,8 +49,8 @@ export default async function ContactPage({ params, searchParams }: Props) {
           <h1 className="mt-2 font-display text-4xl text-navy-900 sm:text-5xl">{t("title")}</h1>
           <p className="mt-4 max-w-2xl text-navy-600">
             {t("subtitle")}
-            <a className="text-accent-700 hover:text-accent-900" href="mailto:hello@f2.co.th">
-              hello@f2.co.th
+            <a className="text-accent-700 hover:text-accent-900" href="mailto:info@f2.co.th">
+              info@f2.co.th
             </a>
             .
           </p>
@@ -70,8 +70,8 @@ export default async function ContactPage({ params, searchParams }: Props) {
           <div className="card">
             <Mail className="h-5 w-5 text-accent-700" />
             <h3 className="mt-3 font-semibold text-navy-900">{t("side.email")}</h3>
-            <a className="mt-1 block text-sm text-navy-600 hover:text-accent-700" href="mailto:hello@f2.co.th">
-              hello@f2.co.th
+            <a className="mt-1 block text-sm text-navy-600 hover:text-accent-700" href="mailto:info@f2.co.th">
+              info@f2.co.th
             </a>
           </div>
           <div className="card">
