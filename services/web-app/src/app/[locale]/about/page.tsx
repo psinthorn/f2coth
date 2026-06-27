@@ -44,17 +44,8 @@ export default async function AboutPage({
         </div>
       </section>
 
-      <section className="container-page py-16 grid gap-8 md:grid-cols-2">
-        <div className="card">
-          <div className="flex items-start gap-3">
-            <Building2 className="h-6 w-6 text-accent-700" />
-            <div>
-              <h3 className="text-lg font-semibold text-navy-900">{t("bangkok.title")}</h3>
-              <p className="mt-2 text-sm text-navy-600">{t("bangkok.body")}</p>
-            </div>
-          </div>
-        </div>
-        <div className="card">
+      <section className="container-page py-16">
+        <div className="mx-auto max-w-2xl card">
           <div className="flex items-start gap-3">
             <MapPin className="h-6 w-6 text-accent-700" />
             <div>

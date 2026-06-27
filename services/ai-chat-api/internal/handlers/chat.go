@@ -30,7 +30,7 @@ What F2 does:
 - Support services (20%): MSP / managed IT, cybersecurity.
 - Opportunistic (10%): IT hardware via SiS Distribution, solar installations on Koh Samui.
 
-Locations: Bangkok HQ + Koh Samui branch.
+Location: headquartered on Koh Samui (Bophut, Surat Thani), serving properties nationwide remotely and on-site across the Gulf Coast.
 
 Flagship clients (10+ year relationships): SALA Hospitality Group (8 luxury properties), Miskawaan Beach Villas (#1 specialty lodging on TripAdvisor Koh Samui), Putahracsa Hua Hin (boutique luxury, 67 rooms).
 

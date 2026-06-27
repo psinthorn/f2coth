@@ -17,7 +17,7 @@
     },
     "about": {
       "title": "About F2",
-      "description": "F2 Co., Ltd. (formerly Nextgentechs) is Thailand's trusted IT partner for luxury hospitality, with offices in Bangkok and Koh Samui."
+      "description": "F2 Co., Ltd. (formerly Nextgentechs) is Thailand's trusted IT partner for luxury hospitality, headquartered on Koh Samui and serving properties nationwide."
     },
     "products": {
       "title": "Products — iACC",
@@ -125,7 +125,7 @@
     "customerLogin": "Customer login"
   },
   "footer": {
-    "tagline": "Thailand's trusted IT partner for luxury hospitality. Bangkok HQ · Koh Samui branch.",
+    "tagline": "Thailand's trusted IT partner for luxury hospitality. Headquartered on Koh Samui, serving properties nationwide.",
     "formerName": "Formerly Nextgentechs Service & Support Co., Ltd.",
     "explore": "Explore",
     "exploreLinks": {
@@ -138,7 +138,7 @@
       "about": "About"
     },
     "contact": "Contact",
-    "officesValue": "Bangkok HQ & Koh Samui",
+    "officesValue": "Koh Samui, Thailand",
     "startProject": "Start a project",
     "rights": "All rights reserved.",
     "privacy": "Privacy",
@@ -168,7 +168,7 @@
     "ctaPrimary": "Talk to F2",
     "ctaSecondary": "See client results",
     "trust": {
-      "bangkokSamui": "Bangkok HQ · Samui branch",
+      "kohSamui": "Koh Samui HQ · nationwide remote",
       "sameDay": "Same-day Samui on-site",
       "partners": "ResellerClub · SiS · Microsoft"
     },
@@ -219,13 +219,9 @@
     "kicker": "About",
     "title": "Built for luxury hospitality. Headquartered in Thailand.",
     "lead": "F2 Co., Ltd. (formerly Nextgentechs Service & Support Co., Ltd.) is a digital transformation services company. For over a decade we've served Thailand's most demanding luxury hotels, villas, and resorts — and we've never lost a client.",
-    "bangkok": {
-      "title": "Bangkok HQ",
-      "body": "Our head office runs nationwide remote operations, vendor management, and large-property design work."
-    },
     "samui": {
-      "title": "Koh Samui branch",
-      "body": "Our island team delivers same-day on-site response, hardware deployments, and solar installations across Samui and the Gulf Coast."
+      "title": "Koh Samui HQ",
+      "body": "Our island team runs nationwide remote operations, same-day on-site response across Samui and the Gulf Coast, hardware deployments, and solar installations."
     },
     "focusTitle": "What we focus on",
     "focusBody": "70% of our business is core: IT management, digital transformation, AI, domains & hosting, and our iACC SaaS. 20% is support services — MSP and cybersecurity. The remaining 10% is opportunistic — IT hardware (via SiS Distribution) and solar installations on Samui.",
@@ -402,8 +398,8 @@
     },
     "side": {
       "email": "Email",
-      "offices": "Offices",
-      "officesValue": "Bangkok HQ · Koh Samui branch",
+      "offices": "Office",
+      "officesValue": "Koh Samui, Thailand · nationwide remote",
       "responseTime": "Response time",
       "responseTimeValue": "Within one business day, Mon–Fri (Asia/Bangkok)."
     }

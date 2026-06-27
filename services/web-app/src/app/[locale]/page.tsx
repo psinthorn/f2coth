@@ -56,7 +56,7 @@ export default async function HomePage({
             </Link>
           </div>
           <div className="mt-12 grid max-w-2xl grid-cols-1 gap-4 text-sm text-navy-200 sm:grid-cols-3">
-            <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" /> {t("trust.bangkokSamui")}</div>
+            <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" /> {t("trust.kohSamui")}</div>
             <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" /> {t("trust.sameDay")}</div>
             <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" /> {t("trust.partners")}</div>
           </div>
