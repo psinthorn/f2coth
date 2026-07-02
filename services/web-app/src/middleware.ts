@@ -5,10 +5,28 @@ import { routing } from "./i18n/routing";
 
 const intlMiddleware = createMiddleware(routing);
 
+// Origins the browser is allowed to fetch from (CSP connect-src).
+// Derived from NEXT_PUBLIC_API_BASE so a Vercel deployment pointing at a
+// cross-origin Go API (e.g. https://api.f2.co.th) doesn't get blocked.
+function extraConnectOrigins(): string {
+  const base = process.env.NEXT_PUBLIC_API_BASE;
+  if (!base) return "";
+  try {
+    const u = new URL(base);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return "";
+  }
+}
+
 export default function middleware(request: NextRequest) {
   // Generate a fresh cryptographic nonce for every request so that
   // Content-Security-Policy can use 'nonce-<value>' instead of 'unsafe-inline'.
   const nonce = btoa(crypto.randomUUID());
+
+  const connectSrc = ["'self'", "https://api.anthropic.com", extraConnectOrigins()]
+    .filter(Boolean)
+    .join(" ");
 
   const csp = [
     "default-src 'self'",
@@ -19,7 +37,7 @@ export default function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://api.anthropic.com",
+    `connect-src ${connectSrc}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -44,6 +62,11 @@ export default function middleware(request: NextRequest) {
   // don't strip the rewrite by accident.
   const reqHeaders = new Headers(request.headers);
   reqHeaders.set("x-nonce", nonce);
+  // Expose the raw URL pathname so the root layout can derive the URL locale
+  // without calling next-intl's getLocale() (which would trigger the
+  // request-scoped translations config early and pin messages to the default
+  // locale — see app/layout.tsx).
+  reqHeaders.set("x-pathname", request.nextUrl.pathname);
 
   const rewriteTarget = intlResponse.headers.get("x-middleware-rewrite");
   const response = rewriteTarget
