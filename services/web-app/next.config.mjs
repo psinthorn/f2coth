@@ -19,9 +19,17 @@ const securityHeaders = [
   // cryptographic nonce, eliminating 'unsafe-inline' for script-src.
 ];
 
+// Public-only build (Vercel): admin + portal + payments redirect to the
+// full-stack deployment at admin.f2.co.th. Toggle with PUBLIC_ONLY_BUILD=1.
+const PUBLIC_ONLY = process.env.PUBLIC_ONLY_BUILD === "1";
+const BACKOFFICE_HOST =
+  process.env.BACKOFFICE_HOST ?? "https://admin.f2.co.th";
+
 const nextConfig = {
   reactStrictMode: true,
-  output: "standalone",
+  // `standalone` is used by the Docker Dockerfile. Vercel ignores it, but
+  // omit it in Vercel builds to avoid duplicate .next/standalone output.
+  ...(process.env.VERCEL ? {} : { output: "standalone" }),
   poweredByHeader: false,
   images: {
     remotePatterns: [
@@ -31,6 +39,43 @@ const nextConfig = {
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  async redirects() {
+    if (!PUBLIC_ONLY) return [];
+    // 307 (temporary) so we can flip PUBLIC_ONLY off later without
+    // clients caching a permanent redirect.
+    return [
+      {
+        source: "/:locale(en|th)/admin/:path*",
+        destination: `${BACKOFFICE_HOST}/:locale/admin/:path*`,
+        permanent: false,
+      },
+      {
+        source: "/admin/:path*",
+        destination: `${BACKOFFICE_HOST}/admin/:path*`,
+        permanent: false,
+      },
+      {
+        source: "/:locale(en|th)/portal/:path*",
+        destination: `${BACKOFFICE_HOST}/:locale/portal/:path*`,
+        permanent: false,
+      },
+      {
+        source: "/portal/:path*",
+        destination: `${BACKOFFICE_HOST}/portal/:path*`,
+        permanent: false,
+      },
+      {
+        source: "/:locale(en|th)/payments/:path*",
+        destination: `${BACKOFFICE_HOST}/:locale/payments/:path*`,
+        permanent: false,
+      },
+      {
+        source: "/payments/:path*",
+        destination: `${BACKOFFICE_HOST}/payments/:path*`,
+        permanent: false,
+      },
+    ];
   },
 };
 
