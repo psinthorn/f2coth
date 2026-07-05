@@ -83,23 +83,29 @@ export function pageOpenGraph(args: {
   imageUrl?: string;
 }) {
   const url = localizedUrl(args.locale, args.path);
-  return {
-    openGraph: {
-      type: "website" as const,
-      url,
-      siteName: "F2 Co., Ltd.",
-      locale: args.locale === "th" ? "th_TH" : "en_TH",
-      title: args.title,
-      description: args.description,
-      images: args.imageUrl
-        ? [{ url: args.imageUrl, width: 1200, height: 630, alt: args.title }]
-        : undefined,
-    },
-    twitter: {
-      card: "summary_large_image" as const,
-      title: args.title,
-      description: args.description,
-      images: args.imageUrl ? [args.imageUrl] : undefined,
-    },
+  // Only include `images` when a caller explicitly passes imageUrl. Setting
+  // `images: undefined` looks harmless but Next.js treats the presence of
+  // the key as an override signal and skips the file-based
+  // opengraph-image.tsx auto-injection. Omitting the key entirely lets the
+  // file convention take over.
+  const openGraph: Record<string, unknown> = {
+    type: "website" as const,
+    url,
+    siteName: "F2 Co., Ltd.",
+    locale: args.locale === "th" ? "th_TH" : "en_TH",
+    title: args.title,
+    description: args.description,
   };
+  const twitter: Record<string, unknown> = {
+    card: "summary_large_image" as const,
+    title: args.title,
+    description: args.description,
+  };
+  if (args.imageUrl) {
+    openGraph.images = [
+      { url: args.imageUrl, width: 1200, height: 630, alt: args.title },
+    ];
+    twitter.images = [args.imageUrl];
+  }
+  return { openGraph, twitter };
 }

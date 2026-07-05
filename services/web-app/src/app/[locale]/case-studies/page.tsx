@@ -29,20 +29,36 @@ export default async function CaseStudiesPage({
   const t = await getTranslations("caseStudies");
   const tc = await getTranslations("common");
 
-  const studies = await cms.listCaseStudies(locale);
+  const [studies, home] = await Promise.all([
+    cms.listCaseStudies(locale),
+    cms.getHome(locale),
+  ]);
+  const c = (key: string, fallback: string) => home[key] ?? fallback;
+  const kicker = c("case_studies_page.kicker", t("kicker"));
+  const title = c("case_studies_page.title", t("title"));
+  const subtitle = c("case_studies_page.subtitle", t("subtitle"));
   const breadcrumbs = pageBreadcrumb(
     locale,
-    [{ name: t("title"), path: "/case-studies" }],
+    [{ name: title, path: "/case-studies" }],
     tc("home"),
   );
   return (
     <>
       <JsonLd data={breadcrumbList(breadcrumbs)} />
-      <section className="bg-navy-50">
-        <div className="container-page py-16">
-          <p className="text-sm font-semibold uppercase tracking-wider text-accent-700">{t("kicker")}</p>
-          <h1 className="mt-2 font-display text-4xl text-navy-900 sm:text-5xl">{t("title")}</h1>
-          <p className="mt-4 max-w-2xl text-navy-600">{t("subtitle")}</p>
+      <section className="relative overflow-hidden bg-gradient-to-br from-navy-900 via-navy-800 to-accent-800 text-white">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-30 [background:radial-gradient(60%_60%_at_20%_20%,rgba(124,58,237,0.35),transparent),radial-gradient(50%_50%_at_80%_80%,rgba(15,23,42,0.4),transparent)]"
+        />
+        <div className="container-page relative py-20 sm:py-24">
+          <p className="text-sm font-semibold uppercase tracking-wider text-accent-200">{kicker}</p>
+          <h1 className="mt-3 font-display text-4xl sm:text-5xl lg:text-6xl">{title}</h1>
+          <p className="mt-5 max-w-2xl text-lg text-navy-100">{subtitle}</p>
+          {studies.length > 0 && (
+            <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs text-navy-200">
+              {tc("yearsPartnershipShort", { years: 10 })} · {studies.length} {studies.length === 1 ? "client" : "clients"}
+            </p>
+          )}
         </div>
       </section>
 

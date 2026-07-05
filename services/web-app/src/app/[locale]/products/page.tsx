@@ -7,6 +7,8 @@ import {
 import { Link } from "@/i18n/routing";
 import { pageAlternates, pageOpenGraph, pageBreadcrumb } from "@/lib/seo";
 import { JsonLd, breadcrumbList } from "@/lib/schema";
+import { FAQ } from "@/components/FAQ";
+import type { FAQItem } from "@/lib/api";
 
 export async function generateMetadata({
   params,
@@ -43,6 +45,7 @@ export default async function ProductsPage({
   const freePerks = t.raw("pricing.free.perks") as string[];
   const proPerks = t.raw("pricing.pro.perks") as string[];
   const enterprisePerks = t.raw("pricing.enterprise.perks") as string[];
+  const faqItems = t.raw("faq.items") as FAQItem[];
 
   return (
     <>
@@ -184,6 +187,8 @@ export default async function ProductsPage({
           </div>
         </div>
       </section>
+
+      <FAQ items={faqItems} heading={t("faq.heading")} />
     </>
   );
 }

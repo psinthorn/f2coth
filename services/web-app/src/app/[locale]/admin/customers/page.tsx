@@ -5,7 +5,10 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Loader2, Plus, AlertTriangle } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { ShowcaseStatusBadge, computeShowcaseStatus } from "@/components/admin/CustomerShowcasePanel";
 import { adminApi, type AdminCustomer } from "@/lib/admin-api";
+
+type ShowcaseFilter = "all" | "live" | "ready" | "pending" | "expiring";
 
 export default function AdminCustomersPage() {
   const t = useTranslations("admin.customers");
@@ -17,6 +20,17 @@ export default function AdminCustomersPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ slug: "", name: "", industry: "", primary_contact_email: "" });
   const [adding, setAdding] = useState(false);
+
+  const [filter, setFilter] = useState<ShowcaseFilter>("all");
+  const filtered = customers.filter((c) => {
+    if (filter === "all") return true;
+    const s = computeShowcaseStatus(c);
+    if (filter === "live")     return s === "live";
+    if (filter === "ready")    return s === "consent";
+    if (filter === "pending")  return s === "none";
+    if (filter === "expiring") return s === "expiring" || s === "expired";
+    return true;
+  });
 
   async function load() {
     setLoading(true);
@@ -82,10 +96,28 @@ export default function AdminCustomersPage() {
         </div>
       )}
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        {(["all", "live", "ready", "pending", "expiring"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+              filter === f
+                ? "border-accent-500 bg-accent-50 text-accent-800"
+                : "border-navy-200 bg-white text-navy-700 hover:bg-navy-50"
+            }`}
+          >
+            {t(`showcaseFilter.${f}`)}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="flex items-center gap-2 text-navy-500"><Loader2 className="h-4 w-4 animate-spin" /> {tc("loading")}</div>
       ) : customers.length === 0 ? (
         <div className="card text-center text-navy-500">{t("noneYet")}</div>
+      ) : filtered.length === 0 ? (
+        <div className="card text-center text-navy-500">{t("showcaseFilter.empty")}</div>
       ) : (
         <div className="card overflow-x-auto p-0">
           <table className="w-full text-sm">
@@ -95,11 +127,12 @@ export default function AdminCustomersPage() {
                 <th className="px-4 py-3 font-semibold">{t("table.industry")}</th>
                 <th className="px-4 py-3 font-semibold">{t("table.services")}</th>
                 <th className="px-4 py-3 font-semibold">{t("table.manager")}</th>
+                <th className="px-4 py-3 font-semibold">{t("table.showcase")}</th>
                 <th className="px-4 py-3 font-semibold">{t("table.status")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-navy-100">
-              {customers.map((c) => (
+              {filtered.map((c) => (
                 <tr key={c.id} className="hover:bg-navy-50">
                   <td className="px-4 py-3">
                     <Link href={`/admin/customers/${c.id}` as any} className="font-medium text-navy-900 hover:text-accent-700">
@@ -112,6 +145,9 @@ export default function AdminCustomersPage() {
                     {c.services_used.length === 0 ? "—" : c.services_used.join(", ")}
                   </td>
                   <td className="px-4 py-3 text-navy-700 text-xs">{c.account_manager_name ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <ShowcaseStatusBadge customer={c} />
+                  </td>
                   <td className="px-4 py-3">
                     {c.is_active ? (
                       <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800">{t("table.active")}</span>

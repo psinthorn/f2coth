@@ -301,20 +301,21 @@ function PricingGroup({
 
       <div className="mt-5 overflow-x-auto rounded-xl border border-navy-200 bg-white">
         <table className="min-w-full text-sm">
+          <caption className="sr-only">{title} — {subtitle}</caption>
           <thead className="bg-navy-50 text-left text-xs uppercase tracking-wider text-navy-500">
             <tr>
-              <th className="px-4 py-3">{t("tld")}</th>
-              <th className="px-4 py-3">{t("register")}</th>
-              <th className="px-4 py-3">{t("renew")}</th>
-              <th className="px-4 py-3">{t("transfer")}</th>
-              <th className="px-4 py-3">{t("privacy")}</th>
-              <th className="px-4 py-3">{t("notes")}</th>
+              <th scope="col" className="px-4 py-3">{t("tld")}</th>
+              <th scope="col" className="px-4 py-3">{t("register")}</th>
+              <th scope="col" className="px-4 py-3">{t("renew")}</th>
+              <th scope="col" className="px-4 py-3">{t("transfer")}</th>
+              <th scope="col" className="px-4 py-3">{t("privacy")}</th>
+              <th scope="col" className="px-4 py-3">{t("notes")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-navy-100">
             {rows.map((r) => (
               <tr key={r.id}>
-                <td className="px-4 py-3 font-medium text-navy-900">.{r.tld}</td>
+                <th scope="row" className="px-4 py-3 text-left font-medium text-navy-900">.{r.tld}</th>
                 <td className="px-4 py-3 text-navy-700">฿{r.register_price_thb.toLocaleString()}</td>
                 <td className="px-4 py-3 text-navy-700">฿{r.renew_price_thb.toLocaleString()}</td>
                 <td className="px-4 py-3 text-navy-700">฿{r.transfer_price_thb.toLocaleString()}</td>

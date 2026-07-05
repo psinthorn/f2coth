@@ -71,6 +71,17 @@ func main() {
 			r.Get("/pages/{slug}", h.GetPage)
 			r.Get("/domain-pricing", h.ListDomainPricing)
 			r.Get("/hosting-plans", h.ListHostingPlans)
+			r.Get("/home", h.GetHomeContent)
+			r.Get("/app-mode", h.GetAppMode)
+		})
+
+		// Consented-client showcase, gated by public.clients. Kept in a
+		// separate group so the module toggle takes effect at the API
+		// layer too — disabling the module returns 404 for the endpoint,
+		// not just hides the frontend page.
+		r.Group(func(r chi.Router) {
+			r.Use(mw.GateModule("public.clients"))
+			r.Get("/clients", h.ListPublicClients)
 		})
 
 		// Admin-only write endpoints (require admin or editor JWT). Not
@@ -83,6 +94,25 @@ func main() {
 			r.Get("/blog/{slug}", h.AdminGetBlogPost)
 			r.Patch("/blog/{slug}", h.AdminUpdateBlogPost)
 			r.Delete("/blog/{slug}", h.AdminDeleteBlogPost)
+			r.Get("/services", h.AdminListServices)
+			r.Post("/services", h.AdminCreateService)
+			r.Get("/services/{slug}", h.AdminGetService)
+			r.Patch("/services/{slug}", h.AdminUpdateService)
+			r.Delete("/services/{slug}", h.AdminDeleteService)
+			r.Get("/case-studies", h.AdminListCaseStudies)
+			r.Post("/case-studies", h.AdminCreateCaseStudy)
+			r.Get("/case-studies/{slug}", h.AdminGetCaseStudy)
+			r.Patch("/case-studies/{slug}", h.AdminUpdateCaseStudy)
+			r.Delete("/case-studies/{slug}", h.AdminDeleteCaseStudy)
+			r.Get("/home", h.AdminListHomeContent)
+			r.Put("/home", h.AdminUpsertHomeContent)
+			r.Get("/app-mode", h.AdminGetAppMode)
+			r.Put("/app-mode", h.AdminSetAppMode)
+			r.Get("/pages", h.AdminListPages)
+			r.Post("/pages", h.AdminCreatePage)
+			r.Get("/pages/{slug}", h.AdminGetPage)
+			r.Patch("/pages/{slug}", h.AdminUpdatePage)
+			r.Delete("/pages/{slug}", h.AdminDeletePage)
 			r.Get("/modules", h.AdminListModules)
 			r.Patch("/modules/{key}", h.AdminToggleModule)
 			r.Get("/modules/{key}/audit", h.AdminListModuleAudit)

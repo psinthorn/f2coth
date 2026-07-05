@@ -8,6 +8,7 @@ const EXPLORE_LINKS = [
   { href: "/domains",      labelKey: "exploreLinks.domains",      moduleKey: "public.domains" },
   { href: "/hosting",      labelKey: "exploreLinks.hosting",      moduleKey: "public.hosting" },
   { href: "/case-studies", labelKey: "exploreLinks.caseStudies",  moduleKey: "public.case_studies" },
+  { href: "/clients",      labelKey: "exploreLinks.clients",      moduleKey: "public.clients" },
   { href: "/products",     labelKey: "exploreLinks.products",     moduleKey: "public.products" },
   { href: "/blog",         labelKey: "exploreLinks.blog",         moduleKey: "public.blog" },
   { href: "/about",        labelKey: "exploreLinks.about",        moduleKey: "public.about" },

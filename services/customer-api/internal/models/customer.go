@@ -18,6 +18,21 @@ type Customer struct {
 	IsActive            bool      `json:"is_active"`
 	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
+
+	// Public showcase + PDPA consent (migration 046). Managed through the
+	// dedicated PATCH /customers/{id}/showcase endpoint so audit_log gets one
+	// atomic row per admin action.
+	ShowOnWebsite         bool       `json:"show_on_website"`
+	WebsiteDisplayName    *string    `json:"website_display_name,omitempty"`
+	WebsiteLogoURL        *string    `json:"website_logo_url,omitempty"`
+	WebsiteIndustryLabel  *string    `json:"website_industry_label,omitempty"`
+	WebsiteIndustryLabelTH *string   `json:"website_industry_label_th,omitempty"`
+	WebsiteSortOrder      int        `json:"website_sort_order"`
+	ConsentDocumentURL    *string    `json:"consent_document_url,omitempty"`
+	ConsentGrantedAt      *time.Time `json:"consent_granted_at,omitempty"`
+	ConsentGrantedBy      *string    `json:"consent_granted_by,omitempty"`
+	ConsentExpiresAt      *time.Time `json:"consent_expires_at,omitempty"`
+	ConsentNotes          *string    `json:"consent_notes,omitempty"`
 }
 
 type Contact struct {
@@ -32,20 +47,20 @@ type Contact struct {
 }
 
 type Ticket struct {
-	ID                  string    `json:"id"`
-	CustomerID          string    `json:"customer_id"`
-	CustomerName        string    `json:"customer_name,omitempty"`
-	OpenedByContactID   *string   `json:"opened_by_contact_id,omitempty"`
-	OpenedByName        *string   `json:"opened_by_name,omitempty"`
-	Subject             string    `json:"subject"`
-	Status              string    `json:"status"`
-	Priority            string    `json:"priority"`
-	AssignedToUserID    *string   `json:"assigned_to_user_id,omitempty"`
-	AssignedToName      *string   `json:"assigned_to_name,omitempty"`
-	RelatedServiceSlug  *string   `json:"related_service_slug,omitempty"`
-	LastActivityAt      time.Time `json:"last_activity_at"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	ID                 string    `json:"id"`
+	CustomerID         string    `json:"customer_id"`
+	CustomerName       string    `json:"customer_name,omitempty"`
+	OpenedByContactID  *string   `json:"opened_by_contact_id,omitempty"`
+	OpenedByName       *string   `json:"opened_by_name,omitempty"`
+	Subject            string    `json:"subject"`
+	Status             string    `json:"status"`
+	Priority           string    `json:"priority"`
+	AssignedToUserID   *string   `json:"assigned_to_user_id,omitempty"`
+	AssignedToName     *string   `json:"assigned_to_name,omitempty"`
+	RelatedServiceSlug *string   `json:"related_service_slug,omitempty"`
+	LastActivityAt     time.Time `json:"last_activity_at"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 type TicketMessage struct {

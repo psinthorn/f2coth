@@ -1,0 +1,33 @@
+{
+  "_comment": "Copy this file to .mcp.json (gitignored) and fill in the real DATABASE_URL from your local .env. Do NOT commit real credentials.",
+  "mcpServers": {
+    "f2-customers": {
+      "command": "/ABSOLUTE/PATH/TO/f2-website/services/mcp-servers/run-with-logs.sh",
+      "args": ["f2-customers-mcp"],
+      "env": {
+        "DATABASE_URL": "postgres://f2:REPLACE_WITH_POSTGRES_PASSWORD@localhost:5432/f2_website"
+      }
+    },
+    "f2-cms": {
+      "command": "/ABSOLUTE/PATH/TO/f2-website/services/mcp-servers/run-with-logs.sh",
+      "args": ["f2-cms-mcp"],
+      "env": {
+        "DATABASE_URL": "postgres://f2:REPLACE_WITH_POSTGRES_PASSWORD@localhost:5432/f2_website"
+      }
+    },
+    "f2-analytics": {
+      "command": "/ABSOLUTE/PATH/TO/f2-website/services/mcp-servers/run-with-logs.sh",
+      "args": ["f2-analytics-mcp"],
+      "env": {
+        "DATABASE_URL": "postgres://f2:REPLACE_WITH_POSTGRES_PASSWORD@localhost:5432/f2_website"
+      }
+    },
+    "f2-content": {
+      "command": "/ABSOLUTE/PATH/TO/f2-website/services/mcp-servers/run-with-logs.sh",
+      "args": ["f2-content-mcp"],
+      "env": {
+        "DATABASE_URL": "postgres://f2:REPLACE_WITH_POSTGRES_PASSWORD@localhost:5432/f2_website"
+      }
+    }
+  }
+}

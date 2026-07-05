@@ -19,10 +19,12 @@ jobs:
         service:
           - ai-chat-api
           - auth-api
+          - checklist-api
           - cms-api
           - customer-api
           - lead-api
           - notification-api
+          - payment-api
           - reseller-api
 
     steps:

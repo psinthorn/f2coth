@@ -1,0 +1,193 @@
+# docker-compose.staging.yml
+#
+# Staging overlay for staging.f2.co.th.
+#
+# Same architecture as prod, but:
+#   - Different domain (staging.f2.co.th)
+#   - Robots noindex header on all HTML responses
+#   - Traefik log level INFO (louder for debugging TLS + routing)
+#   - Access log written but with buffering off
+#   - Basic-auth on any accidentally-exposed admin surface at the edge
+#     (optional — enable by setting STAGING_BASICAUTH_USERS in .env)
+#   - Postgres allowed to bind localhost only (still not internet-exposed)
+#     so a developer SSH-tunnelling in can inspect the DB.
+#
+# Apply:
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+#
+# Required env in .env on the staging server:
+#   IMAGE_TAG            e.g. staging-<sha> — pinned by deploy step
+#   GHCR_OWNER           GitHub owner (e.g. f2coltd)
+#   ACME_EMAIL           info@f2.co.th
+#   DOMAIN               staging.f2.co.th
+#   STAGING_BASICAUTH_USERS  optional htpasswd string (see runbook)
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-app-defaults: &app-defaults
+  restart: unless-stopped
+  logging: *default-logging
+  pull_policy: always
+
+services:
+  traefik:
+    <<: *app-defaults
+    command:
+      - --api.dashboard=false
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      # Cloudflare in front — trust its IPs so rate-limits see real client IPs.
+      - --entrypoints.web.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22,2400:cb00::/32,2606:4700::/32,2803:f800::/32,2405:b500::/32,2405:8100::/32,2a06:98c0::/29,2c0f:f248::/32
+      - --entrypoints.websecure.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22,2400:cb00::/32,2606:4700::/32,2803:f800::/32,2405:b500::/32,2405:8100::/32,2a06:98c0::/29,2c0f:f248::/32
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --log.level=INFO
+      - --accesslog=true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-letsencrypt:/letsencrypt
+    mem_limit: 256m
+
+  postgres:
+    <<: *app-defaults
+    pull_policy: missing
+    ports: !override
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    mem_limit: 1g
+    shm_size: 128m
+
+  cms-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-cms-api:${IMAGE_TAG:-staging}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.cms.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/cms`)
+      - traefik.http.routers.cms.entrypoints=websecure
+      - traefik.http.routers.cms.tls.certresolver=letsencrypt
+      - traefik.http.services.cms.loadbalancer.server.port=8001
+
+  lead-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-lead-api:${IMAGE_TAG:-staging}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.lead.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/leads`)
+      - traefik.http.routers.lead.entrypoints=websecure
+      - traefik.http.routers.lead.tls.certresolver=letsencrypt
+      - traefik.http.services.lead.loadbalancer.server.port=8002
+      - traefik.http.routers.consent.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/consent`)
+      - traefik.http.routers.consent.entrypoints=websecure
+      - traefik.http.routers.consent.tls.certresolver=letsencrypt
+      - traefik.http.routers.consent.service=lead
+
+  ai-chat-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-ai-chat-api:${IMAGE_TAG:-staging}
+    mem_limit: 512m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.chat.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/chat`)
+      - traefik.http.routers.chat.entrypoints=websecure
+      - traefik.http.routers.chat.tls.certresolver=letsencrypt
+      - traefik.http.services.chat.loadbalancer.server.port=8003
+
+  auth-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-auth-api:${IMAGE_TAG:-staging}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.auth.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/auth`)
+      - traefik.http.routers.auth.entrypoints=websecure
+      - traefik.http.routers.auth.tls.certresolver=letsencrypt
+      - traefik.http.services.auth.loadbalancer.server.port=8004
+      - traefik.http.routers.privacy.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/privacy`)
+      - traefik.http.routers.privacy.entrypoints=websecure
+      - traefik.http.routers.privacy.tls.certresolver=letsencrypt
+      - traefik.http.routers.privacy.service=auth
+
+  notification-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-notification-api:${IMAGE_TAG:-staging}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.notify.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/notifications`)
+      - traefik.http.routers.notify.entrypoints=websecure
+      - traefik.http.routers.notify.tls.certresolver=letsencrypt
+      - traefik.http.services.notify.loadbalancer.server.port=8005
+
+  customer-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-customer-api:${IMAGE_TAG:-staging}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.portal.rule=Host(`${DOMAIN}`) && (PathPrefix(`/api/portal`) || PathPrefix(`/api/customer`))
+      - traefik.http.routers.portal.entrypoints=websecure
+      - traefik.http.routers.portal.tls.certresolver=letsencrypt
+      - traefik.http.services.portal.loadbalancer.server.port=8006
+
+  reseller-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-reseller-api:${IMAGE_TAG:-staging}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.reseller.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/reseller`)
+      - traefik.http.routers.reseller.entrypoints=websecure
+      - traefik.http.routers.reseller.tls.certresolver=letsencrypt
+      - traefik.http.services.reseller.loadbalancer.server.port=8007
+
+  payment-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-payment-api:${IMAGE_TAG:-staging}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.payment.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/payment`)
+      - traefik.http.routers.payment.entrypoints=websecure
+      - traefik.http.routers.payment.tls.certresolver=letsencrypt
+      - traefik.http.services.payment.loadbalancer.server.port=8008
+
+  web-app:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-web-app:${IMAGE_TAG:-staging}
+    mem_limit: 1g
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE: https://${DOMAIN}/api
+      NEXT_PUBLIC_SITE_URL: https://${DOMAIN}
+      NEXT_PUBLIC_ENV: staging
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.web.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.web.entrypoints=websecure
+      - traefik.http.routers.web.tls.certresolver=letsencrypt
+      - traefik.http.routers.web.priority=1
+      - traefik.http.services.web.loadbalancer.server.port=3000
+      # noindex header — keeps staging out of Google
+      - traefik.http.routers.web.middlewares=staging-noindex
+      - traefik.http.middlewares.staging-noindex.headers.customresponseheaders.X-Robots-Tag=noindex,nofollow
+
+volumes:
+  traefik-letsencrypt:

@@ -15,6 +15,10 @@
       "title": "กรณีศึกษา",
       "description": "ความสัมพันธ์ลูกค้ากว่า 10 ปีของ F2 กับ SALA Hospitality, Miskawaan Beach Villas และ Putahracsa Hua Hin"
     },
+    "clients": {
+      "title": "ลูกค้าที่เราดูแล",
+      "description": "โรงแรม วิลล่า รีสอร์ต และธุรกิจในกลุ่มโรงแรมหรูทั่วประเทศไทยที่ F2 ดูแลด้านโดเมน โฮสติ้ง และไอที"
+    },
     "about": {
       "title": "เกี่ยวกับ F2",
       "description": "F2 Co., Ltd. (เดิมชื่อ Nextgentechs) คือพันธมิตรไอทีที่ภาคโรงแรมหรูในประเทศไทยไว้วางใจ สำนักงานใหญ่ตั้งอยู่ที่เกาะสมุย ให้บริการครอบคลุมทั่วประเทศ"
@@ -45,6 +49,7 @@
     }
   },
   "common": {
+    "open": "เปิด",
     "talkToF2": "ติดต่อ F2",
     "talkToF2About": "ปรึกษา F2 เรื่อง {topic}",
     "home": "หน้าแรก",
@@ -107,12 +112,15 @@
     },
     "current": "ปัจจุบัน",
     "errorLoad": "โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรช",
-    "all": "ทั้งหมด"
+    "all": "ทั้งหมด",
+    "saved": "บันทึกแล้ว",
+    "saveAll": "บันทึกทั้งหมด"
   },
   "header": {
     "nav": {
       "services": "บริการ",
       "caseStudies": "กรณีศึกษา",
+      "clients": "ลูกค้าของเรา",
       "products": "ผลิตภัณฑ์",
       "infrastructure": "โครงสร้างพื้นฐาน",
       "domains": "โดเมนเนม",
@@ -133,6 +141,7 @@
       "domains": "โดเมนเนม",
       "hosting": "เว็บโฮสติ้ง",
       "caseStudies": "กรณีศึกษา",
+      "clients": "ลูกค้าของเรา",
       "products": "ผลิตภัณฑ์ / iACC",
       "blog": "บล็อก",
       "about": "เกี่ยวกับเรา"
@@ -193,11 +202,13 @@
     "groups": {
       "core": "บริการหลัก",
       "support": "บริการสนับสนุน",
+      "marketing": "การตลาดและคอนเทนต์",
       "opportunistic": "บริการเฉพาะทาง"
     },
     "detail": {
       "back": "บริการทั้งหมด",
-      "related": "บริการที่เกี่ยวข้อง"
+      "related": "บริการที่เกี่ยวข้อง",
+      "faqHeading": "คำถามที่พบบ่อย"
     }
   },
   "caseStudies": {
@@ -213,6 +224,25 @@
       "servicesUsed": "บริการที่ใช้",
       "ctaTitle": "ต้องการผลลัพธ์แบบเดียวกัน?",
       "ctaBody": "บอกเราเกี่ยวกับอสังหาริมทรัพย์ของคุณ แล้วเราจะแสดงให้เห็นว่า F2 ทำอะไรได้บ้าง"
+    }
+  },
+  "trustedBy": {
+    "title": "ได้รับความไว้วางใจจากทีมงานทั่วประเทศไทย",
+    "seeAll": "ดูลูกค้าทั้งหมด"
+  },
+  "clients": {
+    "kicker": "ลูกค้าที่เราดูแล",
+    "title": "ได้รับความไว้วางใจจากธุรกิจโรงแรมหรูทั่วประเทศไทย",
+    "subtitle": "รายชื่อโรงแรม วิลล่า รีสอร์ต และผู้ประกอบการด้านการบริการที่ไว้ใจ F2 ในการดูแลโดเมน โฮสติ้ง และโครงสร้างพื้นฐานไอที ทุกรายชื่อบนหน้านี้ได้รับความยินยอมเป็นลายลักษณ์อักษรจากลูกค้าแล้ว",
+    "servicesLabel": "บริการ",
+    "count": "{count, plural, =0 {ยังไม่มีลูกค้าที่จะแสดง} other {ลูกค้า # ราย}}",
+    "empty": {
+      "title": "กำลังเตรียมรายชื่อลูกค้า",
+      "body": "ขณะนี้เรากำลังขอความยินยอมเป็นลายลักษณ์อักษรจากลูกค้าก่อนเผยแพร่รายชื่อ กรุณากลับมาใหม่ในภายหลัง หรือติดต่อ F2 เพื่อขอเอกสารอ้างอิง"
+    },
+    "cta": {
+      "title": "อยากมีชื่ออยู่ในรายการนี้?",
+      "body": "ปรึกษา F2 เรื่องบริการไอที โดเมน โฮสติ้ง และโครงสร้างพื้นฐานสำหรับกิจการของคุณ"
     }
   },
   "about": {
@@ -351,6 +381,27 @@
     "closing": {
       "title": "บัญชียุคใหม่ ความน่าเชื่อถือระดับ F2",
       "subtitle": "ทดลอง iACC Core ฟรีวันนี้ หรือปรึกษา F2 ว่าโมดูลไหนเหมาะกับธุรกิจคุณ"
+    },
+    "faq": {
+      "heading": "คำถามที่พบบ่อย",
+      "items": [
+        {
+          "q": "iACC คืออะไร?",
+          "a": "iACC คือระบบบัญชีคลาวด์ SaaS ของ F2 สำหรับธุรกิจโรงแรมไทย — จองห้อง เอเจนต์ โควตา ออกใบแจ้งหนี้ ใบกำกับภาษี VAT ภาษีหัก ณ ที่จ่าย และหลายสกุลเงิน ใช้งานได้ที่ iacc.f2.co.th"
+        },
+        {
+          "q": "iACC รองรับภาษาอะไรบ้าง?",
+          "a": "อินเทอร์เฟซใช้ได้สองภาษา ไทยและอังกฤษ เอกสารสำหรับแขก (ใบแจ้งหนี้ ใบเสร็จ) สามารถออกได้ทั้งสองภาษา"
+        },
+        {
+          "q": "iACC แทนที่ PMS ที่ใช้อยู่หรือไม่?",
+          "a": "ไม่ — iACC เสริม PMS ที่มีอยู่ เราเชื่อม Opera, Cloudbeds, Mews ผ่าน API เพื่อให้ข้อมูลการจองไหลจาก PMS ไปยังใบแจ้งหนี้โดยไม่ต้องกรอกซ้ำ"
+        },
+        {
+          "q": "iACC คิดราคาอย่างไร?",
+          "a": "สมาชิกรายเดือนต่อทรัพย์สิน ตามจำนวนผู้ใช้และปริมาณธุรกรรม การติดตั้งและย้ายข้อมูลรวมในค่าธรรมเนียมปีแรก ติดต่อเราเพื่อรับใบเสนอราคา"
+        }
+      ]
     }
   },
   "blog": {
@@ -361,7 +412,8 @@
       "title": "บทความแรกกำลังจะมาเร็ว ๆ นี้",
       "body": "เรากำลังจัดเตรียมปฏิทินบทความ ระหว่างนี้ลองอ่านกรณีศึกษาโครงการระยะยาวของ F2 ได้",
       "cta": "อ่านกรณีศึกษา"
-    }
+    },
+    "backToList": "กลับไปรายการบทความ"
   },
   "contact": {
     "kicker": "ติดต่อ",
@@ -401,7 +453,9 @@
       "offices": "สำนักงาน",
       "officesValue": "เกาะสมุย ประเทศไทย · บริการทั่วประเทศ",
       "responseTime": "เวลาตอบกลับ",
-      "responseTimeValue": "ภายในหนึ่งวันทำการ จันทร์–ศุกร์ (เวลาประเทศไทย)"
+      "responseTimeValue": "ภายในหนึ่งวันทำการ จันทร์–ศุกร์ (เวลาประเทศไทย)",
+      "directions": "ดูเส้นทาง →",
+      "mapHeading": "ที่ตั้งสำนักงาน F2"
     }
   },
   "privacy": {
@@ -572,9 +626,29 @@
         "users": "ผู้ใช้",
         "pricing": "ราคาและแพ็คเกจ",
         "orders": "คำสั่งซื้อโดเมน",
+        "invoices": "ใบแจ้งหนี้",
+        "payments": "การชำระเงิน",
+        "paymentMethods": "วิธีการชำระเงิน",
+        "subscriptions": "การสมัครรับบริการ",
+        "refunds": "การคืนเงิน",
+        "bankImports": "กระทบยอดธนาคาร",
+        "webhooks": "Webhook events",
+        "disputes": "การโต้แย้ง",
+        "analytics": "วิเคราะห์",
+        "suspensions": "การระงับบริการ",
+        "projects": "โปรเจกต์",
         "dsr": "คิว DSR",
         "blog": "บทความ",
-        "features": "รายการฟีเจอร์"
+        "features": "รายการฟีเจอร์",
+        "homeContent": "หน้าแรก",
+        "servicesEditor": "บริการ",
+        "caseStudiesEditor": "กรณีศึกษา",
+        "pagesEditor": "หน้าสถิต",
+        "appMode": "โหมดเว็บแอป",
+        "smtp": "SMTP",
+        "aiHome": "แดชบอร์ด AI",
+        "aiRouting": "AI routing",
+        "aiUsage": "การใช้งาน AI"
       },
       "signedInAs": "เข้าสู่ระบบในชื่อ",
       "signOut": "ออกจากระบบ",
@@ -584,6 +658,7 @@
         "workspace": "เวิร์กสเปซ",
         "pipeline": "ไปป์ไลน์",
         "infrastructure": "โครงสร้างพื้นฐาน",
+        "ai": "AI orchestrator",
         "system": "ระบบ"
       }
     },
@@ -595,7 +670,30 @@
       "submit": "เข้าสู่ระบบ",
       "submitting": "กำลังเข้าสู่ระบบ…",
       "error": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
-      "back": "← กลับสู่ f2.co.th"
+      "back": "← กลับสู่ f2.co.th",
+      "forgotPassword": "ลืมรหัสผ่าน?",
+      "forgot": {
+        "heading": "รีเซ็ตรหัสผ่าน",
+        "instructions": "กรอกอีเมลบัญชีของคุณ เราจะส่งลิงก์รีเซ็ตรหัสผ่านให้",
+        "email": "อีเมล",
+        "submit": "ส่งลิงก์รีเซ็ต",
+        "submitting": "กำลังส่ง…",
+        "sent": "หากมีบัญชีตรงกับอีเมลนี้ ระบบส่งลิงก์รีเซ็ตให้แล้ว โปรดตรวจกล่องขาเข้า",
+        "backToLogin": "กลับไปหน้าเข้าสู่ระบบ",
+        "error": "ส่งลิงก์รีเซ็ตไม่สำเร็จ กรุณาลองใหม่"
+      },
+      "reset": {
+        "heading": "ตั้งรหัสผ่านใหม่",
+        "requirements": "อย่างน้อย 10 ตัวอักษร ประกอบด้วยตัวอักษรและตัวเลข",
+        "newPassword": "รหัสผ่านใหม่",
+        "confirmPassword": "ยืนยันรหัสผ่านใหม่",
+        "mismatch": "รหัสผ่านไม่ตรงกัน",
+        "submit": "รีเซ็ตรหัสผ่าน",
+        "submitting": "กำลังรีเซ็ต…",
+        "success": "อัปเดตรหัสผ่านแล้ว กำลังพาไปหน้าเข้าสู่ระบบ…",
+        "backToLogin": "กลับไปหน้าเข้าสู่ระบบ",
+        "error": "รีเซ็ตไม่สำเร็จ"
+      }
     },
     "dashboard": {
       "title": "แดชบอร์ด",
@@ -687,6 +785,24 @@
       }
     },
     "customers": {
+      "billingProfile": {
+        "title": "ข้อมูลผู้เสียภาษี (ใบกำกับภาษี)",
+        "subtitle": "ใช้บนใบกำกับภาษีที่ออกแล้ว · ค่าจะถูก snapshot ลงในใบแต่ละใบตอนออกเอกสาร การแก้ไขในภายหลังจะไม่กระทบเอกสารเดิม",
+        "legalName": "ชื่อตามนิติกรรม *",
+        "legalNameRequired": "กรุณาระบุชื่อตามนิติกรรม",
+        "taxID": "เลขประจำตัวผู้เสียภาษี (13 หลัก)",
+        "branchCode": "รหัสสาขา",
+        "addressLine1": "ที่อยู่ บรรทัดที่ 1",
+        "addressLine2": "ที่อยู่ บรรทัดที่ 2",
+        "subdistrict": "ตำบล/แขวง",
+        "district": "อำเภอ/เขต",
+        "province": "จังหวัด",
+        "postalCode": "รหัสไปรษณีย์",
+        "country": "ประเทศ",
+        "billingEmail": "อีเมลการเรียกเก็บเงิน",
+        "save": "บันทึกข้อมูล",
+        "saved": "บันทึกข้อมูลผู้เสียภาษีแล้ว"
+      },
       "title": "ลูกค้า",
       "subtitle": "องค์กรลูกค้า {count} ราย",
       "addButton": "เพิ่มลูกค้า",
@@ -704,9 +820,71 @@
         "industry": "อุตสาหกรรม",
         "services": "บริการ",
         "manager": "ผู้จัดการ",
+        "showcase": "เว็บไซต์",
         "status": "สถานะ",
         "active": "ใช้งานอยู่",
         "inactive": "ไม่ใช้งาน"
+      },
+      "showcaseFilter": {
+        "all": "ทั้งหมด",
+        "live": "แสดงบนเว็บ",
+        "ready": "พร้อมเผยแพร่",
+        "pending": "รอ consent",
+        "expiring": "ใกล้หมด / หมดอายุ",
+        "empty": "ไม่มีลูกค้าที่ตรงกับตัวกรองนี้"
+      },
+      "showcase": {
+        "title": "การแสดงผลบนเว็บไซต์และความยินยอม",
+        "blurb": "ควบคุมการแสดงลูกค้ารายนี้บนหน้า /clients และแถบ trusted-by ต้องมี consent ที่ลงนามแล้วในระบบ (PDPA มาตรา 24)",
+        "saveButton": "บันทึกการตั้งค่า",
+        "saved": "บันทึกการตั้งค่าและอัปเดตประวัติการตรวจสอบเรียบร้อย",
+        "showAudit": "แสดงประวัติการเปลี่ยนแปลง",
+        "hideAudit": "ซ่อนประวัติการเปลี่ยนแปลง",
+        "expiryWarn": "Consent จะหมดอายุใน {days} วัน — เริ่มต่ออายุได้แล้ว",
+        "expiredWarn": "Consent หมดอายุมาแล้ว {days} วัน — ลูกค้ารายนี้ถูกซ่อนจากพื้นที่สาธารณะ",
+        "errors": {
+          "consentRequired": "ไม่สามารถเผยแพร่ได้ ถ้ายังไม่มีวันที่ให้ consent ในระบบ"
+        },
+        "status": {
+          "none": "ยังไม่มี consent",
+          "consent": "มี consent แล้ว",
+          "live": "แสดงบนเว็บ",
+          "expiring": "ใกล้หมดอายุ",
+          "expired": "หมดอายุแล้ว"
+        },
+        "consent": {
+          "title": "บันทึก PDPA consent",
+          "help": "กรอกจากหนังสือ consent ที่ลูกค้าลงนามแล้ว ทุกฟิลด์จะถูกบันทึกลง audit_log เพื่อร่องรอย PDPA",
+          "documentURL": "URL ของเอกสารที่ลงนามแล้ว",
+          "documentURLPlaceholder": "ลิงก์ Google Drive ของไฟล์ PDF ที่ลงนาม",
+          "grantedAt": "วันที่ให้ consent *",
+          "grantedBy": "ผู้ลงนาม (ชื่อ + ตำแหน่ง) *",
+          "grantedByPlaceholder": "เช่น สมชาย ปัญญาวัฒโน, ผู้จัดการทั่วไป",
+          "expiresAt": "วันที่ consent หมดอายุ",
+          "expiresAtHelper": "เว้นว่างหากไม่มีกำหนดหมดอายุ",
+          "notes": "หมายเหตุภายใน",
+          "templateBasicTH": "แบบพื้นฐาน (ไทย)",
+          "templateExtendedTH": "แบบขยาย (ไทย)"
+        },
+        "display": {
+          "title": "ข้อมูลที่จะแสดงบนเว็บสาธารณะ",
+          "help": "รูปแบบการแสดงลูกค้าบน /clients และแถบ trusted-by ปล่อยว่างเพื่อใช้ค่าเริ่มต้นจากชื่อและอุตสาหกรรมของลูกค้า",
+          "publish": "แสดงบนเว็บไซต์สาธารณะ",
+          "publishHelp": "เมื่อเปิด ลูกค้าจะปรากฏบน /clients และแถบ trusted-by (ตามการตั้งค่า module toggle)",
+          "publishBlocked": "ต้องบันทึกวันที่ให้ consent ก่อนจึงจะเปิดใช้ได้",
+          "displayName": "ชื่อที่จะแสดง",
+          "displayNameHelper": "ชื่อที่ได้รับอนุมัติจากแบรนด์ ปล่อยว่างเพื่อใช้ชื่อลูกค้าตามระบบ",
+          "logoURL": "URL ของโลโก้",
+          "industryEN": "ป้ายกำกับอุตสาหกรรม (อังกฤษ)",
+          "industryTH": "ป้ายกำกับอุตสาหกรรม (ไทย)",
+          "sortOrder": "ลำดับการแสดงผล",
+          "sortOrderHelper": "เลขน้อยกว่าจะแสดงก่อน ค่าเริ่มต้นคือ 100"
+        },
+        "audit": {
+          "title": "ประวัติการเปลี่ยนแปลง consent",
+          "empty": "ยังไม่มีการเปลี่ยนแปลงสำหรับลูกค้ารายนี้",
+          "system": "ระบบ"
+        }
       },
       "detail": {
         "back": "ลูกค้าทั้งหมด",
@@ -1021,6 +1199,707 @@
       "auditTitle": "ประวัติการเปลี่ยนแปลง",
       "auditEmpty": "ยังไม่มีประวัติการเปลี่ยนแปลงสำหรับโมดูลนี้",
       "systemActor": "ระบบ"
+    },
+    "invoices": {
+      "title": "ใบแจ้งหนี้",
+      "subtitle": "ออก ติดตาม และกระทบยอดใบแจ้งหนี้ของลูกค้า",
+      "create": "ใบแจ้งหนี้ใหม่",
+      "createDraft": "สร้างฉบับร่าง",
+      "backToList": "กลับสู่รายการใบแจ้งหนี้",
+      "empty": "ยังไม่มีใบแจ้งหนี้",
+      "all": "ทั้งหมด",
+      "issue": "ออกและส่งอีเมล",
+      "issued": "ออกใบแจ้งหนี้แล้ว",
+      "print": "พิมพ์",
+      "downloadPDF": "PDF",
+      "exportInvoices": "Export ใบแจ้งหนี้ CSV",
+      "exportPayments": "Export การชำระเงิน CSV",
+      "selectedCount": "{count, plural, one {เลือก 1} other {เลือก #}}",
+      "bulkIssue": "ออกใบที่เลือก",
+      "bulkVoid": "ยกเลิกใบที่เลือก",
+      "bulkResult": "สำเร็จ {succeeded} · ข้าม {skipped}",
+      "refund": "คืนเงิน",
+      "refundIssued": "ออกคำสั่งคืนเงินแล้ว",
+      "refundFailed": "คืนเงินไม่สำเร็จ",
+      "refundDialogTitle": "ออกคำสั่งคืนเงิน",
+      "refundAmount": "จำนวน",
+      "maxRefund": "สูงสุด",
+      "refundReason": "เหตุผล",
+      "refundBankRef": "เลขอ้างอิงธนาคาร (คืนเงินด้วยมือ)",
+      "refundProofUrl": "URL หลักฐาน (คืนเงินด้วยมือ)",
+      "refundInvalid": "ระบุจำนวนที่มากกว่า 0 ไม่เกินจำนวนเดิม และระบุเหตุผล",
+      "issueRefund": "ดำเนินการคืนเงิน",
+      "cancel": "ยกเลิก",
+      "void": "ยกเลิก",
+      "voided": "ยกเลิกใบแจ้งหนี้แล้ว",
+      "voidReasonPrompt": "เหตุผลในการยกเลิกใบแจ้งหนี้นี้?",
+      "currency": "สกุลเงิน",
+      "vatLabel": "อัตรา VAT",
+      "notes": "หมายเหตุภายใน",
+      "items": "รายการ",
+      "addItem": "เพิ่มรายการ",
+      "descEN": "รายละเอียด (EN)",
+      "descTH": "รายละเอียด (TH)",
+      "unitPriceCents": "ราคาต่อหน่วย (หน่วยย่อย)",
+      "pickCustomer": "เลือกลูกค้าก่อน",
+      "invalidItems": "แต่ละรายการต้องมีคำอธิบาย จำนวน ≥ 1 และราคาที่ไม่ติดลบ",
+      "due": "ครบกำหนด",
+      "subtotal": "รวมก่อน VAT",
+      "vat": "VAT ({rate}%)",
+      "total": "รวม",
+      "paid": "ชำระแล้ว",
+      "balanceDue": "ยอดค้างชำระ",
+      "paymentsTitle": "การชำระเงิน",
+      "noPayments": "ยังไม่มีการชำระเงิน",
+      "viewSlip": "ดูสลิป",
+      "col": {
+        "number": "เลขที่",
+        "customer": "ลูกค้า",
+        "issued": "ออก",
+        "due": "ครบกำหนด",
+        "total": "รวม",
+        "paid": "ชำระแล้ว",
+        "status": "สถานะ",
+        "description": "รายละเอียด",
+        "qty": "จำนวน",
+        "unitPrice": "ราคา/หน่วย",
+        "lineTotal": "รวมรายการ"
+      },
+      "status": {
+        "draft": "ฉบับร่าง",
+        "issued": "ออกแล้ว",
+        "partially_paid": "ชำระบางส่วน",
+        "paid": "ชำระแล้ว",
+        "overdue": "เกินกำหนด",
+        "void": "ยกเลิก",
+        "refunded": "คืนเงินแล้ว"
+      },
+      "methodLabel": {
+        "bank_transfer": "โอนเงิน",
+        "thai_qr": "Thai QR",
+        "promptpay": "พร้อมเพย์",
+        "paypal": "PayPal"
+      },
+      "payStatus": {
+        "pending": "รอ",
+        "awaiting_verification": "รอตรวจสอบ",
+        "completed": "สำเร็จ",
+        "failed": "ไม่สำเร็จ",
+        "expired": "หมดอายุ",
+        "refunded": "คืนเงินแล้ว"
+      }
+    },
+    "payments": {
+      "title": "การชำระเงิน",
+      "subtitle": "ตรวจสอบสลิปการโอนและกระทบยอด PayPal",
+      "empty": "ไม่มีการชำระเงินตามตัวกรองนี้",
+      "all": "ทั้งหมด",
+      "verify": "ยืนยัน",
+      "verified": "ยืนยันการชำระและกระทบยอดใบแจ้งหนี้แล้ว",
+      "reject": "ปฏิเสธ",
+      "rejected": "ปฏิเสธการชำระเงินแล้ว",
+      "rejectReasonPrompt": "ปฏิเสธการชำระเงินนี้ด้วยเหตุผลใด?",
+      "viewSlip": "เปิดสลิป",
+      "col": {
+        "payment": "รหัสการชำระ",
+        "invoice": "ใบแจ้งหนี้",
+        "customer": "ลูกค้า",
+        "method": "วิธี",
+        "slip": "สลิป",
+        "amount": "จำนวน",
+        "status": "สถานะ",
+        "actions": "การจัดการ"
+      },
+      "methodLabel": {
+        "bank_transfer": "โอนเงิน",
+        "thai_qr": "Thai QR",
+        "promptpay": "พร้อมเพย์",
+        "paypal": "PayPal"
+      },
+      "payStatus": {
+        "pending": "รอ",
+        "awaiting_verification": "รอตรวจสอบ",
+        "completed": "สำเร็จ",
+        "failed": "ไม่สำเร็จ",
+        "expired": "หมดอายุ",
+        "refunded": "คืนเงินแล้ว"
+      }
+    },
+    "paymentMethods": {
+      "title": "วิธีการชำระเงิน",
+      "subtitle": "ตั้งค่าวิธีที่ลูกค้าสามารถชำระได้ วิธีที่ปิดอยู่จะไม่แสดงในหน้าจ่ายเงินของพอร์ทัล",
+      "enabled": "เปิดใช้",
+      "disabled": "ปิดอยู่",
+      "displayNameEN": "ชื่อแสดงผล (EN)",
+      "displayNameTH": "ชื่อแสดงผล (TH)",
+      "instructionsEN": "คำแนะนำสำหรับลูกค้า (EN)",
+      "instructionsTH": "คำแนะนำสำหรับลูกค้า (TH)",
+      "methodConfig": "ตั้งค่าวิธี",
+      "save": "บันทึก",
+      "saved": "บันทึกแล้ว",
+      "labels": {
+        "bank_transfer": "โอนเงินผ่านธนาคาร",
+        "thai_qr": "Thai QR",
+        "promptpay": "พร้อมเพย์",
+        "paypal": "PayPal"
+      },
+      "modeLabel": "โหมด",
+      "modeSandbox": "Sandbox",
+      "modeProduction": "Production",
+      "methodSandboxBody": "โหมดทดสอบ — การชำระเงินผ่านวิธีนี้เป็นการจำลอง · helper sandbox (force complete, จำลอง webhook) สามารถจัดการรายการได้",
+      "methodProductionBody": "โหมดใช้งานจริง — มีการเคลื่อนไหวเงินจริง · helper sandbox จะปฏิเสธรายการของวิธีนี้",
+      "confirmGoLive": "เปลี่ยน {method} เป็น PRODUCTION? ระบบจะรับชำระเงินจริงผ่านวิธีนี้ ดำเนินการต่อ?",
+      "confirmGoSandbox": "เปลี่ยน {method} กลับเป็น SANDBOX? การชำระเงินจริงผ่านวิธีนี้จะถูกปิดจนกว่าจะเปลี่ยนกลับ ดำเนินการต่อ?",
+      "modeAdminOnly": "เฉพาะผู้ใช้บทบาท admin เท่านั้นที่เปลี่ยนโหมดของวิธีการชำระเงินได้",
+      "paypalSandboxLabel": "Credentials (Sandbox)",
+      "paypalLiveLabel": "Credentials (Live)",
+      "paypalActiveBadge": "กำลังใช้",
+      "paypalClientID": "Client ID",
+      "paypalClientSecret": "Client secret",
+      "paypalWebhookID": "Webhook ID",
+      "paypalMerchantEmail": "อีเมลร้านค้า",
+      "paypalSecretSet": "ตั้งแล้ว",
+      "paypalSetSecret": "คลิกเพื่อตั้ง client secret",
+      "paypalChangeSecret": "เปลี่ยน",
+      "paypalKeepSecret": "ใช้ค่าเดิม",
+      "paypalRevealSecret": "แสดง secret",
+      "paypalHideSecret": "ซ่อน secret",
+      "paypalSecretPlaceholder": "วาง client secret จาก PayPal Developer Dashboard"
+    },
+    "subscriptions": {
+      "title": "การสมัครรับบริการ",
+      "subtitle": "เรียกเก็บเงินอัตโนมัติสำหรับ hosting, SLA และ managed services · scheduler จะออกใบแจ้งหนี้ล่วงหน้า 7 วันก่อนรอบถัดไป",
+      "create": "สร้างใหม่",
+      "all": "ทั้งหมด",
+      "empty": "ยังไม่มีการสมัครรับบริการ",
+      "invalid": "ต้องระบุลูกค้า ชื่อ และจำนวนเงิน (หน่วยย่อย) ที่มากกว่า 0",
+      "pause": "หยุดชั่วคราว",
+      "resume": "ดำเนินการต่อ",
+      "cancel": "ยกเลิก",
+      "amountCents": "จำนวน (หน่วยย่อย)",
+      "startsOn": "เริ่ม",
+      "pickFromCatalog": "เลือกจากแคตตาล็อก",
+      "custom": "กำหนดเอง",
+      "catalogHosting": "แพ็คเกจโฮสติ้ง",
+      "catalogSLA": "สัญญา SLA",
+      "status": {
+        "active": "ใช้งาน",
+        "paused": "หยุดชั่วคราว",
+        "cancelled": "ยกเลิกแล้ว"
+      },
+      "cycle": {
+        "monthly": "รายเดือน",
+        "quarterly": "ราย 3 เดือน",
+        "annually": "รายปี"
+      },
+      "col": {
+        "title": "ชื่อ",
+        "customer": "ลูกค้า",
+        "product": "ประเภท",
+        "cycle": "รอบ",
+        "amount": "จำนวน",
+        "nextBilling": "ออกถัดไป",
+        "status": "สถานะ",
+        "actions": "การจัดการ"
+      }
+    },
+    "refunds": {
+      "title": "การคืนเงิน",
+      "subtitle": "ประวัติการคืนเงินครอบคลุมทุกวิธี · PayPal ผ่าน Refunds v2 API · การคืนเงินด้วยมือ (โอน/QR/พร้อมเพย์) บันทึกไว้สำหรับ audit",
+      "all": "ทั้งหมด",
+      "empty": "ยังไม่มีการคืนเงิน",
+      "status": {
+        "pending": "รอ",
+        "completed": "สำเร็จ",
+        "failed": "ไม่สำเร็จ"
+      },
+      "col": {
+        "refund": "รหัสคืนเงิน",
+        "invoice": "ใบแจ้งหนี้",
+        "customer": "ลูกค้า",
+        "method": "วิธี",
+        "amount": "จำนวน",
+        "reason": "เหตุผล",
+        "status": "สถานะ"
+      }
+    },
+    "bankImports": {
+      "title": "กระทบยอดธนาคาร",
+      "subtitle": "อัปโหลด CSV ของรายการโอนล่าสุด ระบบจะจับคู่กับ payment ที่รอตรวจสอบโดยอัตโนมัติ — เร็วกว่าตรวจสลิปทีละใบมาก",
+      "uploadTitle": "อัปโหลดรายการเดินบัญชี",
+      "uploadHint": "CSV หนึ่งแถวต่อหนึ่งรายการ คอลัมน์ที่ต้องมี:",
+      "sourceName": "ป้ายกำกับ",
+      "sourceNamePlaceholder": "เช่น Kasikorn มีนาคม 2026",
+      "upload": "อัปโหลด & จับคู่",
+      "uploaded": "อ่านได้ {parsed} แถว · จับคู่ได้ {matched}",
+      "apply": "ใช้การจับคู่ {count} รายการ",
+      "applyConfirm": "ยืนยันใช้การจับคู่ {count} รายการ? ระบบจะเปลี่ยน payment ทั้งหมดเป็น completed",
+      "applied": "ยืนยัน payment สำเร็จ {count} รายการ",
+      "parsedSummary": "อ่าน {parsed} · จับคู่ {matched} · ใช้แล้ว {applied}",
+      "recent": "ประวัติการอัปโหลด",
+      "empty": "ยังไม่มีการอัปโหลด",
+      "noMatch": "ไม่มีคู่",
+      "status": {
+        "pending": "รอ",
+        "applied": "ใช้แล้ว",
+        "discarded": "ยกเลิก"
+      },
+      "matchStatus": {
+        "unmatched": "ยังไม่จับคู่",
+        "proposed": "เสนอ",
+        "applied": "ใช้แล้ว",
+        "skipped": "ข้าม"
+      },
+      "col": {
+        "source": "ป้ายกำกับ",
+        "parsed": "อ่าน",
+        "matched": "จับคู่",
+        "applied": "ใช้แล้ว",
+        "status": "สถานะ",
+        "uploaded": "อัปโหลด",
+        "date": "วันที่",
+        "amount": "จำนวน",
+        "ref": "อ้างอิง",
+        "match": "การจับคู่"
+      }
+    },
+    "dashboardWidget": {
+      "title": "สรุปการเรียกเก็บเงิน",
+      "viewAll": "ดูใบแจ้งหนี้ทั้งหมด",
+      "thisMonth": "เดือนนี้",
+      "outstanding": "ค้างชำระ",
+      "overdue": "เกินกำหนด",
+      "verificationQueue": "รอตรวจสอบ",
+      "paymentsCount": "{count, plural, one {# รายการ} other {# รายการ}}",
+      "invoicesCount": "{count, plural, one {# ใบ} other {# ใบ}}",
+      "paymentsAwaiting": "รอตรวจ"
+    },
+    "webhooks": {
+      "title": "Webhook events",
+      "subtitle": "ทุก webhook ที่ได้รับจาก PayPal — สถานะลายเซ็น · ผลการประมวลผล · ลิงก์ไปยัง payment ที่เกี่ยวข้อง · ใช้ตรวจสอบกรณี PayPal ไม่ capture",
+      "empty": "ยังไม่มี webhook event เข้ามา",
+      "verified": "ยืนยัน",
+      "unverified": "ไม่ยืนยัน",
+      "errored": "ผิดพลาด",
+      "notProcessed": "—",
+      "error": "ข้อผิดพลาด",
+      "payload": "Payload",
+      "replay": "ประมวลผลซ้ำ",
+      "replayHint": "เรียกใช้ path การประมวลผลของ event นี้ใหม่ (idempotent สำหรับ capture ที่ทำสำเร็จแล้ว)",
+      "replayed": {
+        "replayed": "ประมวลผลซ้ำสำเร็จ — กระทบยอด payment แล้ว",
+        "noop": "ไม่ต้องดำเนินการกับ event ประเภทนี้"
+      },
+      "filter": {
+        "all": "ทั้งหมด",
+        "processed": "ประมวลผลแล้ว",
+        "unprocessed": "ยังไม่ประมวลผล"
+      },
+      "col": {
+        "received": "รับเมื่อ",
+        "provider": "ผู้ให้บริการ",
+        "event": "ประเภท event",
+        "signature": "ลายเซ็น",
+        "processed": "ประมวลผล",
+        "payment": "Payment"
+      }
+    },
+    "suspensions": {
+      "title": "การระงับบริการ",
+      "subtitle": "บริการที่ถูก dunning scheduler หยุดอัตโนมัติหลังการแจ้งเตือนครั้งสุดท้าย + 14 วัน · ระบบเปิดกลับอัตโนมัติเมื่อใบแจ้งหนี้ถูกชำระ · admin เปิดด้วยมือได้ (Restore = พลิก resource กลับ, Override = ตัดออกจากคิวโดยไม่แตะ resource)",
+      "all": "ทั้งหมด",
+      "empty": "ไม่มีการระงับบริการ — ทุกบัญชีอยู่ในสภาพดี",
+      "restore": "เปิดบริการ",
+      "override": "ยกเลิก",
+      "restored": "เปิดบริการเรียบร้อย",
+      "overridden": "ยกเลิกการระงับแล้ว",
+      "overridePrompt": "ยกเลิกการระงับโดยไม่เปิด resource กลับด้วยเหตุผลอะไร?",
+      "status": {
+        "active": "กำลังระงับ",
+        "restored": "เปิดแล้ว",
+        "overridden": "ยกเลิก"
+      },
+      "col": {
+        "suspendedAt": "ระงับเมื่อ",
+        "customer": "ลูกค้า",
+        "invoice": "ใบแจ้งหนี้",
+        "product": "Resource",
+        "previousState": "สถานะเดิม",
+        "status": "สถานะ",
+        "actions": "การจัดการ"
+      }
+    },
+    "analytics": {
+      "title": "วิเคราะห์การเรียกเก็บเงิน",
+      "subtitle": "รายได้ย้อนหลัง 12 เดือน + AR aging + churn ของ subscription · ตัวเลขดึงตรงจากตารางจริง ไม่มี cache",
+      "mrrTitle": "รายได้รายเดือน",
+      "mrrSubtitle": "Payment ที่ completed แบ่งตามเดือน · Sub revenue คือสัดส่วนที่มาจาก subscription รอบประจำ",
+      "agingTitle": "AR aging",
+      "agingSubtitle": "ยอดค้างชำระจัดกลุ่มตามจำนวนวันเลยกำหนด",
+      "churnTitle": "Churn ของ subscription",
+      "churnSubtitle": "จำนวนการยกเลิกต่อเดือนและอัตรา churn เทียบกับ subscription ที่ active ณ ต้นเดือน",
+      "legendAll": "รายได้รวม",
+      "legendSub": "รายได้ subscription",
+      "invoiceCount": "{count, plural, one {1 ใบ} other {# ใบ}}",
+      "bucket": {
+        "current": "ยังไม่ครบกำหนด",
+        "1_30": "1-30 วัน",
+        "31_60": "31-60 วัน",
+        "61_90": "61-90 วัน",
+        "90_plus": "90+ วัน"
+      },
+      "col": {
+        "month": "เดือน",
+        "allRevenue": "รายได้รวม",
+        "subRevenue": "รายได้ Sub",
+        "payments": "Payment",
+        "trend": "Trend",
+        "cancelled": "ยกเลิก",
+        "activeStart": "Active ณ ต้นเดือน",
+        "churnRate": "Churn %"
+      }
+    },
+    "disputes": {
+      "title": "การโต้แย้ง & chargeback",
+      "subtitle": "การโต้แย้งจาก PayPal ที่ได้รับผ่าน webhook · รายการสถานะ Open/Waiting on us ต้องตอบกลับก่อนวัน due มิเช่นนั้น PayPal จะตัดสินให้ฝั่งผู้ซื้อ",
+      "all": "ทั้งหมด",
+      "empty": "ยังไม่มีการโต้แย้ง — ดีมาก",
+      "status": {
+        "open": "เปิด",
+        "waiting_buyer": "รอผู้ซื้อ",
+        "waiting_seller": "รอเรา",
+        "under_review": "อยู่ระหว่างทบทวน",
+        "resolved": "แก้ไขแล้ว",
+        "closed": "ปิด"
+      },
+      "col": {
+        "disputeID": "รหัส Dispute",
+        "invoice": "ใบแจ้งหนี้",
+        "customer": "ลูกค้า",
+        "reason": "เหตุผล",
+        "amount": "จำนวน",
+        "opened": "เปิดเมื่อ",
+        "due": "ครบกำหนดตอบ",
+        "status": "สถานะ"
+      }
+    },
+    "sandbox": {
+      "title": "Sandbox ทดสอบระบบจ่ายเงิน",
+      "subtitle": "สร้างใบแจ้งหนี้ทดสอบ บังคับการชำระเงินให้สำเร็จ และจำลอง PayPal webhook โดยไม่มีการเคลื่อนไหวเงินจริง",
+      "seedInvoice": "สร้างใบแจ้งหนี้ทดสอบ",
+      "seeded": "สร้างใบแจ้งหนี้ {number} แล้ว",
+      "purge": "ลบข้อมูล sandbox ทั้งหมด",
+      "purgeConfirm": "ลบใบแจ้งหนี้และการชำระเงินใน sandbox ทั้งหมด? ไม่สามารถย้อนกลับได้",
+      "purged": "ลบใบแจ้งหนี้ sandbox {count} ใบแล้ว",
+      "pendingPayments": "รายการรอชำระใน sandbox",
+      "noPending": "ไม่มีรายการรอชำระ — สร้างใบแจ้งหนี้และจ่ายจากพอร์ทัลเพื่อสร้างหนึ่งรายการ",
+      "testInvoices": "ใบแจ้งหนี้ทดสอบ",
+      "noInvoices": "ยังไม่มีใบแจ้งหนี้ใน sandbox กด \"สร้างใบแจ้งหนี้ทดสอบ\" เพื่อเริ่ม",
+      "forceComplete": "บังคับเสร็จสิ้น",
+      "simulateWebhook": "จำลอง webhook",
+      "payCompleted": "เปลี่ยนสถานะการชำระเป็นสำเร็จแล้ว",
+      "webhookFired": "จำลอง PayPal webhook สำเร็จ · event {event}",
+      "disabledTitle": "Sandbox ปิดอยู่",
+      "disabledBody": "ตั้ง PAYMENT_SANDBOX_MODE=true ใน .env แล้วรีสตาร์ท payment-api เพื่อใช้งาน",
+      "col": {
+        "payment": "การชำระ",
+        "invoice": "ใบแจ้งหนี้",
+        "customer": "ลูกค้า",
+        "method": "วิธี",
+        "amount": "จำนวน",
+        "status": "สถานะ",
+        "actions": "การจัดการ",
+        "total": "รวม",
+        "paid": "ชำระแล้ว"
+      }
+    },
+    "services": {
+      "title": "บริการ",
+      "subtitle": "ทั้งหมด {total} รายการ",
+      "newService": "เพิ่มบริการใหม่",
+      "newTitle": "เพิ่มบริการใหม่",
+      "editTitle": "แก้ไขบริการ",
+      "noneYet": "ยังไม่มีบริการ — เพิ่มรายการแรกได้เลย",
+      "deleteService": "ลบบริการ",
+      "deleteConfirm": "ลบบริการนี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
+      "saveError": "บันทึกไม่สำเร็จ กรุณาลองใหม่",
+      "deleteError": "ลบไม่สำเร็จ กรุณาลองใหม่",
+      "col": {
+        "title": "ชื่อบริการ",
+        "slug": "Slug",
+        "category": "หมวดหมู่",
+        "order": "ลำดับ",
+        "status": "สถานะ"
+      },
+      "status": {
+        "published": "เผยแพร่",
+        "draft": "ฉบับร่าง"
+      },
+      "field": {
+        "title": "ชื่อบริการ",
+        "shortSummary": "สรุปสั้น",
+        "description": "รายละเอียด",
+        "slug": "URL slug",
+        "icon": "ไอคอน (ชื่อ Lucide)",
+        "iconHint": "เช่น server, cloud, shield-check",
+        "category": "หมวดหมู่",
+        "sortOrder": "ลำดับการแสดง"
+      },
+      "section": {
+        "settings": "ตั้งค่าบริการ"
+      }
+    },
+    "caseStudies": {
+      "title": "กรณีศึกษา",
+      "subtitle": "ทั้งหมด {total} รายการ",
+      "newCase": "เพิ่มกรณีศึกษาใหม่",
+      "newTitle": "เพิ่มกรณีศึกษาใหม่",
+      "editTitle": "แก้ไขกรณีศึกษา",
+      "noneYet": "ยังไม่มีกรณีศึกษา — เพิ่มรายการแรกได้เลย",
+      "deleteCase": "ลบกรณีศึกษา",
+      "deleteConfirm": "ลบกรณีศึกษานี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
+      "saveError": "บันทึกไม่สำเร็จ กรุณาลองใหม่",
+      "deleteError": "ลบไม่สำเร็จ กรุณาลองใหม่",
+      "col": {
+        "client": "ลูกค้า",
+        "slug": "Slug",
+        "industry": "อุตสาหกรรม",
+        "years": "จำนวนปี",
+        "order": "ลำดับ",
+        "status": "สถานะ"
+      },
+      "status": {
+        "published": "เผยแพร่",
+        "draft": "ฉบับร่าง"
+      },
+      "field": {
+        "clientName": "ชื่อลูกค้า",
+        "slug": "URL slug",
+        "industry": "อุตสาหกรรม",
+        "location": "ที่ตั้ง",
+        "years": "ระยะเวลาความสัมพันธ์ (ปี)",
+        "heroImageURL": "URL ภาพหลัก",
+        "summary": "สรุป",
+        "challenge": "ความท้าทาย",
+        "solution": "วิธีการแก้ไข",
+        "results": "ผลลัพธ์",
+        "quote": "คำพูดของลูกค้า",
+        "quoteAuthor": "ผู้กล่าวคำพูด",
+        "servicesUsed": "บริการที่ใช้",
+        "servicesUsedHint": "คั่นด้วยคอมม่า",
+        "sortOrder": "ลำดับการแสดง"
+      },
+      "section": {
+        "settings": "ตั้งค่ากรณีศึกษา"
+      }
+    },
+    "homeContent": {
+      "title": "เนื้อหาหน้าแรก",
+      "subtitle": "แก้ไขส่วนหัวและ CTA ของหน้าแรก หน้าบริการ และหน้ากรณีศึกษา",
+      "saveError": "บันทึกไม่สำเร็จ กรุณาลองใหม่",
+      "group": {
+        "hero": "ส่วนหัว (Hero)",
+        "services": "ส่วนบริการ",
+        "trustedBy": "ลูกค้าที่ไว้วางใจ",
+        "cta": "CTA ท้ายหน้า",
+        "servicesPage": "ส่วนหัวหน้าบริการ",
+        "caseStudiesPage": "ส่วนหัวหน้ากรณีศึกษา"
+      }
+    },
+    "pages": {
+      "title": "หน้าสถิต",
+      "subtitle": "ทั้งหมด {total} หน้า",
+      "newPage": "เพิ่มหน้าใหม่",
+      "newTitle": "เพิ่มหน้าใหม่",
+      "editTitle": "แก้ไขหน้า",
+      "noneYet": "ยังไม่มีหน้า — เพิ่มหน้าแรกได้เลย",
+      "deletePage": "ลบหน้า",
+      "deleteConfirm": "ลบหน้านี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
+      "saveError": "บันทึกไม่สำเร็จ กรุณาลองใหม่",
+      "deleteError": "ลบไม่สำเร็จ กรุณาลองใหม่",
+      "viewLive": "ดูหน้าจริง",
+      "col": {
+        "title": "ชื่อหน้า",
+        "slug": "Slug",
+        "url": "URL",
+        "status": "สถานะ",
+        "updated": "อัปเดต"
+      },
+      "status": {
+        "published": "เผยแพร่",
+        "draft": "ฉบับร่าง"
+      },
+      "field": {
+        "title": "ชื่อหน้า",
+        "body": "เนื้อหา",
+        "bodyHint": "รูปแบบ Markdown — หัวข้อ (#) รายการ ลิงก์ ตัวหนา ตัวเอียง เมื่อกรอกข้อมูลนี้จะแทนที่โครงร่างของหน้าเว็บสาธารณะ",
+        "slug": "URL slug",
+        "slugReserved": "Slug นี้ถูกสงวนไว้ กรุณาเลือกใหม่",
+        "seoTitle": "SEO title (ไม่เกิน 70 ตัวอักษร)",
+        "seoDescription": "SEO description (ไม่เกิน 200 ตัวอักษร)"
+      },
+      "section": {
+        "settings": "ตั้งค่าหน้า",
+        "seo": "SEO metadata",
+        "completeness": "ความครบถ้วนของเนื้อหา"
+      }
+    },
+    "appMode": {
+      "title": "โหมดเว็บแอป",
+      "subtitle": "สถานะของเว็บแอปทั้งหมด มีผลกับหน้าเว็บสาธารณะ พอร์ทัลลูกค้า และหน้าแอดมินทันทีหลังบันทึก",
+      "lastUpdated": "เปลี่ยนล่าสุด: {when}",
+      "saveError": "บันทึกไม่สำเร็จ กรุณาลองใหม่",
+      "messageHeading": "ข้อความกำหนดเอง",
+      "messageHelp": "แสดงในแบนเนอร์และหน้าปิดปรับปรุง ปล่อยว่างเพื่อใช้ข้อความมาตรฐาน",
+      "messagePlaceholderEN": "เช่น Migrating payments — back in 15 minutes.",
+      "messagePlaceholderTH": "เช่น กำลังย้ายระบบชำระเงิน กลับมาใน 15 นาที",
+      "modes": {
+        "production": {
+          "label": "โหมดใช้งานจริง",
+          "description": "การใช้งานปกติ",
+          "effect": "ไม่แสดงแบนเนอร์ ใช้งานได้ครบทุกฟังก์ชัน"
+        },
+        "trial": {
+          "label": "โหมดทดลอง",
+          "description": "เวอร์ชันก่อนขึ้นระบบจริง",
+          "effect": "แสดงแบนเนอร์สีเหลืองทุกหน้า ใช้งานได้ครบทุกฟังก์ชัน"
+        },
+        "maintenance": {
+          "label": "โหมดปิดปรับปรุง",
+          "description": "ปิดเว็บชั่วคราวเพื่อดูแลระบบ",
+          "effect": "หน้าเว็บสาธารณะและพอร์ทัลลูกค้าจะแสดงหน้าปิดปรับปรุง หน้าแอดมินยังใช้งานได้เพื่อสลับกลับ"
+        }
+      }
+    },
+    "projects": {
+      "title": "โปรเจกต์และเช็คลิสต์",
+      "subtitle": "โปรเจกต์ไอทีของลูกค้า — เช็คลิสต์ตรวจสอบ งานประจำสัปดาห์ รายงาน",
+      "newProject": "โปรเจกต์ใหม่",
+      "noneYet": "ยังไม่มีโปรเจกต์ สร้างโปรเจกต์เพื่อเริ่มแนบโมดูลเช็คลิสต์",
+      "progress": "ความคืบหน้า",
+      "failCount": "รายการที่ไม่ผ่าน {count} รายการ",
+      "status": {
+        "active": "กำลังดำเนินการ",
+        "paused": "หยุดชั่วคราว",
+        "closed": "ปิดแล้ว"
+      },
+      "form": {
+        "clientName": "ชื่อลูกค้า",
+        "name": "ชื่อโปรเจกต์",
+        "cancel": "ยกเลิก",
+        "create": "สร้าง",
+        "customer": "ลูกค้า (บัญชีพอร์ทัล)",
+        "customerNone": "— ไม่ผูกลูกค้า —",
+        "customerHint": "ผูกลูกค้าเพื่อให้ผู้ติดต่อของลูกค้าดูโปรเจกต์ในพอร์ทัลได้ ปล่อยว่างสำหรับลูกค้าที่ยังไม่ได้ลงระบบ",
+        "visibleToCustomer": "แสดงให้ลูกค้าเห็นในพอร์ทัล"
+      },
+      "board": {
+        "library": "คลังโมดูล",
+        "libraryHint": "ลากโมดูลไปวางบนโปรเจกต์",
+        "attached": "โปรเจกต์นี้",
+        "emptyHint": "วางโมดูลที่นี่เพื่อสร้างเช็คลิสต์โปรเจกต์",
+        "openChecklist": "เปิดเช็คลิสต์",
+        "report": "รายงาน",
+        "backToBoard": "กลับไปที่บอร์ด",
+        "confirmDetach": "ลบโมดูลนี้และรายการทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้",
+        "notFound": "ไม่พบโปรเจกต์",
+        "viewCustomer": "ดูข้อมูลลูกค้า →",
+        "visibleToCustomer": "แสดงในพอร์ทัล",
+        "hiddenFromCustomer": "ซ่อนจากพอร์ทัล",
+        "linkCustomerFirst": "ผูกลูกค้าก่อนจึงจะควบคุมการแสดงในพอร์ทัลได้"
+      },
+      "checklist": {
+        "subtitle": "แตะปุ่มสถานะเพื่อสลับ: รอ → ผ่าน → ไม่ผ่าน → ไม่เกี่ยวข้อง",
+        "notePlaceholder": "เพิ่มบันทึก…",
+        "viewPhoto": "ดูรูป",
+        "attachPhoto": "แนบรูป",
+        "uploading": "กำลังอัปโหลด…"
+      },
+      "report": {
+        "title": "รายงาน",
+        "weekly": "รายสัปดาห์",
+        "monthly": "รายเดือน",
+        "print": "พิมพ์",
+        "summary": "สรุป",
+        "total": "ทั้งหมด",
+        "pass": "ผ่าน",
+        "fail": "ไม่ผ่าน",
+        "pending": "รอตรวจ",
+        "changes": "รายการที่เปลี่ยน",
+        "noChanges": "ไม่มีรายการที่เปลี่ยนแปลงในช่วงนี้",
+        "visits": "การเข้าปฏิบัติงาน",
+        "noVisits": "ไม่มีการเข้าปฏิบัติงานในช่วงนี้",
+        "billable": "คิดค่าบริการ",
+        "sendWeekly": "ส่งสรุปสัปดาห์"
+      },
+      "hiddenFromCustomer": "ซ่อนจากลูกค้า"
+    },
+    "smtp": {
+      "title": "การตั้งค่า SMTP",
+      "subtitle": "ข้อมูลเซิร์ฟเวอร์อีเมลที่ใช้ส่งจากบริการทั้งหมดของ F2",
+      "server": "เซิร์ฟเวอร์อีเมล",
+      "host": "โฮสต์",
+      "port": "พอร์ต",
+      "username": "ชื่อผู้ใช้",
+      "password": "รหัสผ่าน",
+      "passwordHint": "เว้นว่างเพื่อคงรหัสผ่านเดิม",
+      "fromAddress": "อีเมลผู้ส่ง",
+      "tlsMode": "โหมด TLS",
+      "save": "บันทึก",
+      "saved": "บันทึกการตั้งค่าแล้ว",
+      "testTitle": "ส่งอีเมลทดสอบ",
+      "testHint": "ใช้การตั้งค่าที่บันทึกไว้ปัจจุบัน — บันทึกก่อนแล้วจึงทดสอบ",
+      "testSend": "ส่งทดสอบ",
+      "testSent": "ส่งอีเมลทดสอบไปยัง {to} แล้ว"
+    },
+    "ai": {
+      "home": {
+        "title": "AI orchestrator",
+        "subtitle": "ระบบ routing งาน AI แบบไม่ผูก provider ใช้ Ollama บนเครื่องร่วมกับ Anthropic บนคลาวด์ สลับได้ในแต่ละ task โดยไม่ต้อง deploy",
+        "mtdSpend": "ค่าใช้จ่ายในเดือนนี้",
+        "todaySpend": "วันนี้",
+        "budget": "งบประมาณต่อเดือน",
+        "used": "ใช้ไปแล้ว",
+        "today": "วันนี้",
+        "calls": "requests",
+        "cost": "ค่าใช้จ่าย",
+        "provider": "Provider",
+        "task": "งาน",
+        "byProvider": "ค่าใช้จ่ายตาม provider (เดือนนี้)",
+        "byTask": "ค่าใช้จ่ายตามงาน (เดือนนี้)",
+        "noActivity": "ยังไม่มีกิจกรรมที่บันทึกไว้",
+        "goRouting": "จัดการ routing",
+        "goRoutingBody": "เปลี่ยน provider ที่รับงานแต่ละประเภท มีผลภายใน 30 วินาที",
+        "goUsage": "ดู request log",
+        "goUsageBody": "รายการ requests ล่าสุดพร้อมค่าใช้จ่าย latency และข้อผิดพลาด"
+      },
+      "routing": {
+        "title": "AI routing",
+        "subtitle": "ทุกงาน AI มี route หลักและ (โดยปกติ) route สำรอง แก้ที่นี่เพื่อเปลี่ยน provider หรือ model โดยไม่ต้อง redeploy backend จะ poll ทุก 30 วินาที",
+        "tier": "ระดับ",
+        "provider": "Provider",
+        "model": "Model",
+        "maxOut": "Max out",
+        "enabled": "เปิดใช้งาน"
+      },
+      "usage": {
+        "title": "บันทึกการใช้งาน AI",
+        "subtitle": "รายการ generate + embed ล่าสุด แสดงค่าใช้จ่ายต่อ call เวลาที่ใช้ และข้อผิดพลาดจาก provider",
+        "filterTask": "งาน:",
+        "allTasks": "ทุกงาน",
+        "noEntries": "ยังไม่มีการใช้งาน — เริ่ม generate เพื่อดู request ที่นี่",
+        "time": "เวลา",
+        "task": "งาน",
+        "provider": "Provider",
+        "model": "Model",
+        "tokensIn": "Tokens เข้า",
+        "tokensOut": "Tokens ออก",
+        "costUSD": "ค่าใช้จ่าย (USD)",
+        "latencyMs": "Latency (ms)",
+        "status": "สถานะ",
+        "ok": "OK",
+        "errored": "ผิดพลาด"
+      }
     }
   },
   "portal": {
@@ -1031,7 +1910,10 @@
         "account": "บัญชี",
         "tickets": "ตั๋วซัพพอร์ต",
         "domains": "โดเมน",
-        "sla": "SLA"
+        "sla": "SLA",
+        "billing": "บิล",
+        "billingProfile": "ข้อมูลใบกำกับภาษี",
+        "projects": "โปรเจกต์"
       },
       "organisation": "องค์กร",
       "signedInAs": "เข้าสู่ระบบในชื่อ",
@@ -1051,7 +1933,30 @@
       "submit": "เข้าสู่ระบบ",
       "submitting": "กำลังเข้าสู่ระบบ…",
       "error": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
-      "back": "← กลับสู่ f2.co.th"
+      "back": "← กลับสู่ f2.co.th",
+      "forgotPassword": "ลืมรหัสผ่าน?",
+      "forgot": {
+        "heading": "รีเซ็ตรหัสผ่าน",
+        "instructions": "กรอกอีเมลบัญชีของคุณ เราจะส่งลิงก์รีเซ็ตรหัสผ่านให้",
+        "email": "อีเมล",
+        "submit": "ส่งลิงก์รีเซ็ต",
+        "submitting": "กำลังส่ง…",
+        "sent": "หากมีบัญชีตรงกับอีเมลนี้ ระบบส่งลิงก์รีเซ็ตให้แล้ว โปรดตรวจกล่องขาเข้า",
+        "backToLogin": "กลับไปหน้าเข้าสู่ระบบ",
+        "error": "ส่งลิงก์รีเซ็ตไม่สำเร็จ กรุณาลองใหม่"
+      },
+      "reset": {
+        "heading": "ตั้งรหัสผ่านใหม่",
+        "requirements": "อย่างน้อย 10 ตัวอักษร ประกอบด้วยตัวอักษรและตัวเลข",
+        "newPassword": "รหัสผ่านใหม่",
+        "confirmPassword": "ยืนยันรหัสผ่านใหม่",
+        "mismatch": "รหัสผ่านไม่ตรงกัน",
+        "submit": "รีเซ็ตรหัสผ่าน",
+        "submitting": "กำลังรีเซ็ต…",
+        "success": "อัปเดตรหัสผ่านแล้ว กำลังพาไปหน้าเข้าสู่ระบบ…",
+        "backToLogin": "กลับไปหน้าเข้าสู่ระบบ",
+        "error": "รีเซ็ตไม่สำเร็จ"
+      }
     },
     "home": {
       "welcome": "ยินดีต้อนรับกลับ",
@@ -1195,6 +2100,182 @@
       "errorContactRequired": "ต้องระบุชื่อและอีเมลผู้จดทะเบียน",
       "errorCheckFailed": "ตรวจสอบสถานะไม่สำเร็จ กรุณาลองใหม่ในอีกสักครู่",
       "errorSubmitFailed": "ส่งคำขอไม่สำเร็จ กรุณาลองใหม่หรือเปิดทิกเก็ต"
+    },
+    "suspendedBanner": {
+      "badge": "บริการถูกระงับ",
+      "body": "{count, plural, one {1 บริการถูกระงับ} other {# บริการถูกระงับ}} เนื่องจากใบแจ้งหนี้ {invoice} เลยกำหนดชำระ",
+      "payNow": "ชำระเงิน"
+    },
+    "billingProfile": {
+      "title": "ข้อมูลใบกำกับภาษี",
+      "subtitle": "ใช้บนใบกำกับภาษีทุกใบที่เราออกให้คุณ · กรุณากรอกชื่อตามนิติกรรม เลขประจำตัวผู้เสียภาษี และที่อยู่ให้เป็นปัจจุบัน",
+      "legalName": "ชื่อตามนิติกรรม",
+      "legalNameRequired": "กรุณาระบุชื่อตามนิติกรรม",
+      "taxID": "เลขประจำตัวผู้เสียภาษี (13 หลัก)",
+      "branchCode": "รหัสสาขา",
+      "addressLine1": "ที่อยู่ บรรทัดที่ 1",
+      "addressLine2": "ที่อยู่ บรรทัดที่ 2",
+      "subdistrict": "ตำบล/แขวง",
+      "district": "อำเภอ/เขต",
+      "province": "จังหวัด",
+      "postalCode": "รหัสไปรษณีย์",
+      "country": "ประเทศ",
+      "billingEmail": "อีเมลการเรียกเก็บเงิน",
+      "save": "บันทึก",
+      "saved": "บันทึกแล้ว"
+    },
+    "billing": {
+      "title": "บิลและใบแจ้งหนี้",
+      "subtitle": "ใบแจ้งหนี้และประวัติการชำระเงินของคุณ",
+      "noneYet": "คุณยังไม่มีใบแจ้งหนี้",
+      "outstandingTitle": "ค้างชำระ",
+      "historyTitle": "ประวัติ",
+      "loadError": "โหลดใบแจ้งหนี้ไม่สำเร็จ",
+      "notFound": "ไม่พบใบแจ้งหนี้",
+      "backToList": "ใบแจ้งหนี้ทั้งหมด",
+      "issued": "ออกเมื่อ",
+      "due": "ครบกำหนด",
+      "dueAmount": "ค้าง {amount}",
+      "subtotal": "รวมก่อน VAT",
+      "vat": "VAT ({rate}%)",
+      "total": "รวม",
+      "paid": "ชำระแล้ว",
+      "balanceDue": "ยอดค้างชำระ",
+      "payTitle": "ชำระใบแจ้งหนี้นี้",
+      "paySubtitle": "เลือกวิธีการชำระเงิน",
+      "noMethods": "ยังไม่มีวิธีการชำระเงินที่เปิดใช้งาน กรุณาติดต่อ F2",
+      "continueToPay": "ดำเนินการต่อ",
+      "continueToPayPal": "ไปยัง PayPal",
+      "uploadSlip": "อัปโหลดสลิปการโอน",
+      "uploadSlipHint": "วาง URL ของรูปสลิปที่เปิดสาธารณะได้ เราจะตรวจสอบภายใน 1 วันทำการ",
+      "uploadSlipHintV2": "วางหรือเลือกไฟล์สลิป (รูปหรือ PDF · สูงสุด 5 MB) เราจะตรวจสอบภายใน 1 วันทำการ",
+      "slipDropHere": "คลิกหรือลากไฟล์มาวาง",
+      "slipAccept": "JPG, PNG, WEBP, GIF, หรือ PDF · ไม่เกิน 5 MB",
+      "slipUploaded": "อัปโหลดสลิปแล้ว",
+      "slipReplace": "เปลี่ยนไฟล์",
+      "slipFileTooBig": "ไฟล์ใหญ่เกิน 5 MB",
+      "slipFileError": "อัปโหลดไม่สำเร็จ ลองใหม่หรือวาง URL ของสลิปแทน",
+      "printDocument": "พิมพ์",
+      "downloadPDF": "ดาวน์โหลด PDF",
+      "downloadReceipt": "ดาวน์โหลดใบเสร็จ",
+      "print": {
+        "back": "กลับ",
+        "print": "พิมพ์",
+        "docInvoiceEN": "INVOICE",
+        "docInvoiceTH": "ใบแจ้งหนี้",
+        "docTaxInvoiceEN": "TAX INVOICE",
+        "docTaxInvoiceTH": "ใบกำกับภาษี",
+        "docReceiptEN": "RECEIPT",
+        "docReceiptTH": "ใบเสร็จรับเงิน",
+        "docQuotationEN": "QUOTATION",
+        "docQuotationTH": "ใบเสนอราคา",
+        "companyTaxID": "เลขประจำตัวผู้เสียภาษี",
+        "number": "เลขที่",
+        "issueDate": "วันที่",
+        "dueDate": "ครบกำหนด",
+        "billTo": "ผู้ซื้อ",
+        "taxID": "เลขประจำตัวผู้เสียภาษี:",
+        "branch": "สาขา:",
+        "notes": "หมายเหตุ",
+        "description": "รายการ",
+        "qty": "จำนวน",
+        "unitPrice": "ราคา/หน่วย",
+        "lineTotal": "รวม",
+        "subtotal": "รวมก่อน VAT",
+        "vat": "VAT {rate}%",
+        "total": "รวมทั้งสิ้น",
+        "paid": "ชำระแล้ว",
+        "balanceDue": "ยอดค้างชำระ",
+        "paymentInfo": "การชำระเงิน",
+        "paymentInstructions": "ชำระผ่านพอร์ทัลลูกค้า F2 — รับโอนเงิน, Thai QR, พร้อมเพย์ หรือ PayPal โปรดอ้างอิงเลขที่ใบแจ้งหนี้ทุกครั้งหากโอนด้วยมือ",
+        "authorizedSignature": "ผู้มีอำนาจลงนาม",
+        "thanks": "ขอบคุณที่ใช้บริการ"
+      },
+      "slipUrl": "URL สลิป *",
+      "bankRef": "เลขอ้างอิงธนาคาร (ถ้ามี)",
+      "transferredAt": "วันเวลาที่โอน",
+      "submitSlip": "ส่งสลิป",
+      "slipSubmitted": "รับสลิปแล้ว — รอตรวจสอบ",
+      "slipUrlRequired": "กรุณาวาง URL ของสลิป",
+      "payError": "เริ่มการชำระเงินไม่สำเร็จ — ลองวิธีอื่นหรือติดต่อ F2",
+      "paymentHistory": "ประวัติการชำระเงิน",
+      "col": {
+        "description": "รายละเอียด",
+        "qty": "จำนวน",
+        "unitPrice": "ราคา/หน่วย",
+        "total": "รวม"
+      },
+      "status": {
+        "draft": "ฉบับร่าง",
+        "issued": "ออกแล้ว",
+        "partially_paid": "ชำระบางส่วน",
+        "paid": "ชำระแล้ว",
+        "overdue": "เกินกำหนด",
+        "void": "ยกเลิก",
+        "refunded": "คืนเงินแล้ว"
+      },
+      "methodLabel": {
+        "bank_transfer": "โอนเงิน",
+        "thai_qr": "Thai QR",
+        "promptpay": "พร้อมเพย์",
+        "paypal": "PayPal"
+      },
+      "payStatus": {
+        "pending": "รอ",
+        "awaiting_verification": "รอตรวจสอบ",
+        "completed": "สำเร็จ",
+        "failed": "ไม่สำเร็จ",
+        "expired": "หมดอายุ",
+        "refunded": "คืนเงินแล้ว"
+      },
+      "payInstructions": {
+        "bank_transfer": "โอนเข้าบัญชีนี้",
+        "thai_qr": "สแกนเพื่อชำระ",
+        "promptpay": "รายละเอียดพร้อมเพย์"
+      },
+      "cfg": {
+        "bank_name": "ธนาคาร",
+        "account_name": "ชื่อบัญชี",
+        "account_number": "เลขที่บัญชี",
+        "branch": "สาขา",
+        "swift": "SWIFT",
+        "merchant_name": "ร้านค้า",
+        "promptpay_id": "เลขพร้อมเพย์",
+        "qr_image_url": "QR Code",
+        "environment": "สภาพแวดล้อม",
+        "client_id_public": "Client ID",
+        "merchant_email": "อีเมลร้านค้า"
+      }
+    },
+    "projects": {
+      "title": "โปรเจกต์และเช็คลิสต์",
+      "subtitle": "สถานะงานที่ F2 กำลังทำให้กับคุณแบบเรียลไทม์",
+      "noneYet": "ยังไม่มีโปรเจกต์ที่แสดง",
+      "notFound": "ไม่พบโปรเจกต์หรือโปรเจกต์นี้ไม่ได้เปิดให้ดู",
+      "progress": "ความคืบหน้า",
+      "backToList": "กลับไปที่รายการโปรเจกต์",
+      "status": {
+        "active": "กำลังดำเนินการ",
+        "paused": "หยุดชั่วคราว",
+        "closed": "ปิดแล้ว"
+      }
+    }
+  },
+  "payments": {
+    "paypal": {
+      "capturing": "กำลังยืนยันการชำระเงินกับ PayPal…",
+      "successTitle": "ยืนยันการชำระเงินสำเร็จ",
+      "successBody": "ขอบคุณ — เราได้รับการชำระเงินของคุณแล้ว ใบเสร็จจะถูกส่งทางอีเมล",
+      "errorTitle": "ไม่สามารถยืนยันการชำระเงินได้",
+      "errorBody": "เราไม่สามารถปิดรายการชำระเงินนี้ได้ หากเงินถูกหักจากบัญชีของคุณ กรุณาติดต่อ F2 เพื่อกระทบยอดให้",
+      "cancelTitle": "ยกเลิกการชำระเงิน",
+      "cancelBody": "คุณยกเลิกการชำระผ่าน PayPal ใบแจ้งหนี้ยังเปิดอยู่ — สามารถลองใหม่หรือเลือกวิธีอื่นได้",
+      "backToBilling": "กลับสู่หน้าบิล"
+    },
+    "sandbox": {
+      "badge": "โหมด SANDBOX",
+      "methodsInSandbox": "{count, plural, one {{methods} อยู่ในโหมดทดสอบ} other {{count} วิธีอยู่ในโหมดทดสอบ ({methods})}}",
+      "openDashboard": "เปิดแดชบอร์ด"
     }
   },
   "chat": {
@@ -1326,6 +2407,38 @@
       "title": "งานใหญ่ขึ้น?",
       "body": "หากปริมาณ traffic, ปลั๊กอิน หรือข้อกำหนดด้าน compliance เกินที่ shared hosting รองรับ ให้ดูบริการ Cloud & VPS แบบ Managed ของเรา — รันบน DigitalOcean ดูแลโดยทีม F2 ทีมเดียวกัน",
       "button": "Cloud & VPS"
+    },
+    "faq": {
+      "heading": "คำถามที่พบบ่อย",
+      "items": [
+        {
+          "q": "เซิร์ฟเวอร์อยู่ที่ใด?",
+          "a": "ประเทศไทย — ดาต้าเซ็นเตอร์ระดับ tier-3 ในกรุงเทพฯ ข้อมูลอยู่ในไทยและมี latency ต่ำสำหรับระบบจองและสำนักงานของธุรกิจโรงแรมไทย"
+        },
+        {
+          "q": "รวม SSL หรือไม่?",
+          "a": "รวมทุกแพ็คเกจ SSL ผ่าน Let's Encrypt พร้อม auto-renewal ฟรี"
+        },
+        {
+          "q": "SLA อัปไทม์เท่าใด?",
+          "a": "รับประกันอัปไทม์ 99.9% ต่อเดือน หากพลาด SLA คุณจะได้รับเครดิตบริการโดยอัตโนมัติในใบแจ้งหนี้ถัดไป"
+        },
+        {
+          "q": "จดโดเมนได้ด้วยไหม?",
+          "a": "ได้ — .co.th, .th, .com และ TLD กว่า 200 ดูราคาและตรวจโดเมนได้ที่ Domain Marketplace"
+        },
+        {
+          "q": "ย้ายเว็บที่มีอยู่ได้ไหม?",
+          "a": "ได้ ย้ายฟรีในแพ็คเกจ Professional และ Business cPanel-to-cPanel ทำอัตโนมัติ ส่วน stack อื่นทีมเราดำเนินการ"
+        }
+      ]
+    },
+    "table": {
+      "title": "เปรียบเทียบแพ็คเกจทั้งหมด",
+      "caption": "ตารางเปรียบเทียบแพ็คเกจเว็บโฮสติ้งของ F2 ทั้งราคา พื้นที่ จำนวนเว็บ อีเมล แบนด์วิดท์ SSL และการสำรองข้อมูลรายวัน",
+      "plan": "แพ็คเกจ",
+      "priceMonthly": "รายเดือน",
+      "priceAnnually": "รายปี"
     }
   },
   "cookieBanner": {
@@ -1342,5 +2455,12 @@
     "essentialOnly": "เฉพาะจำเป็น",
     "manage": "จัดการ",
     "savePreferences": "บันทึกการตั้งค่า"
+  },
+  "appMode": {
+    "trial": "โหมดทดลอง",
+    "maintenance": "โหมดปิดปรับปรุง",
+    "trialDefault": "คุณกำลังดูเวอร์ชันก่อนขึ้นระบบจริง ข้อมูลและฟีเจอร์อาจเปลี่ยนแปลงโดยไม่แจ้งล่วงหน้า",
+    "maintenanceDefault": "ระบบปิดปรับปรุงชั่วคราว กรุณาลองใหม่อีกครั้งในภายหลัง",
+    "splashTitle": "อีกไม่นานเราจะกลับมา"
   }
 }

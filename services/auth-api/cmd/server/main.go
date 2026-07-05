@@ -33,6 +33,7 @@ func main() {
 	uh := &handlers.UserHandler{DB: pool, Cfg: cfg}
 	ch := &handlers.CustomerAuthHandler{DB: pool, Cfg: cfg}
 	ph := &handlers.PrivacyHandler{DB: pool, Cfg: cfg}
+	pr := &handlers.PasswordResetHandler{DB: pool, Cfg: cfg}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -57,12 +58,19 @@ func main() {
 		r.Post("/refresh", h.Refresh)
 		r.Post("/logout", h.Logout)
 
+		// Public password-reset endpoints. Enumeration-safe (always 200 on
+		// forgot); rate-limiting is enforced at Traefik.
+		r.Post("/forgot-password", pr.StaffForgot)
+		r.Post("/reset-password", pr.StaffReset)
+
 		// Customer (portal) login flow — separate JWT audience.
 		r.Route("/customer", func(r chi.Router) {
 			r.Post("/login", ch.Login)
 			r.Post("/refresh", ch.Refresh)
 			r.Post("/logout", ch.Logout)
 			r.Patch("/me/locale", ch.SetLocale)
+			r.Post("/forgot-password", pr.CustomerForgot)
+			r.Post("/reset-password", pr.CustomerReset)
 		})
 
 		r.Group(func(r chi.Router) {

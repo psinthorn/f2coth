@@ -30,14 +30,22 @@ export default async function ServicesPage({
   const t = await getTranslations("services");
   const tc = await getTranslations("common");
 
-  const services = await cms.listServices(locale);
-  const groups = (["core", "support", "opportunistic"] as const).map((cat) => ({
+  const [services, home] = await Promise.all([
+    cms.listServices(locale),
+    cms.getHome(locale),
+  ]);
+  const groups = (["core", "support", "marketing", "opportunistic"] as const).map((cat) => ({
     cat,
     items: services.filter((s) => s.category === cat),
   }));
+  // Admin-editable hero copy from /admin/home-content wins over the i18n JSON.
+  const c = (key: string, fallback: string) => home[key] ?? fallback;
+  const kicker = c("services_page.kicker", t("kicker"));
+  const title = c("services_page.title", t("title"));
+  const subtitle = c("services_page.subtitle", t("subtitle"));
   const breadcrumbs = pageBreadcrumb(
     locale,
-    [{ name: t("title"), path: "/services" }],
+    [{ name: title, path: "/services" }],
     tc("home"),
   );
 
@@ -57,17 +65,36 @@ export default async function ServicesPage({
           })}
         />
       ))}
-      <section className="bg-navy-50">
-        <div className="container-page py-16">
-          <p className="text-sm font-semibold uppercase tracking-wider text-accent-700">{t("kicker")}</p>
-          <h1 className="mt-2 font-display text-4xl text-navy-900 sm:text-5xl">{t("title")}</h1>
-          <p className="mt-4 max-w-2xl text-navy-600">{t("subtitle")}</p>
+      <section className="relative overflow-hidden bg-gradient-to-br from-navy-900 via-navy-800 to-accent-800 text-white">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-30 [background:radial-gradient(60%_60%_at_20%_20%,rgba(124,58,237,0.35),transparent),radial-gradient(50%_50%_at_80%_80%,rgba(15,23,42,0.4),transparent)]"
+        />
+        <div className="container-page relative py-20 sm:py-24">
+          <p className="text-sm font-semibold uppercase tracking-wider text-accent-200">{kicker}</p>
+          <h1 className="mt-3 font-display text-4xl sm:text-5xl lg:text-6xl">{title}</h1>
+          <p className="mt-5 max-w-2xl text-lg text-navy-100">{subtitle}</p>
+          <div className="mt-8 flex flex-wrap gap-2 text-xs text-navy-200">
+            {(["core", "support", "marketing", "opportunistic"] as const).map((cat) => {
+              const count = services.filter((s) => s.category === cat).length;
+              if (!count) return null;
+              return (
+                <a
+                  key={cat}
+                  href={`#${cat}`}
+                  className="rounded-full border border-white/20 bg-white/5 px-3 py-1 hover:bg-white/10"
+                >
+                  {t(`groups.${cat}`)} · {count}
+                </a>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       {groups.map((g) =>
         g.items.length === 0 ? null : (
-          <section key={g.cat} className="container-page py-16">
+          <section key={g.cat} id={g.cat} className="container-page py-16 scroll-mt-16">
             <h2 className="font-display text-2xl text-navy-900">{t(`groups.${g.cat}`)}</h2>
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {g.items.map((s) => (

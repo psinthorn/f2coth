@@ -7,7 +7,7 @@ import (
 
 // clientIP returns a bare IP string suitable for Postgres INET casting, or
 // the empty string if the request has no parseable address. Use the result
-// with NULLIF($n,'')::inet so empty stays NULL instead of erroring.
+// with NULLIF($n,”)::inet so empty stays NULL instead of erroring.
 //
 // chi's RealIP middleware rewrites r.RemoteAddr from X-Forwarded-For when a
 // proxy sets it, but only when behind a proxy. Direct connections (dev curl,

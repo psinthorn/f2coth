@@ -20,7 +20,7 @@ import (
 // "available" so demos feel useful.
 type Mock struct{}
 
-func (Mock) Name() string        { return "mock" }
+func (Mock) Name() string       { return "mock" }
 func (Mock) Owns(_ string) bool { return false } // only used as fallback
 
 func (Mock) CheckAvailability(_ context.Context, sld string, tlds []string) ([]models.AvailabilityResult, error) {

@@ -8,12 +8,14 @@ import {
   ArrowLeft, Loader2, AlertTriangle, Plus, Ban, RotateCcw, Save, Ticket,
 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import CustomerShowcasePanel from "@/components/admin/CustomerShowcasePanel";
 import {
   adminApi,
   type AdminCustomer,
   type CustomerContactRow,
   type AdminDomain,
   type AdminSLA,
+  type BillingProfile,
 } from "@/lib/admin-api";
 
 const priorities = ["low", "normal", "high", "urgent"] as const;
@@ -265,6 +267,10 @@ export default function AdminCustomerDetailPage() {
             <DomainsPanel customerId={id} />
           )}
           <SLAPanel customerId={id!} services={customer.services_used} />
+          <CustomerShowcasePanel
+            customer={customer}
+            onChange={(updated) => setCustomer(updated)}
+          />
 
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="card">
@@ -357,10 +363,85 @@ export default function AdminCustomerDetailPage() {
                 )}
               </div>
             </section>
+            <BillingProfileSection customerID={id as string} />
           </div>
         </>
       )}
     </AdminShell>
+  );
+}
+
+// ---------- billing profile (tax invoice metadata) ----------
+
+function BillingProfileSection({ customerID }: { customerID: string }) {
+  const t = useTranslations("admin.customers.billingProfile");
+  const tc = useTranslations("common");
+  const [profile, setProfile] = useState<BillingProfile | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  useEffect(() => {
+    adminApi.getBillingProfile(customerID)
+      .then((p) => { setProfile(p); setLoaded(true); })
+      .catch((e: { status?: number }) => {
+        if (e?.status === 404) setProfile({ legal_name: "", branch_code: "00000", country: "TH" });
+        setLoaded(true);
+      });
+  }, [customerID]);
+
+  async function save() {
+    if (!profile) return;
+    if (!profile.legal_name.trim()) {
+      setMsg({ kind: "err", text: t("legalNameRequired") });
+      return;
+    }
+    setBusy(true); setMsg(null);
+    try {
+      const saved = await adminApi.upsertBillingProfile(customerID, profile);
+      setProfile(saved);
+      setMsg({ kind: "ok", text: t("saved") });
+    } catch (e: unknown) {
+      const v = e as { body?: string };
+      setMsg({ kind: "err", text: v.body || tc("error") });
+    } finally { setBusy(false); }
+  }
+
+  if (!loaded) return null;
+  if (!profile) return null;
+
+  const set = (patch: Partial<BillingProfile>) => setProfile({ ...profile, ...patch });
+
+  return (
+    <section className="card mb-6">
+      <header className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lg text-navy-900">{t("title")}</h2>
+          <p className="mt-1 text-xs text-navy-500">{t("subtitle")}</p>
+        </div>
+      </header>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label={t("legalName")} value={profile.legal_name} onChange={(v) => set({ legal_name: v })} />
+        <Field label={t("taxID")} value={profile.tax_id ?? ""} onChange={(v) => set({ tax_id: v })} placeholder="0105556012345" />
+        <Field label={t("branchCode")} value={profile.branch_code} onChange={(v) => set({ branch_code: v })} placeholder="00000" />
+        <Field label={t("billingEmail")} value={profile.billing_email ?? ""} onChange={(v) => set({ billing_email: v })} type="email" />
+        <Field label={t("addressLine1")} value={profile.address_line1 ?? ""} onChange={(v) => set({ address_line1: v })} />
+        <Field label={t("addressLine2")} value={profile.address_line2 ?? ""} onChange={(v) => set({ address_line2: v })} />
+        <Field label={t("subdistrict")} value={profile.subdistrict ?? ""} onChange={(v) => set({ subdistrict: v })} />
+        <Field label={t("district")} value={profile.district ?? ""} onChange={(v) => set({ district: v })} />
+        <Field label={t("province")} value={profile.province ?? ""} onChange={(v) => set({ province: v })} />
+        <Field label={t("postalCode")} value={profile.postal_code ?? ""} onChange={(v) => set({ postal_code: v })} />
+        <Field label={t("country")} value={profile.country} onChange={(v) => set({ country: v })} />
+      </div>
+      {msg && (
+        <p className={`mt-3 text-sm ${msg.kind === "ok" ? "text-emerald-700" : "text-red-700"}`}>{msg.text}</p>
+      )}
+      <div className="mt-3 flex justify-end">
+        <button type="button" className="btn-accent" disabled={busy} onClick={save}>
+          {busy && <Loader2 className="h-4 w-4 animate-spin" />}{t("save")}
+        </button>
+      </div>
+    </section>
   );
 }
 

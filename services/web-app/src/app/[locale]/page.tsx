@@ -5,6 +5,7 @@ import { Link } from "@/i18n/routing";
 import { cms } from "@/lib/api";
 import { ServiceIcon } from "@/lib/icons";
 import { pageAlternates, pageOpenGraph } from "@/lib/seo";
+import TrustedByStrip from "@/components/TrustedByStrip";
 
 export async function generateMetadata({
   params,
@@ -33,44 +34,49 @@ export default async function HomePage({
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
 
-  const [services, caseStudies] = await Promise.all([
+  const [services, caseStudies, home] = await Promise.all([
     cms.listServices(locale),
     cms.listCaseStudies(locale),
+    cms.getHome(locale),
   ]);
   const coreServices = services.filter((s) => s.category === "core").slice(0, 5);
+  // Admin-editable copy wins; i18n JSON is the fallback for missing keys.
+  const c = (key: string, fallback: string) => home[key] ?? fallback;
 
   return (
     <>
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-navy-900 via-navy-800 to-accent-800" />
         <div className="container-page py-24 sm:py-32 text-white">
-          <span className="badge bg-white/10 text-accent-200">{t("badge")}</span>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight sm:text-6xl">{t("headline")}</h1>
-          <p className="mt-6 max-w-2xl text-lg text-navy-200">{t("subhead")}</p>
+          <span className="badge bg-white/10 text-accent-200">{c("hero.badge", t("badge"))}</span>
+          <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight sm:text-6xl">{c("hero.headline", t("headline"))}</h1>
+          <p className="mt-6 max-w-2xl text-lg text-navy-200">{c("hero.subhead", t("subhead"))}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/contact" className="btn-accent">
-              {t("ctaPrimary")} <ArrowRight className="h-4 w-4" />
+              {c("hero.ctaPrimary", t("ctaPrimary"))} <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href="/case-studies" className="btn-ghost bg-white/10 text-white border-white/20 hover:bg-white/20">
-              {t("ctaSecondary")}
+              {c("hero.ctaSecondary", t("ctaSecondary"))}
             </Link>
           </div>
           <div className="mt-12 grid max-w-2xl grid-cols-1 gap-4 text-sm text-navy-200 sm:grid-cols-3">
-            <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" /> {t("trust.kohSamui")}</div>
-            <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" /> {t("trust.sameDay")}</div>
-            <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" /> {t("trust.partners")}</div>
+            <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" /> {c("hero.trust.kohSamui", t("trust.kohSamui"))}</div>
+            <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" /> {c("hero.trust.sameDay", t("trust.sameDay"))}</div>
+            <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" /> {c("hero.trust.partners", t("trust.partners"))}</div>
           </div>
         </div>
       </section>
 
+      <TrustedByStrip locale={locale} />
+
       <section className="container-page py-20">
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-accent-600">{t("services.kicker")}</p>
-            <h2 className="mt-2 font-display text-3xl text-navy-900">{t("services.title")}</h2>
+            <p className="text-sm font-semibold uppercase tracking-wider text-accent-600">{c("services.kicker", t("services.kicker"))}</p>
+            <h2 className="mt-2 font-display text-3xl text-navy-900">{c("services.title", t("services.title"))}</h2>
           </div>
           <Link href="/services" className="text-sm font-medium text-accent-700 hover:text-accent-900">
-            {t("services.all8")} <ArrowRight className="inline h-3.5 w-3.5" />
+            {c("services.all8", t("services.all8"))} <ArrowRight className="inline h-3.5 w-3.5" />
           </Link>
         </div>
 
@@ -90,7 +96,7 @@ export default async function HomePage({
       <section className="bg-navy-50 py-16">
         <div className="container-page">
           <p className="text-center text-sm font-semibold uppercase tracking-wider text-navy-500">
-            {t("trustedBy.title")}
+            {c("trustedBy.title", t("trustedBy.title"))}
           </p>
           <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {caseStudies.slice(0, 3).map((c) => (
@@ -127,9 +133,9 @@ export default async function HomePage({
 
       <section className="container-page pb-24">
         <div className="rounded-2xl bg-navy-900 px-8 py-16 text-center text-white">
-          <h2 className="mx-auto max-w-2xl font-display text-3xl">{t("cta.title")}</h2>
-          <p className="mx-auto mt-4 max-w-xl text-navy-300">{t("cta.subtitle")}</p>
-          <Link href="/contact" className="mt-8 inline-flex btn-accent">{t("cta.button")}</Link>
+          <h2 className="mx-auto max-w-2xl font-display text-3xl">{c("cta.title", t("cta.title"))}</h2>
+          <p className="mx-auto mt-4 max-w-xl text-navy-300">{c("cta.subtitle", t("cta.subtitle"))}</p>
+          <Link href="/contact" className="mt-8 inline-flex btn-accent">{c("cta.button", t("cta.button"))}</Link>
         </div>
       </section>
     </>

@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -387,7 +390,7 @@ func (h *AssetHandler) AdminDeleteSLA(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// ptrOrEmpty returns "" for nil string pointers so we can use NULLIF($,'')
+// ptrOrEmpty returns "" for nil string pointers so we can use NULLIF($,”)
 // in queries cleanly.
 func ptrOrEmpty(p *string) string {
 	if p == nil {
@@ -482,8 +485,16 @@ func (h *AssetHandler) PortalCreateDomainOrder(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	ctx := r.Context()
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "could not begin tx")
+		return
+	}
+	defer tx.Rollback(ctx)
+
 	var o models.DomainOrder
-	err := h.DB.QueryRow(r.Context(), `
+	err = tx.QueryRow(ctx, `
         INSERT INTO domain_orders (
             sld, tld, registry, customer_id,
             contact_name, contact_email, contact_phone, contact_company,
@@ -506,5 +517,80 @@ func (h *AssetHandler) PortalCreateDomainOrder(w http.ResponseWriter, r *http.Re
 		writeErr(w, http.StatusInternalServerError, "could not create order")
 		return
 	}
+
+	// Auto-issue invoice from domain_pricing. Best-effort — if pricing isn't
+	// loaded for this TLD we still ship the order (admin will quote manually).
+	if invID, perr := createDomainOrderInvoice(ctx, tx, cid, o); perr == nil && invID != "" {
+		_, _ = tx.Exec(ctx,
+			`UPDATE domain_orders SET invoice_id=$1 WHERE id=$2`, invID, o.ID)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		writeErr(w, http.StatusInternalServerError, "could not commit")
+		return
+	}
 	writeJSON(w, http.StatusCreated, o)
+}
+
+// createDomainOrderInvoice issues an invoice with one line item for the
+// domain registration. Returns ("", nil) if pricing for the TLD is not
+// loaded (silent skip — domain order itself still succeeds).
+func createDomainOrderInvoice(ctx context.Context, tx pgx.Tx, customerID string, o models.DomainOrder) (string, error) {
+	var registerTHB int64
+	if err := tx.QueryRow(ctx, `
+		SELECT register_price_thb
+		  FROM domain_pricing
+		 WHERE tld=$1 AND active=true`, o.TLD).Scan(&registerTHB); err != nil {
+		return "", nil
+	}
+	if registerTHB <= 0 {
+		return "", nil
+	}
+	registerCents := registerTHB * 100 // THB → satang
+	total := registerCents * int64(o.Years)
+
+	var seq int64
+	if err := tx.QueryRow(ctx, `SELECT nextval('invoice_number_seq')`).Scan(&seq); err != nil {
+		return "", err
+	}
+	year := time.Now().Year()
+	number := fmt.Sprintf("INV-%d-%06d", year, seq)
+	due := time.Now().AddDate(0, 0, 7).Format("2006-01-02")
+
+	const vatBP = 700
+	vat := total * vatBP / 10000
+	grand := total + vat
+
+	var invID string
+	if err := tx.QueryRow(ctx, `
+		INSERT INTO invoices (
+			invoice_number, customer_id, status, currency,
+			subtotal_cents, vat_rate_bp, vat_cents, total_cents,
+			issue_date, due_date, notes
+		) VALUES ($1,$2,'issued','THB',$3,$4,$5,$6,CURRENT_DATE,$7,$8)
+		RETURNING id`,
+		number, customerID, total, vatBP, vat, grand, due,
+		fmt.Sprintf("Auto-issued for domain order %s.%s", o.SLD, o.TLD)).
+		Scan(&invID); err != nil {
+		return "", err
+	}
+
+	desc := fmt.Sprintf("Domain registration: %s.%s (%d year%s)", o.SLD, o.TLD, o.Years, plural(o.Years))
+	descTH := fmt.Sprintf("จดทะเบียนโดเมน: %s.%s (%d ปี)", o.SLD, o.TLD, o.Years)
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO invoice_items (
+			invoice_id, product_type, product_ref, description_en, description_th,
+			quantity, unit_price_cents, total_cents, sort_order
+		) VALUES ($1, 'domain', $2, $3, $4, $5, $6, $7, 0)`,
+		invID, o.ID, desc, descTH, o.Years, registerCents, total); err != nil {
+		return "", err
+	}
+	return invID, nil
+}
+
+func plural(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
 }

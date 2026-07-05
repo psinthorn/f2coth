@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "@/i18n/routing";
+import { usePathname } from "next/navigation";
 import Header from "./Header";
 import Footer from "./Footer";
 import ChatWidget from "./ChatWidget";
@@ -23,10 +23,12 @@ export default function ConditionalChrome({
   // items (fail-open). See lib/modules.ts isEnabledIn().
   enabledModules: Record<string, boolean>;
 }) {
+  // Use next/navigation's usePathname (returns the raw URL path, always
+  // including the locale prefix on SSR) rather than next-intl's, which
+  // stripped-locale behavior is inconsistent between SSR and CSR — that
+  // caused the public Footer to leak into admin pages on the server render.
   const pathname = usePathname() ?? "";
-  const isAppRoute =
-    pathname === "/admin" || pathname.startsWith("/admin/") ||
-    pathname === "/portal" || pathname.startsWith("/portal/");
+  const isAppRoute = /^\/(?:[a-z]{2}\/)?(admin|portal)(?:\/|$)/.test(pathname);
 
   if (isAppRoute) {
     return <>{children}</>;

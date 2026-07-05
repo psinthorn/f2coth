@@ -69,6 +69,55 @@ services:
     networks:
       - f2-net
 
+  checklist-api:
+    build:
+      context: ./services/checklist-api
+      dockerfile: Dockerfile
+    container_name: f2-checklist-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SERVICE_NAME: checklist-api
+      SERVICE_PORT: "8008"
+      UPLOADS_DIR: /data/uploads
+    volumes:
+      - checklist-uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      # Two routers: staff (unlimited, matches /api/checklists) and portal
+      # (rate-limited, matches only /api/checklists/portal). Traefik picks
+      # the more specific rule first, so the portal one intercepts.
+      - traefik.http.routers.checklist.rule=PathPrefix(`/api/checklists`)
+      - traefik.http.routers.checklist.entrypoints=web
+      - traefik.http.services.checklist.loadbalancer.server.port=8008
+      - traefik.http.routers.checklist-portal.rule=PathPrefix(`/api/checklists/portal`)
+      - traefik.http.routers.checklist-portal.entrypoints=web
+      - traefik.http.routers.checklist-portal.service=checklist
+      - traefik.http.routers.checklist-portal.priority=100
+      - traefik.http.routers.checklist-portal.middlewares=checklist-portal-ratelimit
+      # 30 req/s per source IP (bursts to 60). Matches the pattern used for
+      # /api/leads and /api/consent — public-adjacent endpoints get a limit.
+      - traefik.http.middlewares.checklist-portal-ratelimit.ratelimit.average=30
+      - traefik.http.middlewares.checklist-portal-ratelimit.ratelimit.burst=60
+      - traefik.http.middlewares.checklist-portal-ratelimit.ratelimit.period=1m
+      # /api/checklists/uploads POST — tight limit so a misbehaving tech
+      # can't fill the volume. 10 uploads/min per IP with burst 5. Applies
+      # to the writer path only; GETs on stored files go through the
+      # unlimited main router. Higher-priority so it wins over `checklist`.
+      - traefik.http.routers.checklist-upload.rule=Path(`/api/checklists/uploads`)
+      - traefik.http.routers.checklist-upload.entrypoints=web
+      - traefik.http.routers.checklist-upload.service=checklist
+      - traefik.http.routers.checklist-upload.priority=150
+      - traefik.http.routers.checklist-upload.middlewares=checklist-upload-ratelimit
+      - traefik.http.middlewares.checklist-upload-ratelimit.ratelimit.average=10
+      - traefik.http.middlewares.checklist-upload-ratelimit.ratelimit.burst=5
+      - traefik.http.middlewares.checklist-upload-ratelimit.ratelimit.period=1m
+    networks:
+      - f2-net
+
   lead-api:
     build:
       context: ./services/lead-api
@@ -157,6 +206,18 @@ services:
       - traefik.http.middlewares.privacy-ratelimit.ratelimit.average=5
       - traefik.http.middlewares.privacy-ratelimit.ratelimit.burst=3
       - traefik.http.middlewares.privacy-ratelimit.ratelimit.period=1m
+      # Password-reset endpoints — tighter still (5 attempts / min per IP)
+      # so brute-force enumeration is impractical. Applies to both staff
+      # (/api/auth/forgot-password + /reset-password) and customer variants
+      # (/api/auth/customer/...) since both live under the same prefix.
+      - traefik.http.routers.pwreset.rule=PathRegexp(`^/api/auth/(customer/)?(forgot|reset)-password$`)
+      - traefik.http.routers.pwreset.entrypoints=web
+      - traefik.http.routers.pwreset.service=auth
+      - traefik.http.routers.pwreset.priority=200
+      - traefik.http.routers.pwreset.middlewares=pwreset-ratelimit
+      - traefik.http.middlewares.pwreset-ratelimit.ratelimit.average=5
+      - traefik.http.middlewares.pwreset-ratelimit.ratelimit.burst=3
+      - traefik.http.middlewares.pwreset-ratelimit.ratelimit.period=1m
     networks:
       - f2-net
 
@@ -223,6 +284,35 @@ services:
     networks:
       - f2-net
 
+  payment-api:
+    build:
+      context: ./services/payment-api
+      dockerfile: Dockerfile
+    container_name: f2-payment-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SERVICE_NAME: payment-api
+      SERVICE_PORT: "8008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.payment.rule=PathPrefix(`/api/payment`)
+      - traefik.http.routers.payment.entrypoints=web
+      - traefik.http.routers.payment.middlewares=payment-ratelimit
+      # 60 req/min average with burst 20 — generous for normal admin/portal
+      # use while still blunting any abuse on the public webhook + status
+      # endpoints. /api/payment/webhooks/paypal traffic from PayPal itself
+      # stays well below this.
+      - traefik.http.middlewares.payment-ratelimit.ratelimit.average=60
+      - traefik.http.middlewares.payment-ratelimit.ratelimit.burst=20
+      - traefik.http.middlewares.payment-ratelimit.ratelimit.period=1m
+      - traefik.http.services.payment.loadbalancer.server.port=8008
+    networks:
+      - f2-net
+
   # ----------------------------------------------------------------
   # Next.js frontend
   # ----------------------------------------------------------------
@@ -250,10 +340,50 @@ services:
     networks:
       - f2-net
 
+  # AI Orchestrator — provider-agnostic router that dispatches each task
+  # (orchestrator, content_writer, ticket_triage, ...) to Anthropic cloud
+  # or local Ollama based on the ai_routing table (migration 050).
+  # Ollama runs on the host Mac (Metal-accelerated) per the pilot MVP
+  # decision — reached via host.docker.internal:11434.
+  ai-orchestrator-api:
+    build:
+      context: ./services/ai-orchestrator-api
+      dockerfile: Dockerfile
+    container_name: f2-ai-orchestrator-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SERVICE_NAME: ai-orchestrator-api
+      SERVICE_PORT: "8009"
+      # Local Ollama on the host — override in .env if running elsewhere.
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      # Monthly USD cap that triggers the /admin/ai budget-alert email.
+      AI_BUDGET_ALERT_USD: ${AI_BUDGET_ALERT_USD:-150}
+    extra_hosts:
+      # Linux Docker doesn't auto-map host.docker.internal — this line is
+      # a no-op on macOS but keeps the service portable to a Linux host.
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ai.rule=PathPrefix(`/api/ai`)
+      - traefik.http.routers.ai.entrypoints=web
+      - traefik.http.routers.ai.middlewares=ai-ratelimit
+      - traefik.http.middlewares.ai-ratelimit.ratelimit.average=30
+      - traefik.http.middlewares.ai-ratelimit.ratelimit.burst=10
+      - traefik.http.middlewares.ai-ratelimit.ratelimit.period=1m
+      - traefik.http.services.ai.loadbalancer.server.port=8009
+    networks:
+      - f2-net
+
 networks:
   f2-net:
     driver: bridge
 
 volumes:
   pgdata:
+    driver: local
+  checklist-uploads:
     driver: local

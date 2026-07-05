@@ -43,7 +43,7 @@ var rcOwnedTLDs = map[string]struct{}{
 	"info": {}, "co": {}, "io": {}, "app": {}, "shop": {},
 }
 
-func (r *ResellerClub) Name() string        { return "resellerclub" }
+func (r *ResellerClub) Name() string         { return "resellerclub" }
 func (r *ResellerClub) Owns(tld string) bool { _, ok := rcOwnedTLDs[strings.ToLower(tld)]; return ok }
 
 // rcAvailableResponse: the API returns a map keyed by the FQDN, each value:

@@ -54,3 +54,13 @@ body {
   .prose-f2 p  { @apply mb-4; }
   .prose-f2 ul { @apply mb-4 list-disc pl-6; }
 }
+
+/* Print-only rules for the invoice document. Hides everything outside
+   the printable .invoice-doc element so the user gets a clean A4 page
+   when they hit Cmd+P / Ctrl+P from the print route. */
+@media print {
+  body { background: white !important; }
+  .print\:hidden { display: none !important; }
+  .invoice-doc { box-shadow: none !important; margin: 0 !important; padding: 1cm !important; }
+  @page { size: A4; margin: 0; }
+}

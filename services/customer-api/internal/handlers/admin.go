@@ -29,16 +29,37 @@ func staffID(r *http.Request) string {
 
 // -------------------- Customers --------------------
 
+// customerSelect is shared by List and Get so a column change only needs
+// editing here. Keeps the two shapes from drifting (list showing extra
+// fields the detail page doesn't, etc.).
+const customerSelect = `
+    SELECT c.id, c.slug, c.name, c.industry,
+           c.primary_contact_name, c.primary_contact_email, c.primary_contact_phone,
+           c.account_manager_id, u.full_name, u.email,
+           c.services_used, c.notes, c.is_active, c.created_at, c.updated_at,
+           c.show_on_website, c.website_display_name, c.website_logo_url,
+           c.website_industry_label, c.website_industry_label_th,
+           c.website_sort_order,
+           c.consent_document_url, c.consent_granted_at, c.consent_granted_by,
+           c.consent_expires_at, c.consent_notes
+      FROM customers c
+      LEFT JOIN users u ON u.id = c.account_manager_id`
+
+func scanCustomer(row interface{ Scan(...any) error }, c *models.Customer) error {
+	return row.Scan(&c.ID, &c.Slug, &c.Name, &c.Industry,
+		&c.PrimaryContactName, &c.PrimaryContactEmail, &c.PrimaryContactPhone,
+		&c.AccountManagerID, &c.AccountManagerName, &c.AccountManagerEmail,
+		&c.ServicesUsed, &c.Notes, &c.IsActive, &c.CreatedAt, &c.UpdatedAt,
+		&c.ShowOnWebsite, &c.WebsiteDisplayName, &c.WebsiteLogoURL,
+		&c.WebsiteIndustryLabel, &c.WebsiteIndustryLabelTH,
+		&c.WebsiteSortOrder,
+		&c.ConsentDocumentURL, &c.ConsentGrantedAt, &c.ConsentGrantedBy,
+		&c.ConsentExpiresAt, &c.ConsentNotes)
+}
+
 func (h *AdminHandler) ListCustomers(w http.ResponseWriter, r *http.Request) {
-	rows, err := h.DB.Query(r.Context(), `
-        SELECT c.id, c.slug, c.name, c.industry,
-               c.primary_contact_name, c.primary_contact_email, c.primary_contact_phone,
-               c.account_manager_id, u.full_name, u.email,
-               c.services_used, c.notes, c.is_active, c.created_at, c.updated_at
-        FROM customers c
-        LEFT JOIN users u ON u.id = c.account_manager_id
-        ORDER BY c.is_active DESC, c.name
-    `)
+	rows, err := h.DB.Query(r.Context(),
+		customerSelect+` ORDER BY c.is_active DESC, c.name`)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
@@ -47,10 +68,7 @@ func (h *AdminHandler) ListCustomers(w http.ResponseWriter, r *http.Request) {
 	out := make([]models.Customer, 0, 16)
 	for rows.Next() {
 		var c models.Customer
-		if err := rows.Scan(&c.ID, &c.Slug, &c.Name, &c.Industry,
-			&c.PrimaryContactName, &c.PrimaryContactEmail, &c.PrimaryContactPhone,
-			&c.AccountManagerID, &c.AccountManagerName, &c.AccountManagerEmail,
-			&c.ServicesUsed, &c.Notes, &c.IsActive, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		if err := scanCustomer(rows, &c); err != nil {
 			writeErr(w, http.StatusInternalServerError, "scan error")
 			return
 		}
@@ -62,18 +80,10 @@ func (h *AdminHandler) ListCustomers(w http.ResponseWriter, r *http.Request) {
 func (h *AdminHandler) GetCustomer(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var c models.Customer
-	err := h.DB.QueryRow(r.Context(), `
-        SELECT c.id, c.slug, c.name, c.industry,
-               c.primary_contact_name, c.primary_contact_email, c.primary_contact_phone,
-               c.account_manager_id, u.full_name, u.email,
-               c.services_used, c.notes, c.is_active, c.created_at, c.updated_at
-        FROM customers c
-        LEFT JOIN users u ON u.id = c.account_manager_id
-        WHERE c.id = $1
-    `, id).Scan(&c.ID, &c.Slug, &c.Name, &c.Industry,
-		&c.PrimaryContactName, &c.PrimaryContactEmail, &c.PrimaryContactPhone,
-		&c.AccountManagerID, &c.AccountManagerName, &c.AccountManagerEmail,
-		&c.ServicesUsed, &c.Notes, &c.IsActive, &c.CreatedAt, &c.UpdatedAt)
+	err := scanCustomer(
+		h.DB.QueryRow(r.Context(), customerSelect+` WHERE c.id = $1`, id),
+		&c,
+	)
 	if err == pgx.ErrNoRows {
 		writeErr(w, http.StatusNotFound, "customer not found")
 		return

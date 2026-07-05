@@ -7,6 +7,7 @@ import { cms } from "@/lib/api";
 import { ServiceIcon } from "@/lib/icons";
 import { pageAlternates, pageOpenGraph, pageBreadcrumb, localizedUrl } from "@/lib/seo";
 import { JsonLd, breadcrumbList, service as serviceSchema } from "@/lib/schema";
+import { FAQ } from "@/components/FAQ";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -72,13 +73,21 @@ export default async function ServiceDetailPage({ params }: Props) {
       </section>
 
       <section className="container-page py-16">
-        <div className="prose-f2 max-w-3xl">
+        {/* AEO direct-answer paragraph — first thing after H1 so LLMs
+             pick it as the citable summary. Falls back to short_summary
+             so pages still render if the CMS row hasn't been filled. */}
+        {s.intro && (
+          <p className="max-w-3xl text-lg font-medium text-navy-800">{s.intro}</p>
+        )}
+        <div className={`prose-f2 max-w-3xl ${s.intro ? "mt-8" : ""}`}>
           <p className="text-lg">{s.description}</p>
         </div>
         <Link href={`/contact?service=${s.slug}`} className="mt-10 inline-flex btn-accent">
           {tc("talkToF2About", { topic: s.title })} <ArrowRight className="h-4 w-4" />
         </Link>
       </section>
+
+      <FAQ items={s.faq} heading={t("faqHeading")} />
 
       {related.length > 0 && (
         <section className="container-page pb-20">

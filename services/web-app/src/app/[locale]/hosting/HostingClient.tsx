@@ -61,6 +61,57 @@ export default function HostingClient({ plans }: { plans: HostingPlanItem[] }) {
         </div>
       </section>
 
+      {/* Semantic comparison table — the cards above are the primary visual,
+          this is the crawlable/AEO-extractable version. Google AI Overviews
+          and generative search parse <table> markup to build side-by-side
+          summaries; the same content laid out as cards is invisible to
+          them. Horizontally-scrollable on mobile so nothing wraps. */}
+      {plans.length > 0 && (
+        <section className="container-page pb-16">
+          <h2 className="mb-4 font-display text-2xl text-navy-900">{t("table.title")}</h2>
+          <div className="overflow-x-auto rounded-xl border border-navy-100 bg-white">
+            <table className="w-full min-w-[640px] text-sm">
+              <caption className="sr-only">{t("table.caption")}</caption>
+              <thead className="bg-navy-50 text-left text-xs uppercase tracking-wider text-navy-500">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("table.plan")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("table.priceMonthly")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("table.priceAnnually")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("card.storage")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("card.sites")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("card.emails")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("card.bandwidth")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("card.ssl")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("card.backups")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-navy-100 text-navy-800">
+                {plans.map((p) => (
+                  <tr key={p.id}>
+                    <th scope="row" className="px-4 py-3 text-left font-medium text-navy-900">
+                      {p.name}
+                      {p.is_featured && (
+                        <span className="ml-2 rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent-800">
+                          {t("card.popular")}
+                        </span>
+                      )}
+                    </th>
+                    <td className="px-4 py-3 whitespace-nowrap">฿{p.price_thb_monthly.toLocaleString()}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">฿{p.price_thb_annually.toLocaleString()}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{p.storage_gb} {t("card.storageUnit")}</td>
+                    <td className="px-4 py-3">{p.sites_included === 0 ? t("card.unlimited") : p.sites_included}</td>
+                    <td className="px-4 py-3">{p.emails_included === 0 ? t("card.unlimited") : p.emails_included}</td>
+                    <td className="px-4 py-3">{p.bandwidth_label}</td>
+                    <td className="px-4 py-3" aria-label={p.ssl_included ? "yes" : "no"}>{p.ssl_included ? "✓" : "—"}</td>
+                    <td className="px-4 py-3" aria-label={p.daily_backups ? "yes" : "no"}>{p.daily_backups ? "✓" : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section className="bg-navy-50">
         <div className="container-page py-16">
           <h2 className="font-display text-3xl text-navy-900">{t("compare.title")}</h2>

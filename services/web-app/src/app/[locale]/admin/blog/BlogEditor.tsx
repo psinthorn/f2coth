@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { BilingualEditor, BilingualInput, BilingualTextArea } from "@/components/admin/BilingualField";
 import { adminApi, type AdminBlogPost, type BlogPostWriteInput } from "@/lib/admin-api";
 
 interface Props {
@@ -27,7 +28,6 @@ export default function BlogEditor({ post }: Props) {
   const [coverURL, setCoverURL] = useState(post?.cover_image_url ?? "");
   const [tagsRaw, setTagsRaw] = useState((post?.tags ?? []).join(", "));
   const [isPublished, setIsPublished] = useState(post?.is_published ?? false);
-  const [locale, setLocale] = useState<"en" | "th">("en");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -98,102 +98,44 @@ export default function BlogEditor({ post }: Props) {
             <p className="mt-1 text-sm text-navy-500 font-mono">{post.slug}</p>
           )}
         </div>
-        {/* Locale toggle */}
-        <div className="flex rounded-lg border border-navy-200 overflow-hidden shrink-0">
-          {(["en", "th"] as const).map((l) => (
-            <button
-              key={l}
-              onClick={() => setLocale(l)}
-              className={`px-4 py-1.5 text-sm ${
-                locale === l
-                  ? "bg-navy-900 text-white"
-                  : "text-navy-600 hover:bg-navy-50"
-              }`}
-            >
-              {l.toUpperCase()}
-            </button>
-          ))}
-        </div>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main content column */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">
-              {t("field.title")} ({locale.toUpperCase()}) <span aria-hidden>*</span>
-            </label>
-            {locale === "en" ? (
-              <input
-                type="text"
-                value={titleEN}
-                onChange={(e) => {
-                  setTitleEN(e.target.value);
-                  if (!isEditing && !slug) setSlug(autoSlug(e.target.value));
-                }}
-                className="w-full rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-accent-500 focus:outline-none"
-                required
-              />
-            ) : (
-              <input
-                type="text"
-                value={titleTH}
-                onChange={(e) => setTitleTH(e.target.value)}
-                className="w-full rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-accent-500 focus:outline-none"
-                placeholder={t("field.titleTHHint")}
-              />
-            )}
-          </div>
-
-          {/* Excerpt */}
-          <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">
-              {t("field.excerpt")} ({locale.toUpperCase()})
-            </label>
-            {locale === "en" ? (
-              <textarea
-                value={excerptEN}
-                onChange={(e) => setExcerptEN(e.target.value)}
-                rows={3}
-                maxLength={500}
-                className="w-full rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-accent-500 focus:outline-none"
-              />
-            ) : (
-              <textarea
-                value={excerptTH}
-                onChange={(e) => setExcerptTH(e.target.value)}
-                rows={3}
-                maxLength={500}
-                className="w-full rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-accent-500 focus:outline-none"
-              />
-            )}
-          </div>
-
-          {/* Body (Markdown) */}
-          <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">
-              {t("field.body")} ({locale.toUpperCase()}) — Markdown
-            </label>
-            {locale === "en" ? (
-              <textarea
-                value={bodyEN}
-                onChange={(e) => setBodyEN(e.target.value)}
-                rows={20}
-                className="w-full rounded-lg border border-navy-200 px-3 py-2 text-sm font-mono focus:border-accent-500 focus:outline-none"
-                placeholder="# Heading&#10;&#10;Your content here…"
-              />
-            ) : (
-              <textarea
-                value={bodyTH}
-                onChange={(e) => setBodyTH(e.target.value)}
-                rows={20}
-                className="w-full rounded-lg border border-navy-200 px-3 py-2 text-sm font-mono focus:border-accent-500 focus:outline-none"
-                placeholder="# หัวข้อ&#10;&#10;เนื้อหาที่นี่…"
-              />
-            )}
-          </div>
-        </div>
+        <BilingualEditor className="lg:col-span-2 space-y-4">
+          <BilingualInput
+            label={t("field.title")}
+            required
+            placeholderTH={t("field.titleTHHint")}
+            en={titleEN}
+            th={titleTH}
+            onEN={(v) => {
+              setTitleEN(v);
+              if (!isEditing && !slug) setSlug(autoSlug(v));
+            }}
+            onTH={setTitleTH}
+          />
+          <BilingualTextArea
+            label={t("field.excerpt")}
+            rows={3}
+            maxLength={500}
+            en={excerptEN}
+            th={excerptTH}
+            onEN={setExcerptEN}
+            onTH={setExcerptTH}
+          />
+          <BilingualTextArea
+            label={`${t("field.body")} — Markdown`}
+            rows={20}
+            mono
+            placeholderEN={"# Heading\n\nYour content here…"}
+            placeholderTH={"# หัวข้อ\n\nเนื้อหาที่นี่…"}
+            en={bodyEN}
+            th={bodyTH}
+            onEN={setBodyEN}
+            onTH={setBodyTH}
+          />
+        </BilingualEditor>
 
         {/* Sidebar */}
         <div className="space-y-4">

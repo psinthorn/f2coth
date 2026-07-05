@@ -13,7 +13,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/f2cothai/f2-website/services/notification-api/internal/config"
+
+	b64pkg "encoding/base64"
 )
+
+// _b64 is the shared base64 encoder for MIME assembly + RFC2047 subject
+// encoding. Kept package-private so the helper code reads cleanly.
+var _b64 = b64pkg.StdEncoding
 
 type NotificationHandler struct {
 	DB  *pgxpool.Pool
@@ -30,6 +36,16 @@ type enqueueReq struct {
 	Payload       map[string]any `json:"payload"`
 	RelatedLeadID string         `json:"related_lead_id"`
 	Locale        string         `json:"locale"` // "en" | "th"; default en
+	// Attachments piggy-back on `payload._attachments` so we don't need
+	// a schema migration to ship this. Each attachment is base64-encoded
+	// in the producer (payment-api PDF renderer); the worker decodes it
+	// and assembles a multipart/mixed MIME body.
+}
+
+type emailAttachment struct {
+	Filename    string `json:"filename"`
+	ContentType string `json:"content_type"`
+	ContentB64  string `json:"content_b64"`
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -160,7 +176,10 @@ func (h *NotificationHandler) deliver(ctx context.Context, channel, template, to
 	if channel != "email" {
 		return fmt.Errorf("channel %q not supported", channel)
 	}
-	if h.Cfg.SMTPHost == "" {
+	// Resolve SMTP from DB (with env fallback) so admin edits take effect
+	// without redeploying. See smtp_admin.go for the resolution rules.
+	s := h.resolveSMTP(ctx)
+	if s.Host == "" {
 		return fmt.Errorf("SMTP not configured")
 	}
 
@@ -175,13 +194,59 @@ func (h *NotificationHandler) deliver(ctx context.Context, channel, template, to
 	var data map[string]any
 	_ = json.Unmarshal(payload, &data)
 
+	// Pull out attachments before rendering so they don't leak into
+	// the template substitutions as visible "{{_attachments}}" leftovers.
+	atts := extractAttachments(data)
+
 	subject = renderTemplate(subject, data)
 	body := renderTemplate(bodyTmpl, data)
 
-	msg := buildEmail(h.Cfg.SMTPFrom, to, subject, body)
-	addr := fmt.Sprintf("%s:%d", h.Cfg.SMTPHost, h.Cfg.SMTPPort)
-	auth := smtp.PlainAuth("", h.Cfg.SMTPUser, h.Cfg.SMTPPassword, h.Cfg.SMTPHost)
-	return smtp.SendMail(addr, auth, h.Cfg.SMTPUser, []string{to}, msg)
+	msg := buildEmail(s.FromAddress, to, subject, body, atts)
+	addr := fmt.Sprintf("%s:%d", s.Host, s.Port)
+	var auth smtp.Auth
+	if s.Username != "" {
+		auth = smtp.PlainAuth("", s.Username, s.Password, s.Host)
+	}
+	return smtp.SendMail(addr, auth, s.Username, []string{to}, msg)
+}
+
+// extractAttachments lifts the `_attachments` array out of the payload
+// map (if present) and decodes each into the in-memory shape the email
+// builder needs. The key is deliberately underscore-prefixed so it
+// can't collide with a real template variable.
+func extractAttachments(data map[string]any) []emailAttachment {
+	if data == nil {
+		return nil
+	}
+	raw, ok := data["_attachments"]
+	if !ok {
+		return nil
+	}
+	delete(data, "_attachments")
+	list, ok := raw.([]any)
+	if !ok {
+		return nil
+	}
+	out := make([]emailAttachment, 0, len(list))
+	for _, item := range list {
+		m, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		out = append(out, emailAttachment{
+			Filename:    asString(m["filename"]),
+			ContentType: asString(m["content_type"]),
+			ContentB64:  asString(m["content_b64"]),
+		})
+	}
+	return out
+}
+
+func asString(v any) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
 }
 
 // loadTemplate resolves the locale-aware variant of the template, with
@@ -207,14 +272,90 @@ func renderTemplate(s string, data map[string]any) string {
 	return s
 }
 
-func buildEmail(from, to, subject, body string) []byte {
+// buildEmail emits a single-part text/plain message when there are no
+// attachments, or a multipart/mixed message wrapping the body + each
+// attachment otherwise. The boundary is fixed at "f2-mime-boundary" —
+// good enough since the chance of that exact string occurring in the
+// body or attachment content is astronomically low.
+func buildEmail(from, to, subject, body string, atts []emailAttachment) []byte {
 	var b strings.Builder
 	fmt.Fprintf(&b, "From: %s\r\n", from)
 	fmt.Fprintf(&b, "To: %s\r\n", to)
-	fmt.Fprintf(&b, "Subject: %s\r\n", subject)
+	fmt.Fprintf(&b, "Subject: %s\r\n", encodeRFC2047(subject))
 	b.WriteString("MIME-Version: 1.0\r\n")
+
+	if len(atts) == 0 {
+		b.WriteString("Content-Type: text/plain; charset=\"utf-8\"\r\n")
+		b.WriteString("Content-Transfer-Encoding: 8bit\r\n")
+		b.WriteString("\r\n")
+		b.WriteString(body)
+		return []byte(b.String())
+	}
+
+	const boundary = "f2-mime-boundary"
+	fmt.Fprintf(&b, "Content-Type: multipart/mixed; boundary=%q\r\n\r\n", boundary)
+
+	// Body part
+	fmt.Fprintf(&b, "--%s\r\n", boundary)
 	b.WriteString("Content-Type: text/plain; charset=\"utf-8\"\r\n")
-	b.WriteString("\r\n")
+	b.WriteString("Content-Transfer-Encoding: 8bit\r\n\r\n")
 	b.WriteString(body)
+	b.WriteString("\r\n")
+
+	// Attachments (base64-encoded payload streamed through verbatim —
+	// payment-api already encoded; we just wrap it in MIME headers).
+	for _, a := range atts {
+		if a.Filename == "" || a.ContentB64 == "" {
+			continue
+		}
+		ct := a.ContentType
+		if ct == "" {
+			ct = "application/octet-stream"
+		}
+		fmt.Fprintf(&b, "--%s\r\n", boundary)
+		fmt.Fprintf(&b, "Content-Type: %s; name=%q\r\n", ct, a.Filename)
+		b.WriteString("Content-Transfer-Encoding: base64\r\n")
+		fmt.Fprintf(&b, "Content-Disposition: attachment; filename=%q\r\n\r\n", a.Filename)
+		// Re-flow to 76-char lines per RFC 2045.
+		b.WriteString(reflow(a.ContentB64, 76))
+		b.WriteString("\r\n")
+	}
+
+	fmt.Fprintf(&b, "--%s--\r\n", boundary)
 	return []byte(b.String())
+}
+
+// encodeRFC2047 wraps non-ASCII subjects so SMTP clients render Thai
+// chars correctly. We always encode — the cost is small and it side-
+// steps "should I" predicates.
+func encodeRFC2047(s string) string {
+	for _, r := range s {
+		if r > 127 {
+			return "=?utf-8?B?" + base64StdString(s) + "?="
+		}
+	}
+	return s
+}
+
+func base64StdString(s string) string {
+	// import "encoding/base64" already used elsewhere in this package;
+	// dropping the import in inline closures would duplicate. Reuse via
+	// the var below.
+	return _b64.EncodeToString([]byte(s))
+}
+
+func reflow(s string, n int) string {
+	if n <= 0 || len(s) <= n {
+		return s
+	}
+	var b strings.Builder
+	for i := 0; i < len(s); i += n {
+		end := i + n
+		if end > len(s) {
+			end = len(s)
+		}
+		b.WriteString(s[i:end])
+		b.WriteString("\r\n")
+	}
+	return b.String()
 }

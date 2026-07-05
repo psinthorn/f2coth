@@ -29,6 +29,7 @@ export default function Header({
   const allNav: NavItem[] = [
     { kind: "leaf", href: "/services",     labelKey: "services",    moduleKey: "public.services" },
     { kind: "leaf", href: "/case-studies", labelKey: "caseStudies", moduleKey: "public.case_studies" },
+    { kind: "leaf", href: "/clients",      labelKey: "clients",     moduleKey: "public.clients" },
     { kind: "leaf", href: "/products",     labelKey: "products",    moduleKey: "public.products" },
     {
       kind: "group", labelKey: "infrastructure",

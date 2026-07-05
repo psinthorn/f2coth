@@ -38,6 +38,9 @@ export default function middleware(request: NextRequest) {
     "img-src 'self' data: https:",
     "font-src 'self' data:",
     `connect-src ${connectSrc}`,
+    // Google Maps embed on /contact — no-key iframe from maps.google.com.
+    // If we add YouTube, Vimeo, or Calendly embeds later, extend this list.
+    "frame-src 'self' https://www.google.com https://maps.google.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

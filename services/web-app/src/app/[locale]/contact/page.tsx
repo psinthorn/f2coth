@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Mail, MapPin, Clock } from "lucide-react";
+import { F2_ORG } from "@/lib/schema";
 import { cms } from "@/lib/api";
 import ContactForm from "./ContactForm";
 import { pageAlternates, pageOpenGraph, pageBreadcrumb } from "@/lib/seo";
@@ -78,6 +79,15 @@ export default async function ContactPage({ params, searchParams }: Props) {
             <MapPin className="h-5 w-5 text-accent-700" />
             <h3 className="mt-3 font-semibold text-navy-900">{t("side.offices")}</h3>
             <p className="mt-1 text-sm text-navy-600">{t("side.officesValue")}</p>
+            <p className="mt-3 text-xs text-navy-500">{F2_ORG.street}, {F2_ORG.locality}, {F2_ORG.region} {F2_ORG.postalCode}</p>
+            <a
+              className="mt-2 inline-flex items-center gap-1 text-xs text-accent-700 hover:text-accent-900"
+              href={mapDirectionsURL()}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t("side.directions")}
+            </a>
           </div>
           <div className="card">
             <Clock className="h-5 w-5 text-accent-700" />
@@ -86,6 +96,39 @@ export default async function ContactPage({ params, searchParams }: Props) {
           </div>
         </aside>
       </section>
+
+      {/* Embedded map — lazy-loaded iframe so it doesn't hurt LCP.
+          Uses Google Maps' zero-config embed URL (no API key required).
+          The visible text address above stays as the accessible fallback
+          so screen readers and print-friendly views don't lose the NAP. */}
+      <section className="container-page pb-16">
+        <h2 className="sr-only">{t("side.mapHeading")}</h2>
+        <div className="overflow-hidden rounded-xl border border-navy-100 shadow-sm">
+          <iframe
+            title={t("side.mapHeading")}
+            src={mapEmbedURL()}
+            className="h-[360px] w-full"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+      </section>
     </>
   );
+}
+
+/** Zero-config Google Maps embed pointing at F2's Bophut office. */
+function mapEmbedURL(): string {
+  const q = encodeURIComponent(
+    `${F2_ORG.street}, ${F2_ORG.locality}, ${F2_ORG.region} ${F2_ORG.postalCode}, Thailand`,
+  );
+  return `https://maps.google.com/maps?q=${q}&z=15&hl=en&output=embed`;
+}
+
+/** Directions link that opens the caller's default Maps app. */
+function mapDirectionsURL(): string {
+  const q = encodeURIComponent(
+    `${F2_ORG.street}, ${F2_ORG.locality}, ${F2_ORG.region} ${F2_ORG.postalCode}, Thailand`,
+  );
+  return `https://www.google.com/maps/dir/?api=1&destination=${q}`;
 }

@@ -170,6 +170,43 @@ export function service(args: {
   };
 }
 
+/**
+ * Article — long-form content that isn't a blog post: case studies,
+ * technical write-ups, hospitality-industry pieces. `about` accepts
+ * schema.org Thing-name strings (e.g. an industry vertical) and is what
+ * generative engines use to categorise the piece.
+ */
+export function article(args: {
+  url: string;
+  headline: string;
+  description: string;
+  image?: string;
+  datePublished?: string;
+  dateModified?: string;
+  authorName?: string;   // omit for publisher-authored pieces
+  about?: string;
+  inLanguage: "en" | "th";
+}) {
+  const author =
+    args.authorName
+      ? { "@type": "Person", name: args.authorName }
+      : { "@id": `${SITE_URL}/#organization` };
+  return {
+    "@context": ctx,
+    "@type": "Article",
+    mainEntityOfPage: { "@type": "WebPage", "@id": args.url },
+    headline: args.headline,
+    description: args.description,
+    image: args.image,
+    datePublished: args.datePublished,
+    dateModified: args.dateModified ?? args.datePublished,
+    author,
+    publisher: { "@id": `${SITE_URL}/#organization` },
+    about: args.about,
+    inLanguage: args.inLanguage,
+  };
+}
+
 /** BlogPosting — for each /blog/{slug}. */
 export function blogPosting(args: {
   url: string;

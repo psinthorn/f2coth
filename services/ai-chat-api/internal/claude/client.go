@@ -16,7 +16,7 @@ const endpoint = "https://api.anthropic.com/v1/messages"
 const apiVersion = "2023-06-01"
 
 type Message struct {
-	Role    string `json:"role"`    // "user" | "assistant"
+	Role    string `json:"role"` // "user" | "assistant"
 	Content string `json:"content"`
 }
 

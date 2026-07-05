@@ -26,7 +26,12 @@ export const apiBase = {
   publicAuth: `${PUBLIC_BASE}/auth`,
 };
 
-export type ServiceCategory = "core" | "support" | "opportunistic";
+export type ServiceCategory = "core" | "support" | "opportunistic" | "marketing";
+
+export interface FAQItem {
+  q: string;
+  a: string;
+}
 
 export interface ServiceItem {
   id: string;
@@ -34,9 +39,16 @@ export interface ServiceItem {
   title: string;
   short_summary: string;
   description: string;
+  intro: string;
+  faq: FAQItem[];
   icon: string | null;
   category: ServiceCategory;
   sort_order: number;
+  // Freshness — used by the sitemap so search crawlers only re-fetch when
+  // content actually changes. Optional so hand-rolled fallbackServices can
+  // omit them without a compile error.
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CaseStudyItem {
@@ -54,6 +66,9 @@ export interface CaseStudyItem {
   quote_text: string | null;
   quote_author: string | null;
   services_used: string[];
+  published_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface BlogPostItem {
@@ -63,8 +78,10 @@ export interface BlogPostItem {
   excerpt: string;
   body_md: string;
   cover_image_url: string | null;
+  author_name: string;
   tags: string[];
   published_at: string | null;
+  updated_at?: string;
 }
 
 export interface DomainPricingItem {
@@ -77,6 +94,15 @@ export interface DomainPricingItem {
   privacy_included: boolean;
   is_thai_only: boolean;
   notes: string;
+  sort_order: number;
+}
+
+export interface PublicClientItem {
+  slug: string;
+  display_name: string;
+  industry_label: string;
+  logo_url: string | null;
+  services_used: string[];
   sort_order: number;
 }
 
@@ -99,7 +125,14 @@ export interface HostingPlanItem {
 }
 
 async function getJSON<T>(url: string, locale?: string): Promise<T> {
-  const res = await fetch(url, {
+  // Next's fetch cache keys on URL only — headers are ignored. Two locales
+  // hitting the same URL would collide on the cache and one would poison the
+  // other with the wrong-language content. Append the locale as a query param
+  // so cache entries stay per-locale. The backend ignores unknown params.
+  const cacheKeyedURL = locale
+    ? `${url}${url.includes("?") ? "&" : "?"}_loc=${encodeURIComponent(locale)}`
+    : url;
+  const res = await fetch(cacheKeyedURL, {
     next: { revalidate: 60 },
     headers: locale ? { "Accept-Language": locale } : undefined,
   });
@@ -137,6 +170,21 @@ export const cms = {
     }
   },
 
+  async listPublicClients(locale?: string): Promise<PublicClientItem[]> {
+    // No fallback: if the endpoint is 404 (module off) or throws, an empty
+    // list is the safe answer — the page renders the empty state and no
+    // client name leaks without a live consent record backing it.
+    try {
+      const data = await getJSON<{ clients: PublicClientItem[] }>(
+        `${apiBase.serverCMS}/clients`,
+        locale,
+      );
+      return data.clients ?? [];
+    } catch {
+      return [];
+    }
+  },
+
   async getCaseStudy(slug: string, locale?: string) {
     try {
       return await getJSON<CaseStudyItem>(
@@ -157,6 +205,17 @@ export const cms = {
       return data.posts ?? [];
     } catch {
       return [];
+    }
+  },
+
+  async getBlogPost(slug: string, locale?: string) {
+    try {
+      return await getJSON<BlogPostItem>(
+        `${apiBase.serverCMS}/blog/${slug}`,
+        locale,
+      );
+    } catch {
+      return null;
     }
   },
 
@@ -183,6 +242,41 @@ export const cms = {
       return [];
     }
   },
+
+  // Landing page copy (hero, CTAs, section titles) resolved on the server for
+  // the requested locale. Returns {} on failure so the page can fall back to
+  // its i18n JSON defaults.
+  async getHome(locale?: string): Promise<Record<string, string>> {
+    try {
+      return await getJSON<Record<string, string>>(
+        `${apiBase.serverCMS}/home`,
+        locale,
+      );
+    } catch {
+      return {};
+    }
+  },
+
+  // Static CMS page (about, privacy, terms, dpa, custom slugs). Returns
+  // locale-resolved fields — or null if the page is missing / unpublished,
+  // so the caller can fall back to its i18n JSON layout.
+  async getPage(slug: string, locale?: string) {
+    try {
+      return await getJSON<{
+        id: string;
+        slug: string;
+        title: string;
+        body_md: string;
+        seo_title: string | null;
+        seo_description: string | null;
+        is_published: boolean;
+        created_at: string;
+        updated_at: string;
+      }>(`${apiBase.serverCMS}/pages/${slug}`, locale);
+    } catch {
+      return null;
+    }
+  },
 };
 
 // ----- Static fallbacks so the site renders even if the API is down -----
@@ -192,35 +286,35 @@ export const fallbackServices: ServiceItem[] = [
   { id: "1", slug: "it-management", title: "IT Management Partner",
     short_summary: "End-to-end IT operations for hotels, villas, and resorts — single point of contact, hospitality-grade SLAs.",
     description: "F2 acts as your in-house IT department. We design, deploy, monitor, and support every layer of your property's technology — from the cabling in the walls to the apps on your guests' phones. Same-day on-site response on Samui; remote-first elsewhere in Thailand.",
-    icon: "Server", category: "core", sort_order: 10 },
+    intro: "", faq: [], icon: "Server", category: "core", sort_order: 10 },
   { id: "2", slug: "digital-transformation", title: "Digital Transformation",
     short_summary: "Roadmaps and execution to modernise property operations, guest experience, and back-office workflows.",
     description: "We assess your current stack, identify the highest-ROI changes, and then actually build them. Typical engagements: PMS modernisation, contactless check-in, paperless F&B ops, AI-assisted reservations.",
-    icon: "Sparkles", category: "core", sort_order: 20 },
+    intro: "", faq: [], icon: "Sparkles", category: "core", sort_order: 20 },
   { id: "3", slug: "ai-driven-solutions", title: "AI-Driven Solutions",
     short_summary: "Practical AI for hospitality — chat concierge, intelligent enquiry handling, ops copilots.",
     description: "F2 builds and operates AI workflows that fit your brand voice. Powered by Anthropic Claude and OpenAI, integrated with your PMS, booking engine, and CRM. Outcomes-first, not hype-first.",
-    icon: "Bot", category: "core", sort_order: 30 },
+    intro: "", faq: [], icon: "Bot", category: "core", sort_order: 30 },
   { id: "4", slug: "domain-hosting", title: "Domain & Hosting",
     short_summary: "Reliable domain registration and managed hosting via our ResellerClub partnership.",
     description: "Single-vendor management of your .com, .co.th, and country-specific domains, plus high-uptime managed hosting tuned for hospitality websites and booking engines. DNS, SSL, email — handled.",
-    icon: "Globe", category: "core", sort_order: 40 },
+    intro: "", faq: [], icon: "Globe", category: "core", sort_order: 40 },
   { id: "5", slug: "iacc-saas", title: "iACC — Tour Operator SaaS",
     short_summary: "Multi-tenant accounting and operations platform for tour operators and travel agencies.",
     description: "iACC is F2's own SaaS product: bookings, payments, agents, allotments, fleets — all in one place, mobile-friendly. Visit iacc.f2.co.th.",
-    icon: "LayoutDashboard", category: "core", sort_order: 50 },
+    intro: "", faq: [], icon: "LayoutDashboard", category: "core", sort_order: 50 },
   { id: "6", slug: "it-support-msp", title: "IT Management & MSP Services",
     short_summary: "24/7 monitoring, helpdesk, and managed services for distributed hospitality operations.",
     description: "We sit on top of your stack and keep it running. Helpdesk, monitoring, patching, backups, vendor management. Tiered SLAs from business-hours to 24/7 white-glove.",
-    icon: "Headset", category: "support", sort_order: 60 },
+    intro: "", faq: [], icon: "Headset", category: "support", sort_order: 60 },
   { id: "7", slug: "cybersecurity", title: "Cybersecurity",
     short_summary: "Firewall, intrusion detection, guest network isolation, CCTV, and PCI-aware POS hardening.",
     description: "Hospitality is a high-value target. We deploy and operate the security controls your insurers and brand standards expect — without making the guest WiFi feel like an enterprise VPN.",
-    icon: "ShieldCheck", category: "support", sort_order: 70 },
+    intro: "", faq: [], icon: "ShieldCheck", category: "support", sort_order: 70 },
   { id: "8", slug: "hardware-solar", title: "Hardware & Solar (Samui)",
     short_summary: "IT hardware via SiS Distribution, plus solar cell installation for our Samui clients.",
     description: "Through our SiS Distribution partnership we source enterprise networking, servers, and POS hardware at distributor pricing. On Koh Samui we also offer turnkey solar installations.",
-    icon: "Sun", category: "opportunistic", sort_order: 80 },
+    intro: "", faq: [], icon: "Sun", category: "opportunistic", sort_order: 80 },
 ];
 
 export const fallbackCaseStudies: CaseStudyItem[] = [
