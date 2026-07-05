@@ -234,3 +234,29 @@ func TestLookupBillingContact_SkipsDisabledOwner(t *testing.T) {
 		t.Errorf("to=%q, want empty (disabled owner must be excluded)", to)
 	}
 }
+
+// TwoOwnersFirstCreatedWins — real F2 data has customers with multiple
+// role='owner' contacts (Miskawaan Villas at time of writing had two).
+// The resolver deterministically picks the earliest-created owner via
+// ORDER BY created_at LIMIT 1. This test locks that tie-breaker so a
+// future refactor can't silently change which owner receives billing
+// email. If F2 later decides to nominate a primary owner explicitly
+// (either via an is_primary boolean column or a 'primary_owner' role
+// enum value), update this expectation too.
+func TestLookupBillingContact_TwoOwnersFirstCreatedWins(t *testing.T) {
+	pool := dbForTest(t)
+	tx := txForTest(t, pool)
+	cust := insertTestCustomer(t, tx, "Two-owner customer")
+	insertContact(t, tx, cust, "first-owner@example.com", "owner", "en", false)
+	// Small delay so the second row's created_at is unambiguously later.
+	time.Sleep(20 * time.Millisecond)
+	insertContact(t, tx, cust, "second-owner@example.com", "owner", "th", false)
+
+	to, locale := lookupBillingContact(context.Background(), tx, cust)
+	if to != "first-owner@example.com" {
+		t.Errorf("to=%q, want first-owner@example.com (earliest created_at wins)", to)
+	}
+	if locale != "en" {
+		t.Errorf("locale=%q, want en (locale of first-created owner)", locale)
+	}
+}
