@@ -1,0 +1,24 @@
+{
+  "name": "f2-cms-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP server exposing read-only F2 CMS content (services, blog, case studies, pages) to Claude Code",
+  "type": "module",
+  "bin": {
+    "f2-cms-mcp": "src/index.ts"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "pg": "^8.13.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
