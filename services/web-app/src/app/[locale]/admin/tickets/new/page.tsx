@@ -15,9 +15,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
 import {
-  ArrowLeft, Loader2, AlertTriangle, Ticket, Search,
+  ArrowLeft, Loader2, AlertTriangle, Ticket, Search, Paperclip, CheckCircle2,
 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import AttachmentUploader from "@/components/attachments/AttachmentUploader";
+import { adminAttachments } from "@/lib/attachments-api";
 import {
   adminApi,
   type AdminCustomer,
@@ -30,7 +32,13 @@ type Priority = typeof PRIORITIES[number];
 export default function AdminNewTicketPage() {
   const t = useTranslations("admin.tickets.new");
   const tc = useTranslations("common");
+  const ta = useTranslations("attachments");
   const router = useRouter();
+
+  // createdTicketID != null → step 2 (attach files); null → step 1 (form).
+  // Mirrors the two-step flow on /portal/tickets/new so uploads land on
+  // the real ticket id instead of a client-side placeholder.
+  const [createdTicketID, setCreatedTicketID] = useState<string | null>(null);
 
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
   const [customersLoading, setCustomersLoading] = useState(true);
@@ -97,7 +105,10 @@ export default function AdminNewTicketPage() {
         opened_by_contact_id: contactID || undefined,
         assign_to_self: assignToSelf,
       });
-      router.push(`/admin/tickets/${res.id}` as never);
+      // Enter the attach step. AttachmentUploader needs the real ticket
+      // id to POST files to. The "View ticket" button ends the flow.
+      setCreatedTicketID(res.id);
+      setSubmitting(false);
     } catch (e: unknown) {
       setErr(tryMsg(e));
       setSubmitting(false);
@@ -129,6 +140,40 @@ export default function AdminNewTicketPage() {
         </div>
       )}
 
+      {createdTicketID ? (
+        // ── Step 2 — attach files to the freshly-created ticket ───────
+        // Runs the same AttachmentUploader used by portal + admin ticket
+        // detail. It supports multiple documents, multiple images, and
+        // "Take photo" (device camera + GPS coords via navigator.geolocation)
+        // — nothing custom needed here, just pass the ticket owner id +
+        // the admin-scoped attachments client.
+        <div className="card max-w-3xl space-y-4">
+          <div className="flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
+            <CheckCircle2 className="mt-0.5 h-4 w-4" />
+            <span>{t("attach.created")}</span>
+          </div>
+          <div>
+            <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-navy-800">
+              <Paperclip className="h-4 w-4" /> {ta("title")}
+            </div>
+            <p className="mb-3 text-xs text-navy-500">{t("attach.hint")}</p>
+            <AttachmentUploader
+              ownerType="ticket"
+              ownerId={createdTicketID}
+              client={adminAttachments}
+            />
+          </div>
+          <div className="flex justify-end gap-2 border-t border-navy-100 pt-4">
+            <button
+              type="button"
+              onClick={() => router.push(`/admin/tickets/${createdTicketID}` as never)}
+              className="btn-accent"
+            >
+              {t("attach.viewTicket")}
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left column: customer picker */}
         <div className="lg:col-span-1 space-y-4">
@@ -329,6 +374,7 @@ export default function AdminNewTicketPage() {
           </section>
         </div>
       </div>
+      )}
     </AdminShell>
   );
 }

@@ -780,6 +780,11 @@
           "assignToMe": "Assign to me",
           "assignToMeHint": "Uncheck to leave the ticket unassigned in the queue.",
           "createButton": "Create ticket"
+        },
+        "attach": {
+          "created": "Ticket created. Attach any supporting files below, then open the ticket.",
+          "hint": "Photos of the site, error screenshots, config exports, quotes — anything the F2 team should see attached to this ticket. You can also add attachments later from the ticket detail.",
+          "viewTicket": "Open ticket"
         }
       },
       "tiles": {
