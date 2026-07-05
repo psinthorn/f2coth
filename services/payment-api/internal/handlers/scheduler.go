@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/f2cothai/f2-website/services/payment-api/internal/config"
@@ -577,17 +578,66 @@ func cycleInterval(cycle string) string {
 	return "1 month"
 }
 
-func lookupBillingContact(ctx context.Context, db *pgxpool.Pool, customerID string) (to, locale string) {
+// contactLookupSQL is the exact query lookupBillingContact runs. Kept as
+// a package-level const so the regression test can assert the query never
+// again references a non-existent column (like the historical is_primary
+// bug this replaced). If you edit the SQL, update the tests too.
+const contactLookupSQL = `
+	SELECT
+	  (SELECT billing_email FROM customer_billing_profiles WHERE customer_id = $1),
+	  (SELECT email  FROM customer_contacts
+	    WHERE customer_id = $1 AND role='owner' AND disabled_at IS NULL
+	    ORDER BY created_at LIMIT 1),
+	  (SELECT locale FROM customer_contacts
+	    WHERE customer_id = $1 AND role='owner' AND disabled_at IS NULL
+	    ORDER BY created_at LIMIT 1),
+	  (SELECT email  FROM customer_contacts
+	    WHERE customer_id = $1 AND disabled_at IS NULL
+	    ORDER BY (role='owner') DESC, created_at LIMIT 1),
+	  (SELECT locale FROM customer_contacts
+	    WHERE customer_id = $1 AND disabled_at IS NULL
+	    ORDER BY (role='owner') DESC, created_at LIMIT 1)`
+
+// contactQuerier is the tiny subset of pgxpool.Pool / pgx.Tx that
+// lookupBillingContact needs. Accepting the interface lets integration
+// tests pass a transaction they then roll back, so tests never leak DB
+// fixtures.
+type contactQuerier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// lookupBillingContact resolves the recipient email for billing
+// correspondence to a customer. Resolution order (any hit wins):
+//   1. customer_billing_profiles.billing_email (authoritative — set
+//      explicitly by admin in /admin/customers/:id billing profile)
+//   2. customer_contacts.email where role='owner' and not disabled
+//      (portal-account owner; the schema has NO is_primary column —
+//      role='owner' is how migration 009 models the account owner)
+//   3. earliest non-disabled contact (falls back to any member)
+// Returns "" if none resolve — the caller treats "" as skip-email.
+func lookupBillingContact(ctx context.Context, db contactQuerier, customerID string) (to, locale string) {
 	locale = "en"
-	// Prefer billing_email from the billing profile, then primary contact.
-	if err := db.QueryRow(ctx, `
-		SELECT COALESCE(p.billing_email, cc.email),
-		       COALESCE(cc.locale,'en')
-		  FROM customers c
-		  LEFT JOIN customer_billing_profiles p ON p.customer_id = c.id
-		  LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_primary = true
-		 WHERE c.id = $1`, customerID).Scan(&to, &locale); err != nil {
+	var billingEmail, ownerEmail, ownerLocale, memberEmail, memberLocale *string
+	if err := db.QueryRow(ctx, contactLookupSQL, customerID).
+		Scan(&billingEmail, &ownerEmail, &ownerLocale, &memberEmail, &memberLocale); err != nil {
 		return "", "en"
+	}
+	switch {
+	case billingEmail != nil && *billingEmail != "":
+		to = *billingEmail
+		if ownerLocale != nil {
+			locale = *ownerLocale
+		}
+	case ownerEmail != nil && *ownerEmail != "":
+		to = *ownerEmail
+		if ownerLocale != nil {
+			locale = *ownerLocale
+		}
+	case memberEmail != nil && *memberEmail != "":
+		to = *memberEmail
+		if memberLocale != nil {
+			locale = *memberLocale
+		}
 	}
 	return to, locale
 }

@@ -587,15 +587,22 @@ func (h *PaymentHandler) notifyPaid(payID string) {
 		to, locale, invNumber, payNumber, currency, invoiceID string
 		amount                                                int64
 	)
+	// Resolve the billing recipient via the shared helper — same
+	// resolution order as dunning (billing profile → owner contact →
+	// any active contact). Was previously joining on the non-existent
+	// customer_contacts.is_primary column and silently returning "".
+	var customerID string
 	if err := h.DB.QueryRow(ctx, `
-		SELECT cc.email, COALESCE(cc.locale,'en'), i.invoice_number, p.payment_number,
-		       i.currency, p.amount_cents, i.id::text
+		SELECT i.invoice_number, p.payment_number,
+		       i.currency, p.amount_cents, i.id::text, p.customer_id::text
 		  FROM payments p
 		  JOIN invoices i ON i.id = p.invoice_id
-		  JOIN customers c ON c.id = p.customer_id
-		  LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_primary = true
 		 WHERE p.id=$1 LIMIT 1`, payID).
-		Scan(&to, &locale, &invNumber, &payNumber, &currency, &amount, &invoiceID); err != nil || to == "" {
+		Scan(&invNumber, &payNumber, &currency, &amount, &invoiceID, &customerID); err != nil {
+		return
+	}
+	to, locale = lookupBillingContact(ctx, h.DB, customerID)
+	if to == "" {
 		return
 	}
 	var atts []notify.Attachment
