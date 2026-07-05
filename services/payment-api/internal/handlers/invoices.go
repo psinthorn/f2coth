@@ -541,14 +541,19 @@ func (h *InvoiceHandler) sendInvoiceIssuedEmail(r *http.Request, invoiceID strin
 		totalCents         int64
 		currency           string
 	)
+	// Recipient via shared lookupBillingContact — was previously joining
+	// on non-existent customer_contacts.is_primary, silently returning ""
+	// so admin-triggered invoice_issued emails never actually sent.
+	var customerID string
 	err := h.DB.QueryRow(ctx, `
-		SELECT cc.email, COALESCE(cc.locale, 'en'), i.invoice_number, i.total_cents, i.currency
+		SELECT i.invoice_number, i.total_cents, i.currency, i.customer_id::text
 		  FROM invoices i
-		  JOIN customers c ON c.id = i.customer_id
-		  LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_primary = true
-		 WHERE i.id=$1
-		 LIMIT 1`, invoiceID).Scan(&to, &locale, &number, &totalCents, &currency)
-	if err != nil || to == "" {
+		 WHERE i.id=$1 LIMIT 1`, invoiceID).Scan(&number, &totalCents, &currency, &customerID)
+	if err != nil {
+		return
+	}
+	to, locale = lookupBillingContact(ctx, h.DB, customerID)
+	if to == "" {
 		return
 	}
 	portalLink := strings.TrimRight(h.Cfg.PortalBaseURL, "/") + "/portal/billing/" + invoiceID

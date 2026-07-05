@@ -211,15 +211,23 @@ func (h *WebhookHandler) notifyPaid(payID string) {
 	defer cancel()
 	var to, locale, invNumber, payNumber, currency string
 	var amount int64
+	// Recipient via shared lookupBillingContact (billing profile → owner
+	// → any active contact). The previous inline join on
+	// customer_contacts.is_primary hit a non-existent column and always
+	// returned "" — payment-received emails were silently never sent
+	// on webhook completions.
+	var customerID string
 	if err := h.DB.QueryRow(ctx, `
-		SELECT cc.email, COALESCE(cc.locale,'en'), i.invoice_number, p.payment_number,
-		       i.currency, p.amount_cents
+		SELECT i.invoice_number, p.payment_number,
+		       i.currency, p.amount_cents, p.customer_id::text
 		  FROM payments p
 		  JOIN invoices i ON i.id = p.invoice_id
-		  JOIN customers c ON c.id = p.customer_id
-		  LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_primary = true
 		 WHERE p.id=$1 LIMIT 1`, payID).
-		Scan(&to, &locale, &invNumber, &payNumber, &currency, &amount); err != nil || to == "" {
+		Scan(&invNumber, &payNumber, &currency, &amount, &customerID); err != nil {
+		return
+	}
+	to, locale = lookupBillingContact(ctx, h.DB, customerID)
+	if to == "" {
 		return
 	}
 	h.Notify.Send(notify.Job{
