@@ -753,6 +753,35 @@
     "tickets": {
       "title": "Tickets",
       "subtitle": "Customer support queue",
+      "newTicket": "New ticket",
+      "new": {
+        "back": "All tickets",
+        "title": "New ticket",
+        "subtitle": "Create a ticket on behalf of a customer. Use this when a customer phones or emails a request instead of opening the portal ticket themselves.",
+        "customerPicker": {
+          "title": "1. Pick customer",
+          "searchPlaceholder": "Search by name / slug / industry",
+          "noMatch": "No customers match this search."
+        },
+        "form": {
+          "pickCustomerFirst": "Pick a customer on the left to enable the form.",
+          "forCustomer": "Ticket for",
+          "subject": "Subject",
+          "subjectPlaceholder": "e.g. SPF record requested for salahospitality.com",
+          "description": "Description",
+          "descriptionPlaceholder": "Capture what the customer asked for, when, and how it came in (email / phone / detected by F2).",
+          "descriptionHint": "Visible to the customer in their portal — write it as an F2-staff message.",
+          "priority": "Priority",
+          "relatedService": "Related service",
+          "noneOption": "— none —",
+          "onBehalfOf": "On behalf of",
+          "f2Initiated": "— F2-initiated —",
+          "onBehalfHint": "Optional. Pick the customer contact who requested this.",
+          "assignToMe": "Assign to me",
+          "assignToMeHint": "Uncheck to leave the ticket unassigned in the queue.",
+          "createButton": "Create ticket"
+        }
+      },
       "tiles": {
         "open": "Open",
         "inProgress": "In progress",
