@@ -11,6 +11,9 @@ import AdminShell from "@/components/AdminShell";
 import {
   adminApi, type AdminTicket, type AdminTicketMessage, type User,
 } from "@/lib/admin-api";
+import AttachmentUploader from "@/components/attachments/AttachmentUploader";
+import AttachmentList from "@/components/attachments/AttachmentList";
+import { adminAttachments } from "@/lib/attachments-api";
 
 const statuses = ["open", "in_progress", "waiting_customer", "resolved", "closed"];
 const priorities = ["low", "normal", "high", "urgent"];
@@ -25,6 +28,7 @@ const statusColor: Record<string, string> = {
 export default function AdminTicketDetailPage() {
   const t = useTranslations("admin.tickets.detail");
   const tc = useTranslations("common");
+  const ta = useTranslations("attachments");
   const params = useParams<{ id: string }>();
   const id = params?.id;
 
@@ -37,6 +41,8 @@ export default function AdminTicketDetailPage() {
   const [reply, setReply] = useState("");
   const [internal, setInternal] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [attachTick, setAttachTick] = useState(0);
+  const [replyMsgId, setReplyMsgId] = useState<string | null>(null);
 
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
@@ -72,9 +78,10 @@ export default function AdminTicketDetailPage() {
     setBusy(true);
     setErr("");
     try {
-      await adminApi.addAdminTicketMessage(id, reply.trim(), internal);
+      const res = await adminApi.addAdminTicketMessage(id, reply.trim(), internal);
       setReply("");
       setInternal(false);
+      setReplyMsgId(res.id);
       await load();
     } catch (e: any) {
       setErr(tryMsg(e));
@@ -129,6 +136,26 @@ export default function AdminTicketDetailPage() {
 
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-3">
+              <div className="card">
+                <div className="mb-2 text-sm font-medium text-navy-800">{ta("title")}</div>
+                <AttachmentList
+                  ownerType="ticket"
+                  ownerId={id!}
+                  client={adminAttachments}
+                  canDelete
+                  refreshKey={attachTick}
+                />
+                <div className="mt-3">
+                  <AttachmentUploader
+                    ownerType="ticket"
+                    ownerId={id!}
+                    client={adminAttachments}
+                    onUploaded={() => setAttachTick((n) => n + 1)}
+                    compact
+                  />
+                </div>
+              </div>
+
               {messages.map((m) => (
                 <div key={m.id}
                   className={`card ${
@@ -148,11 +175,25 @@ export default function AdminTicketDetailPage() {
                     <span>{new Date(m.created_at).toLocaleString()}</span>
                   </div>
                   <p className="mt-3 whitespace-pre-wrap text-sm text-navy-800">{m.body}</p>
+                  <div className="mt-2">
+                    <AttachmentList ownerType="ticket_message" ownerId={m.id} client={adminAttachments} canDelete />
+                  </div>
                 </div>
               ))}
 
               {ticket.status !== "closed" && (
                 <div className="card mt-4 space-y-3">
+                  {replyMsgId && (
+                    <div className="rounded-lg border border-navy-100 bg-navy-50/50 p-3">
+                      <div className="mb-1.5 text-xs font-medium text-navy-700">{ta("title")}</div>
+                      <AttachmentUploader
+                        ownerType="ticket_message"
+                        ownerId={replyMsgId}
+                        client={adminAttachments}
+                        compact
+                      />
+                    </div>
+                  )}
                   <textarea
                     value={reply} onChange={(e) => setReply(e.target.value)}
                     rows={4} maxLength={10000}

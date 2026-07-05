@@ -299,7 +299,7 @@ export const adminApi = {
   listAdminTicketMessages: (id: string) =>
     request<{ messages: AdminTicketMessage[] }>(`/customer/admin/tickets/${id}/messages`),
   addAdminTicketMessage: (id: string, body: string, internal: boolean) =>
-    request<void>(`/customer/admin/tickets/${id}/messages`, {
+    request<{ id: string }>(`/customer/admin/tickets/${id}/messages`, {
       method: "POST",
       body: JSON.stringify({ body, internal }),
     }),

@@ -38,7 +38,9 @@ Any new service that gates on identity **must** distinguish these — a staff `R
 
 001 extensions · 002 auth (users, refresh, login_events) · 003 cms (services, case_studies, blog, media, hosting_plans, pages) · 004 leads + activities · 005 chat sessions/messages · 006 notifications + templates · 007 seed data · 008 admin v1 · 009 customers + contacts + tickets · 010 customer_assets/domains · 011 i18n JSONB conversion · 012–017 pricing/domain-orders/SLA/billing-profile · 018 dsr_audit_log → 019 modules + audit_log (generic) · 020 remove Bangkok office · 021–031 payments stack (invoices, methods, settings, PayPal, slip files, tax invoice, subs, refunds, bank imports, disputes, dunning) · 032 service_suspensions · 033 home_page_content · 034 fix i18n double nesting · 035 admin_pages_and_dpa_seed · 036 admin editable page heroes · 037 app_mode · **038 projects_checklists** · **039 checklist_seed (12 templates, 78 items)** · **040 projects_customer_link (customer_id FK + visible_to_customer + portal.projects module)**
 
-Next migration number: **041_*.sql**.
+(041–052 added since this list was last curated — read `database/migrations/` for the authoritative sequence) · **053 attachments (polymorphic `attachments` table: multi-doc / multi-image / geo-tagged live-photo BYTEA storage for tickets + projects; `api.attachments` module toggle)**
+
+Next migration number: **054_*.sql**.
 
 All migrations are idempotent (`CREATE TABLE IF NOT EXISTS`, `ON CONFLICT DO NOTHING`). Re-run via `make migrate`.
 

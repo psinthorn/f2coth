@@ -579,10 +579,12 @@ func (h *AdminHandler) AddMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(r.Context())
 
-	if _, err := tx.Exec(r.Context(), `
+	var msgID string
+	if err := tx.QueryRow(r.Context(), `
         INSERT INTO ticket_messages (ticket_id, author_user_id, body, internal)
         VALUES ($1, $2, $3, $4)
-    `, id, uid, body, req.Internal); err != nil {
+        RETURNING id
+    `, id, uid, body, req.Internal).Scan(&msgID); err != nil {
 		writeErr(w, http.StatusInternalServerError, "could not save message")
 		return
 	}
@@ -607,7 +609,7 @@ func (h *AdminHandler) AddMessage(w http.ResponseWriter, r *http.Request) {
 			id, body, h.lookupStaffName(uid), "ticket_reply_customer")
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	writeJSON(w, http.StatusCreated, map[string]string{"id": msgID})
 }
 
 type adminTicketUpdateReq struct {

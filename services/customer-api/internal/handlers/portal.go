@@ -311,10 +311,12 @@ func (h *PortalHandler) AddMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(r.Context())
 
-	if _, err := tx.Exec(r.Context(), `
+	var msgID string
+	if err := tx.QueryRow(r.Context(), `
         INSERT INTO ticket_messages (ticket_id, author_contact_id, body, internal)
         VALUES ($1, $2, $3, FALSE)
-    `, id, conid, body); err != nil {
+        RETURNING id
+    `, id, conid, body).Scan(&msgID); err != nil {
 		writeErr(w, http.StatusInternalServerError, "could not save message")
 		return
 	}
@@ -331,7 +333,7 @@ func (h *PortalHandler) AddMessage(w http.ResponseWriter, r *http.Request) {
 	// Best-effort: email staff that the customer replied.
 	NotifyStaffOnCustomerReply(h.DB, h.Cfg, h.Notify, id, body)
 
-	w.WriteHeader(http.StatusCreated)
+	writeJSON(w, http.StatusCreated, map[string]string{"id": msgID})
 }
 
 type statusReq struct {

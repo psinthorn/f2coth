@@ -6,6 +6,9 @@ import { Link } from "@/i18n/routing";
 import { Loader2, Check, X, MinusCircle, Circle, ChevronLeft, ChevronDown, ChevronRight, Camera } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import { checklistApi, type ItemStatus, type ProjectBoard, type ProjectItem } from "@/lib/checklist-api";
+import AttachmentUploader from "@/components/attachments/AttachmentUploader";
+import AttachmentList from "@/components/attachments/AttachmentList";
+import { checklistAttachments } from "@/lib/attachments-api";
 
 const nextStatus: Record<ItemStatus, ItemStatus> = {
   pending: "pass",
@@ -111,9 +114,11 @@ function ModuleSection({
 
 function ItemRow({ item, onPatch }: { item: ProjectItem; onPatch: (id: string, u: Partial<ProjectItem>) => void }) {
   const t = useTranslations("admin.projects");
+  const ta = useTranslations("attachments");
   const [note, setNote] = useState(item.note ?? "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [attachTick, setAttachTick] = useState(0);
   const projectId = useContext(ProjectIdContext);
 
   const uploadPhoto = async (file: File) => {
@@ -197,6 +202,27 @@ function ItemRow({ item, onPatch }: { item: ProjectItem; onPatch: (id: string, u
               {t("checklist.viewPhoto")}
             </a>
           )}
+        </div>
+
+        {/* Multi-file attachments + geo-tagged live photos. */}
+        <div className="mt-3 border-t border-navy-100 pt-3">
+          <div className="mb-1.5 text-xs font-medium text-navy-600">{ta("title")}</div>
+          <AttachmentList
+            ownerType="project_item"
+            ownerId={item.id}
+            client={checklistAttachments}
+            canDelete
+            refreshKey={attachTick}
+          />
+          <div className="mt-2">
+            <AttachmentUploader
+              ownerType="project_item"
+              ownerId={item.id}
+              client={checklistAttachments}
+              onUploaded={() => setAttachTick((n) => n + 1)}
+              compact
+            />
+          </div>
         </div>
       </div>
     </li>

@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 import PortalShell from "@/components/PortalShell";
 import { portalApi, type PortalTicket, type PortalMessage } from "@/lib/portal-api";
+import AttachmentUploader from "@/components/attachments/AttachmentUploader";
+import AttachmentList from "@/components/attachments/AttachmentList";
+import { portalAttachments } from "@/lib/attachments-api";
 
 const statusColor: Record<string, string> = {
   open: "bg-accent-50 text-accent-800",
@@ -21,6 +24,7 @@ const statusColor: Record<string, string> = {
 export default function TicketDetailPage() {
   const t = useTranslations("portal.tickets.detail");
   const tc = useTranslations("common");
+  const ta = useTranslations("attachments");
   const params = useParams<{ id: string }>();
   const id = params?.id;
 
@@ -30,6 +34,10 @@ export default function TicketDetailPage() {
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [attachTick, setAttachTick] = useState(0);
+  // After a reply posts, keep its id so the customer can attach files to
+  // that specific message.
+  const [replyMsgId, setReplyMsgId] = useState<string | null>(null);
 
   async function load() {
     if (!id) return;
@@ -52,8 +60,9 @@ export default function TicketDetailPage() {
     if (!id || !reply.trim()) return;
     setBusy(true);
     try {
-      await portalApi.addMessage(id, reply.trim());
+      const res = await portalApi.addMessage(id, reply.trim());
       setReply("");
+      setReplyMsgId(res.id);
       await load();
     } catch (e: any) {
       setErr(e?.message ?? t("errorReply"));
@@ -107,6 +116,28 @@ export default function TicketDetailPage() {
             </div>
           )}
 
+          <section className="card mb-4">
+            <div className="mb-2 text-sm font-medium text-navy-800">{ta("title")}</div>
+            <AttachmentList
+              ownerType="ticket"
+              ownerId={id!}
+              client={portalAttachments}
+              canDelete
+              refreshKey={attachTick}
+            />
+            {ticket.status !== "closed" && (
+              <div className="mt-3">
+                <AttachmentUploader
+                  ownerType="ticket"
+                  ownerId={id!}
+                  client={portalAttachments}
+                  onUploaded={() => setAttachTick((n) => n + 1)}
+                  compact
+                />
+              </div>
+            )}
+          </section>
+
           <section className="space-y-3">
             {messages.map((m) => (
               <div
@@ -121,12 +152,26 @@ export default function TicketDetailPage() {
                   <span>{new Date(m.created_at).toLocaleString()}</span>
                 </div>
                 <p className="mt-3 whitespace-pre-wrap text-sm text-navy-800">{m.body}</p>
+                <div className="mt-2">
+                  <AttachmentList ownerType="ticket_message" ownerId={m.id} client={portalAttachments} />
+                </div>
               </div>
             ))}
           </section>
 
           {ticket.status !== "closed" && (
             <section className="mt-6 space-y-3">
+              {replyMsgId && (
+                <div className="rounded-lg border border-navy-100 bg-navy-50/50 p-3">
+                  <div className="mb-1.5 text-xs font-medium text-navy-700">{ta("title")}</div>
+                  <AttachmentUploader
+                    ownerType="ticket_message"
+                    ownerId={replyMsgId}
+                    client={portalAttachments}
+                    compact
+                  />
+                </div>
+              )}
               <textarea
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}

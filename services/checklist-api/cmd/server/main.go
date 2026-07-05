@@ -73,6 +73,13 @@ func main() {
 			r.Get("/projects/{id}/progress", h.GetProjectProgress)
 			r.Get("/projects/{id}/report", h.GetProjectReport)
 			r.Get("/projects/{id}/visits", h.ListVisits)
+
+			// Attachments — staff read (metadata + streamed file).
+			r.Group(func(r chi.Router) {
+				r.Use(mw.GateModule("api.attachments"))
+				r.Get("/attachments", h.ListAttachments)
+				r.Get("/attachments/{id}", h.ServeAttachment)
+			})
 		})
 		// Staff (admin + editor = tech) can write item state + visit logs,
 		// and upload photos to attach to items.
@@ -81,6 +88,13 @@ func main() {
 			r.Patch("/items/{id}", h.UpdateItem)
 			r.Post("/projects/{id}/visits", h.CreateVisit)
 			r.Post("/uploads", h.UploadPhoto)
+
+			// Attachments — staff write (documents, images, live GPS photos).
+			r.Group(func(r chi.Router) {
+				r.Use(mw.GateModule("api.attachments"))
+				r.Post("/attachments", h.CreateAttachment)
+				r.Delete("/attachments/{id}", h.DeleteAttachment)
+			})
 		})
 		// Customer portal — read-only, scoped to the caller's customer_id.
 		r.Group(func(r chi.Router) {
@@ -89,6 +103,13 @@ func main() {
 			r.Get("/portal/projects/{id}", h.PortalGetProject)
 			r.Get("/portal/projects/{id}/board", h.PortalGetBoard)
 			r.Get("/portal/projects/{id}/progress", h.PortalGetProgress)
+
+			// Attachments — customer read, scoped to visible projects.
+			r.Group(func(r chi.Router) {
+				r.Use(mw.GateModule("api.attachments"))
+				r.Get("/portal/attachments", h.PortalListAttachments)
+				r.Get("/portal/attachments/{id}", h.PortalServeAttachment)
+			})
 		})
 		// Admin-only: template CRUD + project lifecycle + module attach/detach/reorder.
 		r.Group(func(r chi.Router) {

@@ -3,15 +3,18 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
-import { ArrowLeft, Loader2, AlertTriangle, Send } from "lucide-react";
+import { ArrowLeft, Loader2, AlertTriangle, Send, CheckCircle2, Paperclip } from "lucide-react";
 import PortalShell from "@/components/PortalShell";
 import { portalApi, type TicketPriority } from "@/lib/portal-api";
+import AttachmentUploader from "@/components/attachments/AttachmentUploader";
+import { portalAttachments } from "@/lib/attachments-api";
 
 const priorities: TicketPriority[] = ["low", "normal", "high", "urgent"];
 
 export default function NewTicketPage() {
   const t = useTranslations("portal.tickets.new");
   const tc = useTranslations("common");
+  const ta = useTranslations("attachments");
   const router = useRouter();
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -20,6 +23,7 @@ export default function NewTicketPage() {
   const [services, setServices] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [createdId, setCreatedId] = useState<string | null>(null);
 
   useEffect(() => {
     portalApi.me()
@@ -38,7 +42,10 @@ export default function NewTicketPage() {
         priority,
         related_service_slug: related || undefined,
       });
-      router.push(`/portal/tickets/${res.id}` as any);
+      // Attachments need the new ticket id, so surface an optional attach
+      // step here rather than redirecting immediately.
+      setCreatedId(res.id);
+      setBusy(false);
     } catch (e: any) {
       setErr(e?.message ?? t("errorGeneric"));
       setBusy(false);
@@ -53,6 +60,29 @@ export default function NewTicketPage() {
 
       <h1 className="mt-4 mb-6 font-display text-3xl text-navy-900">{t("title")}</h1>
 
+      {createdId ? (
+        <div className="card max-w-2xl space-y-4">
+          <div className="flex items-start gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-800">
+            <CheckCircle2 className="mt-0.5 h-4 w-4" />
+            <span>{t("created")}</span>
+          </div>
+          <div>
+            <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-navy-800">
+              <Paperclip className="h-4 w-4" /> {ta("title")}
+            </div>
+            <AttachmentUploader ownerType="ticket" ownerId={createdId} client={portalAttachments} />
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => router.push(`/portal/tickets/${createdId}` as any)}
+              className="btn-accent"
+            >
+              {t("viewTicket")}
+            </button>
+          </div>
+        </div>
+      ) : (
       <form onSubmit={submit} className="card max-w-2xl space-y-4">
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-navy-800">{t("subject")}</label>
@@ -116,6 +146,7 @@ export default function NewTicketPage() {
           </button>
         </div>
       </form>
+      )}
     </PortalShell>
   );
 }

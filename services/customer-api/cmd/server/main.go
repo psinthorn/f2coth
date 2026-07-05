@@ -34,6 +34,7 @@ func main() {
 	ph := &handlers.PortalHandler{DB: pool, Cfg: cfg, Notify: notifier}
 	ah := &handlers.AdminHandler{DB: pool, Cfg: cfg, Notify: notifier}
 	assets := &handlers.AssetHandler{DB: pool}
+	attach := &handlers.AttachmentHandler{DB: pool, Cfg: cfg}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -65,6 +66,15 @@ func main() {
 		r.Patch("/tickets/{id}/status", ph.UpdateStatus)
 		r.Get("/tickets/{id}/messages", ph.ListMessages)
 		r.Post("/tickets/{id}/messages", ph.AddMessage)
+
+		// Attachments (documents, images, geo-tagged live photos).
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("api.attachments"))
+			r.Post("/attachments", attach.Upload)
+			r.Get("/attachments", attach.List)
+			r.Get("/attachments/{id}", attach.Serve)
+			r.Delete("/attachments/{id}", attach.Delete)
+		})
 
 		// Entitlement-gated read endpoints (return 404 if customer
 		// doesn't have the underlying service contracted).
@@ -123,6 +133,15 @@ func main() {
 		r.Patch("/tickets/{id}", ah.UpdateTicket)
 		r.Get("/tickets/{id}/messages", ah.ListAllMessages)
 		r.Post("/tickets/{id}/messages", ah.AddMessage)
+
+		// Attachments (documents, images, geo-tagged live photos).
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("api.attachments"))
+			r.Post("/attachments", attach.Upload)
+			r.Get("/attachments", attach.List)
+			r.Get("/attachments/{id}", attach.Serve)
+			r.Delete("/attachments/{id}", attach.Delete)
+		})
 	})
 
 	srv := &http.Server{

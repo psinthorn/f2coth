@@ -186,7 +186,7 @@ export const portalApi = {
     }),
   listMessages: (id: string) => request<{ messages: PortalMessage[] }>(`/portal/tickets/${id}/messages`),
   addMessage: (id: string, body: string) =>
-    request<void>(`/portal/tickets/${id}/messages`, {
+    request<{ id: string }>(`/portal/tickets/${id}/messages`, {
       method: "POST",
       body: JSON.stringify({ body }),
     }),

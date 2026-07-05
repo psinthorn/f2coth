@@ -2020,6 +2020,8 @@
         "submit": "Submit",
         "submitting": "Submitting…",
         "errorGeneric": "Could not create ticket",
+        "created": "Ticket created. You can attach files below, or view your ticket.",
+        "viewTicket": "View ticket",
         "back": "All tickets"
       },
       "detail": {
@@ -2491,5 +2493,22 @@
     "trialDefault": "You are viewing a pre-production preview. Data and features may change without notice.",
     "maintenanceDefault": "We're briefly offline for maintenance. Please try again soon.",
     "splashTitle": "We'll be right back."
+  },
+  "attachments": {
+    "title": "Attachments",
+    "attachDocuments": "Attach documents",
+    "attachImages": "Attach images",
+    "takePhoto": "Take photo",
+    "capturingLocation": "Capturing location…",
+    "locationCaptured": "Location captured",
+    "uploading": "Uploading…",
+    "uploadFailed": "Upload failed",
+    "fileTooLarge": "File exceeds {max}",
+    "unsupportedType": "Unsupported file type",
+    "viewOnMap": "View on map",
+    "remove": "Remove",
+    "download": "Download",
+    "loading": "Loading attachments…",
+    "noAttachments": "No attachments yet"
   }
 }
