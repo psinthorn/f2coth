@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Inbox, FolderOpen, Trophy, Loader2, ArrowRight } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import BillingDashboardWidget from "@/components/BillingDashboardWidget";
 import { adminApi, type Activity, type LeadStats } from "@/lib/admin-api";
 
 export default function AdminDashboardPage() {
@@ -30,6 +31,10 @@ export default function AdminDashboardPage() {
         <h1 className="font-display text-3xl text-navy-900">{t("title")}</h1>
         <p className="mt-1 text-sm text-navy-600">{t("subtitle")}</p>
       </header>
+
+      <div className="mb-6">
+        <BillingDashboardWidget />
+      </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-navy-500"><Loader2 className="h-4 w-4 animate-spin" /> {tc("loading")}</div>

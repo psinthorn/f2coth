@@ -122,8 +122,52 @@ Audit the restore via the same SELECTs as the monthly verification.
 
 ---
 
+## Non-database volumes to back up
+
+### `checklist-uploads` — photos attached to project items
+
+The checklist-api photo-upload endpoint writes to a named volume:
+
+- **Volume:** `f2-website_checklist-uploads`
+- **Container mount:** `/data/uploads` inside `f2-checklist-api`
+- **Contents:** JPEG/PNG/WEBP/HEIC images; ~2–4 MiB per file; filenames
+  are 32-hex + extension (content-addressable, not reused).
+- **Loss impact:** all attached item photos disappear from the audit
+  trail. `project_items.photo_url` still references them but 404s.
+
+Backup (host side):
+
+```bash
+docker run --rm \
+    -v f2-website_checklist-uploads:/from:ro \
+    -v $(pwd):/to \
+    alpine tar czf /to/uploads-$(date +%F).tar.gz -C /from .
+```
+
+Restore:
+
+```bash
+docker run --rm \
+    -v f2-website_checklist-uploads:/to \
+    -v $(pwd):/from \
+    alpine sh -c 'cd /to && tar xzf /from/uploads-YYYY-MM-DD.tar.gz'
+```
+
+Both are wrapped in Makefile targets:
+
+```bash
+make backup-uploads       # writes ./uploads-YYYY-MM-DD.tar.gz
+make restore-uploads FILE=./uploads-2026-07-04.tar.gz
+```
+
+Cadence: daily, alongside the Postgres backup. Uploads grow slowly —
+one tarball per day for 30 days ≈ 10–20 GB max at current scale.
+
+---
+
 ## Open improvements
 
 - Script `scripts/backup.sh` + add to crontab (no script committed yet).
 - WAL-archiving for point-in-time recovery (current strategy is daily snapshots only).
 - Encrypted backups (e.g. `gpg --symmetric`) before off-host sync.
+- Off-host sync target: S3-compatible bucket (Backblaze B2 is cheapest at this volume).

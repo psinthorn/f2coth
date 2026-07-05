@@ -4,15 +4,17 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import {
-  LayoutDashboard, Inbox, LogOut, Menu, X, Loader2, Building2, Globe, ShieldCheck,
+  LayoutDashboard, Inbox, LogOut, Menu, X, Loader2, Building2, Globe, ShieldCheck, Receipt, FileSignature, ClipboardCheck,
 } from "lucide-react";
 import { portalApi, clearPortalAuth, redirectToPortalLogin, type PortalContact, type PortalCustomer } from "@/lib/portal-api";
+import SandboxBanner from "@/components/SandboxBanner";
+import SuspendedServicesBanner from "@/components/SuspendedServicesBanner";
 
 type GroupKey = "workspace" | "support" | "services";
 
 type NavItem = {
-  href: "/portal" | "/portal/tickets" | "/portal/domains" | "/portal/sla";
-  labelKey: "account" | "tickets" | "domains" | "sla";
+  href: "/portal" | "/portal/tickets" | "/portal/domains" | "/portal/sla" | "/portal/billing" | "/portal/billing-profile" | "/portal/projects";
+  labelKey: "account" | "tickets" | "domains" | "sla" | "billing" | "billingProfile" | "projects";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   requireService?: string;
@@ -26,12 +28,15 @@ const NAV: NavGroup[] = [
     key: "workspace",
     items: [
       { href: "/portal", labelKey: "account", icon: LayoutDashboard, exact: true },
+      { href: "/portal/billing", labelKey: "billing", icon: Receipt },
+      { href: "/portal/billing-profile", labelKey: "billingProfile", icon: FileSignature },
     ],
   },
   {
     key: "support",
     items: [
       { href: "/portal/tickets", labelKey: "tickets", icon: Inbox },
+      { href: "/portal/projects", labelKey: "projects", icon: ClipboardCheck },
     ],
   },
   {
@@ -121,6 +126,8 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-navy-50">
+      <SandboxBanner />
+      <SuspendedServicesBanner />
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-navy-100 bg-white px-4 py-3 lg:hidden">
         <Link href="/portal" className="flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-700 font-display text-sm font-bold text-white">F2</span>

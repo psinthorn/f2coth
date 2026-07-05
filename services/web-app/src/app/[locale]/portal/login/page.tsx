@@ -86,6 +86,8 @@ function LoginForm() {
             {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submit")}
           </button>
           <p className="text-center text-xs text-navy-500">
+            <Link href={"/portal/login/forgot" as any} className="hover:text-accent-700">{t("forgotPassword")}</Link>
+            <span className="mx-2">·</span>
             <Link href="/" className="hover:text-accent-700">{t("back")}</Link>
           </p>
         </div>

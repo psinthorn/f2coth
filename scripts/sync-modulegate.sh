@@ -25,6 +25,7 @@ CONSUMERS=(
   services/cms-api/internal/middleware/modulegate.go
   services/ai-chat-api/internal/middleware/modulegate.go
   services/reseller-api/internal/middleware/modulegate.go
+  services/payment-api/internal/middleware/modulegate.go
 )
 
 CHECK_ONLY=0

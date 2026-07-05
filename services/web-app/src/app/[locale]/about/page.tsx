@@ -4,14 +4,20 @@ import { Building2, MapPin, Handshake, Users } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { pageAlternates, pageOpenGraph, pageBreadcrumb } from "@/lib/seo";
 import { JsonLd, breadcrumbList } from "@/lib/schema";
+import { cms } from "@/lib/api";
+import CMSPageBody from "@/components/CMSPageBody";
+import TrustedByStrip from "@/components/TrustedByStrip";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.about" });
-  const title = t("title");
-  const description = t("description");
+  // Admin-editable SEO from the pages table takes precedence; i18n JSON is
+  // the fallback if the CMS row is missing / unpublished / has empty values.
+  const page = await cms.getPage("about", locale);
+  const title = page?.seo_title || page?.title || t("title");
+  const description = page?.seo_description || t("description");
   return {
     title,
     description,
@@ -27,11 +33,18 @@ export default async function AboutPage({
   setRequestLocale(locale);
   const t = await getTranslations("about");
   const tCommon = await getTranslations("common");
+  const page = await cms.getPage("about", locale);
+
   const breadcrumbs = pageBreadcrumb(
     locale,
-    [{ name: t("title"), path: "/about" }],
+    [{ name: page?.title || t("title"), path: "/about" }],
     tCommon("home"),
   );
+
+  // When admins fill in a body in /admin/pages, we render that markdown in
+  // place of the hand-crafted sections below. Empty CMS body keeps the
+  // original design intact.
+  const cmsBody = page?.body_md?.trim();
 
   return (
     <>
@@ -39,48 +52,58 @@ export default async function AboutPage({
       <section className="bg-navy-50">
         <div className="container-page py-16">
           <p className="text-sm font-semibold uppercase tracking-wider text-accent-700">{t("kicker")}</p>
-          <h1 className="mt-2 font-display text-4xl text-navy-900 sm:text-5xl">{t("title")}</h1>
+          <h1 className="mt-2 font-display text-4xl text-navy-900 sm:text-5xl">{page?.title || t("title")}</h1>
           <p className="mt-4 max-w-3xl text-lg text-navy-700">{t("lead")}</p>
         </div>
       </section>
 
-      <section className="container-page py-16">
-        <div className="mx-auto max-w-2xl card">
-          <div className="flex items-start gap-3">
-            <MapPin className="h-6 w-6 text-accent-700" />
-            <div>
-              <h3 className="text-lg font-semibold text-navy-900">{t("samui.title")}</h3>
-              <p className="mt-2 text-sm text-navy-600">{t("samui.body")}</p>
+      <TrustedByStrip locale={locale} />
+
+      {cmsBody ? (
+        <section className="container-page py-16">
+          <CMSPageBody markdown={cmsBody} />
+        </section>
+      ) : (
+        <>
+          <section className="container-page py-16">
+            <div className="mx-auto max-w-2xl card">
+              <div className="flex items-start gap-3">
+                <MapPin className="h-6 w-6 text-accent-700" />
+                <div>
+                  <h3 className="text-lg font-semibold text-navy-900">{t("samui.title")}</h3>
+                  <p className="mt-2 text-sm text-navy-600">{t("samui.body")}</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      <section className="container-page pb-16">
-        <h2 className="font-display text-3xl text-navy-900">{t("focusTitle")}</h2>
-        <p className="mt-3 max-w-2xl text-navy-600">{t("focusBody")}</p>
+          <section className="container-page pb-16">
+            <h2 className="font-display text-3xl text-navy-900">{t("focusTitle")}</h2>
+            <p className="mt-3 max-w-2xl text-navy-600">{t("focusBody")}</p>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
-          <div className="card">
-            <Handshake className="h-6 w-6 text-accent-700" />
-            <h3 className="mt-3 font-semibold text-navy-900">{t("partnerships.title")}</h3>
-            <p className="mt-2 text-sm text-navy-600">{t("partnerships.body")}</p>
-          </div>
-          <div className="card">
-            <Users className="h-6 w-6 text-accent-700" />
-            <h3 className="mt-3 font-semibold text-navy-900">{t("clients.title")}</h3>
-            <p className="mt-2 text-sm text-navy-600">{t("clients.body")}</p>
-          </div>
-          <div className="card">
-            <Building2 className="h-6 w-6 text-accent-700" />
-            <h3 className="mt-3 font-semibold text-navy-900">{t("products.title")}</h3>
-            <p className="mt-2 text-sm text-navy-600">
-              <Link href="/products" className="text-accent-700 hover:text-accent-900">{t("products.iaccLink")}</Link>
-              {t("products.bodySuffix")}
-            </p>
-          </div>
-        </div>
-      </section>
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              <div className="card">
+                <Handshake className="h-6 w-6 text-accent-700" />
+                <h3 className="mt-3 font-semibold text-navy-900">{t("partnerships.title")}</h3>
+                <p className="mt-2 text-sm text-navy-600">{t("partnerships.body")}</p>
+              </div>
+              <div className="card">
+                <Users className="h-6 w-6 text-accent-700" />
+                <h3 className="mt-3 font-semibold text-navy-900">{t("clients.title")}</h3>
+                <p className="mt-2 text-sm text-navy-600">{t("clients.body")}</p>
+              </div>
+              <div className="card">
+                <Building2 className="h-6 w-6 text-accent-700" />
+                <h3 className="mt-3 font-semibold text-navy-900">{t("products.title")}</h3>
+                <p className="mt-2 text-sm text-navy-600">
+                  <Link href="/products" className="text-accent-700 hover:text-accent-900">{t("products.iaccLink")}</Link>
+                  {t("products.bodySuffix")}
+                </p>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
     </>
   );
 }

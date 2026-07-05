@@ -19,11 +19,11 @@ type AvailabilityCache struct {
 // Lookup returns a cached row if it's still fresh. Misses return nil, nil.
 func (c *AvailabilityCache) Lookup(ctx context.Context, fqdn string) (*models.AvailabilityResult, error) {
 	var (
-		available  bool
-		classif    string
-		source     string
-		checkedAt  time.Time
-		expiresAt  time.Time
+		available bool
+		classif   string
+		source    string
+		checkedAt time.Time
+		expiresAt time.Time
 	)
 	err := c.DB.QueryRow(ctx, `
         SELECT available, classification, source, checked_at, expires_at

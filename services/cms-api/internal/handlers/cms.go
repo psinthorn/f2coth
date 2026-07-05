@@ -33,17 +33,41 @@ func writeErr(w http.ResponseWriter, status int, msg string) {
 
 // -------------------- Services --------------------
 
+// scanService reads the common service columns + intro/faq JSONB into the
+// model. Shared so ListServices and GetService stay identical in shape —
+// prevents "list has faq, detail doesn't" drift.
+func scanService(row interface{ Scan(...any) error }, s *models.Service) error {
+	var faqRaw []byte
+	if err := row.Scan(&s.ID, &s.Slug, &s.Title, &s.ShortSummary, &s.Description,
+		&s.Intro, &faqRaw, &s.Icon, &s.Category, &s.SortOrder, &s.IsPublished,
+		&s.CreatedAt, &s.UpdatedAt); err != nil {
+		return err
+	}
+	if len(faqRaw) > 0 {
+		_ = json.Unmarshal(faqRaw, &s.FAQ)
+	}
+	if s.FAQ == nil {
+		s.FAQ = []models.FAQItem{}
+	}
+	return nil
+}
+
+// serviceSelect is the SELECT list every service query uses. Keep in one
+// place so a new column doesn't need to be added in two spots.
+const serviceSelect = `
+    SELECT id, slug,
+           COALESCE(title->>$1,         title->>'en')         AS title,
+           COALESCE(short_summary->>$1, short_summary->>'en') AS short_summary,
+           COALESCE(description->>$1,   description->>'en')   AS description,
+           COALESCE(intro->>$1,         intro->>'en', '')     AS intro,
+           COALESCE(faq->$1,            faq->'en', '[]')      AS faq,
+           icon, category, sort_order, is_published, created_at, updated_at
+      FROM services`
+
 func (h *CMSHandler) ListServices(w http.ResponseWriter, r *http.Request) {
 	loc := mw.LocaleFrom(r.Context())
-	rows, err := h.DB.Query(r.Context(), `
-        SELECT id, slug,
-               COALESCE(title->>$1,         title->>'en')         AS title,
-               COALESCE(short_summary->>$1, short_summary->>'en') AS short_summary,
-               COALESCE(description->>$1,   description->>'en')   AS description,
-               icon, category, sort_order, is_published, created_at, updated_at
-        FROM services WHERE is_published = TRUE
-        ORDER BY sort_order, slug
-    `, loc)
+	rows, err := h.DB.Query(r.Context(),
+		serviceSelect+` WHERE is_published = TRUE ORDER BY sort_order, slug`, loc)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
@@ -53,9 +77,7 @@ func (h *CMSHandler) ListServices(w http.ResponseWriter, r *http.Request) {
 	out := make([]models.Service, 0, 16)
 	for rows.Next() {
 		var s models.Service
-		if err := rows.Scan(&s.ID, &s.Slug, &s.Title, &s.ShortSummary, &s.Description,
-			&s.Icon, &s.Category, &s.SortOrder, &s.IsPublished,
-			&s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := scanService(rows, &s); err != nil {
 			writeErr(w, http.StatusInternalServerError, "scan error")
 			return
 		}
@@ -68,15 +90,10 @@ func (h *CMSHandler) GetService(w http.ResponseWriter, r *http.Request) {
 	loc := mw.LocaleFrom(r.Context())
 	slug := chi.URLParam(r, "slug")
 	var s models.Service
-	err := h.DB.QueryRow(r.Context(), `
-        SELECT id, slug,
-               COALESCE(title->>$1,         title->>'en')         AS title,
-               COALESCE(short_summary->>$1, short_summary->>'en') AS short_summary,
-               COALESCE(description->>$1,   description->>'en')   AS description,
-               icon, category, sort_order, is_published, created_at, updated_at
-        FROM services WHERE slug = $2 AND is_published = TRUE
-    `, loc, slug).Scan(&s.ID, &s.Slug, &s.Title, &s.ShortSummary, &s.Description, &s.Icon,
-		&s.Category, &s.SortOrder, &s.IsPublished, &s.CreatedAt, &s.UpdatedAt)
+	err := scanService(
+		h.DB.QueryRow(r.Context(), serviceSelect+` WHERE slug = $2 AND is_published = TRUE`, loc, slug),
+		&s,
+	)
 	if err == pgx.ErrNoRows {
 		writeErr(w, http.StatusNotFound, "service not found")
 		return
@@ -159,19 +176,31 @@ func (h *CMSHandler) GetCaseStudy(w http.ResponseWriter, r *http.Request) {
 
 // -------------------- Blog posts --------------------
 
+// blogSelect is shared by list + detail so a schema change only needs
+// editing here. Joins users to surface a display author name — falls
+// back to "F2 Editorial Team" when author_id is NULL.
+const blogSelect = `
+    SELECT b.id, b.slug,
+           COALESCE(b.title->>$1,   b.title->>'en')   AS title,
+           COALESCE(b.excerpt->>$1, b.excerpt->>'en') AS excerpt,
+           COALESCE(b.body_md->>$1, b.body_md->>'en') AS body_md,
+           b.cover_image_url, b.author_id,
+           COALESCE(u.full_name, 'F2 Editorial Team') AS author_name,
+           b.tags, b.is_published, b.published_at, b.created_at, b.updated_at
+      FROM blog_posts b
+      LEFT JOIN users u ON u.id = b.author_id`
+
+func scanBlogPost(row interface{ Scan(...any) error }, p *models.BlogPost) error {
+	return row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.BodyMD,
+		&p.CoverImageURL, &p.AuthorID, &p.AuthorName, &p.Tags,
+		&p.IsPublished, &p.PublishedAt, &p.CreatedAt, &p.UpdatedAt)
+}
+
 func (h *CMSHandler) ListBlogPosts(w http.ResponseWriter, r *http.Request) {
 	loc := mw.LocaleFrom(r.Context())
-	rows, err := h.DB.Query(r.Context(), `
-        SELECT id, slug,
-               COALESCE(title->>$1,   title->>'en')   AS title,
-               COALESCE(excerpt->>$1, excerpt->>'en') AS excerpt,
-               COALESCE(body_md->>$1, body_md->>'en') AS body_md,
-               cover_image_url, author_id, tags,
-               is_published, published_at, created_at, updated_at
-        FROM blog_posts WHERE is_published = TRUE
-        ORDER BY published_at DESC NULLS LAST, created_at DESC
-        LIMIT 50
-    `, loc)
+	rows, err := h.DB.Query(r.Context(),
+		blogSelect+` WHERE b.is_published = TRUE
+		 ORDER BY b.published_at DESC NULLS LAST, b.created_at DESC LIMIT 50`, loc)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
@@ -180,9 +209,7 @@ func (h *CMSHandler) ListBlogPosts(w http.ResponseWriter, r *http.Request) {
 	out := make([]models.BlogPost, 0, 16)
 	for rows.Next() {
 		var p models.BlogPost
-		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.BodyMD,
-			&p.CoverImageURL, &p.AuthorID, &p.Tags, &p.IsPublished,
-			&p.PublishedAt, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := scanBlogPost(rows, &p); err != nil {
 			writeErr(w, http.StatusInternalServerError, "scan error")
 			return
 		}
@@ -195,16 +222,11 @@ func (h *CMSHandler) GetBlogPost(w http.ResponseWriter, r *http.Request) {
 	loc := mw.LocaleFrom(r.Context())
 	slug := chi.URLParam(r, "slug")
 	var p models.BlogPost
-	err := h.DB.QueryRow(r.Context(), `
-        SELECT id, slug,
-               COALESCE(title->>$1,   title->>'en')   AS title,
-               COALESCE(excerpt->>$1, excerpt->>'en') AS excerpt,
-               COALESCE(body_md->>$1, body_md->>'en') AS body_md,
-               cover_image_url, author_id, tags,
-               is_published, published_at, created_at, updated_at
-        FROM blog_posts WHERE slug = $2 AND is_published = TRUE
-    `, loc, slug).Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.BodyMD, &p.CoverImageURL,
-		&p.AuthorID, &p.Tags, &p.IsPublished, &p.PublishedAt, &p.CreatedAt, &p.UpdatedAt)
+	err := scanBlogPost(
+		h.DB.QueryRow(r.Context(),
+			blogSelect+` WHERE b.slug = $2 AND b.is_published = TRUE`, loc, slug),
+		&p,
+	)
 	if err == pgx.ErrNoRows {
 		writeErr(w, http.StatusNotFound, "post not found")
 		return

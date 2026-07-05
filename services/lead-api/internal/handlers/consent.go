@@ -127,10 +127,10 @@ func (h *ConsentHandler) WithdrawConsent(w http.ResponseWriter, r *http.Request)
 // "first visit" from "previously withdrew" — the banner needs both cases but
 // shows different copy:
 //
-//   status = "none"      → no record at all; show first-visit banner
-//   status = "withdrawn" → existing record with withdrawn_at set; re-prompt
-//                          with "you previously withdrew" context
-//   status = "active"    → live consent; banner stays hidden
+//	status = "none"      → no record at all; show first-visit banner
+//	status = "withdrawn" → existing record with withdrawn_at set; re-prompt
+//	                       with "you previously withdrew" context
+//	status = "active"    → live consent; banner stays hidden
 //
 // GET /api/consent/{visitorId}
 func (h *ConsentHandler) GetConsent(w http.ResponseWriter, r *http.Request) {

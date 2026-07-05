@@ -1,0 +1,183 @@
+name: Deploy
+
+# Two environments:
+#   - staging.f2.co.th  ← auto-deploys every push to `staging` branch
+#   - f2.co.th          ← auto-deploys every push to `main` (after CI is green)
+#
+# Flow:
+#   1. build-and-push:  build each service image, push to ghcr.io tagged with git sha
+#   2. deploy:          SSH to the target VPS, write IMAGE_TAG=<sha> to .env,
+#                       `docker compose pull && up -d`, then smoke-test
+#
+# Required GitHub secrets (per environment: `staging` and `production`):
+#   VPS_HOST           IP or hostname (e.g. staging.f2.co.th)
+#   VPS_USER           ssh user (e.g. deploy)
+#   VPS_SSH_KEY        private key, PEM format
+#   VPS_PORT           optional, defaults to 22
+#
+# Required GitHub variables (repo-level, non-secret):
+#   GHCR_OWNER         GitHub org/user that owns the packages (lowercase)
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # Build & push all service images to GHCR
+  # ──────────────────────────────────────────────────────────
+  build-and-push:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        service:
+          - ai-chat-api
+          - auth-api
+          - checklist-api
+          - cms-api
+          - customer-api
+          - lead-api
+          - notification-api
+          - payment-api
+          - reseller-api
+          - web-app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ vars.GHCR_OWNER }}/f2-${{ matrix.service }}
+          tags: |
+            type=sha,prefix=,format=long
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: services/${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+
+  # ──────────────────────────────────────────────────────────
+  # Deploy to target VPS
+  # ──────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy → ${{ needs.plan.outputs.environment }}
+    needs: [build-and-push, plan]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.plan.outputs.environment }}
+      url: https://${{ needs.plan.outputs.domain }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy compose files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: "docker-compose.yml,docker-compose.prod.yml,docker-compose.staging.yml,database/migrations/*,scripts/deploy-remote.sh"
+          target: /opt/f2-website
+          overwrite: true
+
+      - name: Remote deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          envs: IMAGE_TAG,ENVIRONMENT,GHCR_OWNER,GHCR_TOKEN,GHCR_USER
+          script: |
+            set -euo pipefail
+            cd /opt/f2-website
+            chmod +x scripts/deploy-remote.sh
+            IMAGE_TAG="${IMAGE_TAG}" \
+            ENVIRONMENT="${ENVIRONMENT}" \
+            GHCR_OWNER="${GHCR_OWNER}" \
+            GHCR_TOKEN="${GHCR_TOKEN}" \
+            GHCR_USER="${GHCR_USER}" \
+            ./scripts/deploy-remote.sh
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          ENVIRONMENT: ${{ needs.plan.outputs.environment }}
+          GHCR_OWNER: ${{ vars.GHCR_OWNER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+
+      - name: Smoke test
+        run: |
+          set -e
+          url="https://${{ needs.plan.outputs.domain }}"
+          echo "Smoke-testing $url"
+          for path in / /api/cms/health /api/auth/health /api/checklists/healthz; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url$path" || echo "000")
+            echo "  $path → $code"
+            case "$path$code" in
+              */200|*/301|*/302|*/404) ;;   # 404 fine for health if not wired yet
+              *) echo "::error::$path returned $code"; exit 1 ;;
+            esac
+          done
+
+  # ──────────────────────────────────────────────────────────
+  # Pick environment from the triggering ref
+  # ──────────────────────────────────────────────────────────
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.pick.outputs.environment }}
+      domain: ${{ steps.pick.outputs.domain }}
+    steps:
+      - id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            env="${{ inputs.environment }}"
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            env="production"
+          else
+            env="staging"
+          fi
+          echo "environment=$env" >> "$GITHUB_OUTPUT"
+          if [ "$env" = "production" ]; then
+            echo "domain=f2.co.th" >> "$GITHUB_OUTPUT"
+          else
+            echo "domain=staging.f2.co.th" >> "$GITHUB_OUTPUT"
+          fi

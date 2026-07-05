@@ -139,7 +139,25 @@ export interface LeadStats {
 
 // ----- Endpoints -----
 
+export interface SMTPSettings {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  from_address: string;
+  tls_mode: "none" | "starttls" | "tls";
+}
+
 export const adminApi = {
+  // SMTP settings (notification-api admin routes)
+  getSMTP: () => request<SMTPSettings>("/notifications/admin/smtp"),
+  updateSMTP: (s: SMTPSettings) =>
+    request<void>("/notifications/admin/smtp", { method: "PUT", body: JSON.stringify(s) }),
+  testSMTP: (to: string) =>
+    request<{ status: string; to: string }>("/notifications/admin/smtp/test", {
+      method: "POST", body: JSON.stringify({ to }),
+    }),
+
   // Auth / me
   me: () => request<User>("/auth/me"),
   login: (email: string, password: string) =>
@@ -198,6 +216,15 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify(patch),
     }),
+  updateCustomerShowcase: (id: string, patch: CustomerShowcasePatch) =>
+    request<AdminCustomer>(`/customer/admin/customers/${id}/showcase`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  listCustomerShowcaseAudit: (id: string) =>
+    request<{ entries: CustomerShowcaseAuditEntry[] }>(
+      `/customer/admin/customers/${id}/showcase/audit`,
+    ),
   listCustomerContacts: (id: string) =>
     request<{ contacts: CustomerContactRow[] }>(`/customer/admin/customers/${id}/contacts`),
   createCustomerContact: (
@@ -332,6 +359,77 @@ export const adminApi = {
   deleteBlogPost: (slug: string) =>
     request<{ status: string }>(`/cms/admin/blog/${slug}`, { method: "DELETE" }),
 
+  // Services (admin CRUD via cms-api)
+  listAdminServices: () =>
+    request<{ services: AdminService[] }>("/cms/admin/services"),
+  getAdminService: (slug: string) =>
+    request<AdminService>(`/cms/admin/services/${slug}`),
+  createService: (input: ServiceWriteInput) =>
+    request<AdminService>("/cms/admin/services", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateService: (slug: string, input: Partial<ServiceWriteInput>) =>
+    request<AdminService>(`/cms/admin/services/${slug}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteService: (slug: string) =>
+    request<{ status: string }>(`/cms/admin/services/${slug}`, { method: "DELETE" }),
+
+  // Case studies (admin CRUD via cms-api)
+  listAdminCaseStudies: () =>
+    request<{ case_studies: AdminCaseStudy[] }>("/cms/admin/case-studies"),
+  getAdminCaseStudy: (slug: string) =>
+    request<AdminCaseStudy>(`/cms/admin/case-studies/${slug}`),
+  createCaseStudy: (input: CaseStudyWriteInput) =>
+    request<AdminCaseStudy>("/cms/admin/case-studies", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateCaseStudy: (slug: string, input: Partial<CaseStudyWriteInput>) =>
+    request<AdminCaseStudy>(`/cms/admin/case-studies/${slug}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteCaseStudy: (slug: string) =>
+    request<{ status: string }>(`/cms/admin/case-studies/${slug}`, { method: "DELETE" }),
+
+  // Global app mode (production / trial / maintenance)
+  getAppMode: () => request<AdminAppMode>("/cms/admin/app-mode"),
+  setAppMode: (input: { mode: AppMode; message_en: string; message_th: string }) =>
+    request<{ status: string } & AdminAppMode>("/cms/admin/app-mode", {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+
+  // Home page content (bulk upsert of bilingual copy blocks)
+  listAdminHomeContent: () =>
+    request<{ items: AdminHomeContentItem[] }>("/cms/admin/home"),
+  upsertHomeContent: (items: AdminHomeContentItem[]) =>
+    request<{ status: string; count: number }>("/cms/admin/home", {
+      method: "PUT",
+      body: JSON.stringify({ items }),
+    }),
+
+  // Static pages (admin CRUD via cms-api)
+  listAdminPages: () =>
+    request<{ pages: AdminPage[] }>("/cms/admin/pages"),
+  getAdminPage: (slug: string) =>
+    request<AdminPage>(`/cms/admin/pages/${slug}`),
+  createPage: (input: PageWriteInput) =>
+    request<AdminPage>("/cms/admin/pages", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updatePage: (slug: string, input: Partial<PageWriteInput>) =>
+    request<AdminPage>(`/cms/admin/pages/${slug}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deletePage: (slug: string) =>
+    request<{ status: string }>(`/cms/admin/pages/${slug}`, { method: "DELETE" }),
+
   // Modules (toggle architecture — see memories/feature_module_toggle_architecture.md).
   listModules: () => request<AdminModule[]>("/cms/admin/modules"),
   toggleModule: (key: string, enabled: boolean) =>
@@ -341,7 +439,567 @@ export const adminApi = {
     }),
   listModuleAudit: (key: string) =>
     request<ModuleAuditEntry[]>(`/cms/admin/modules/${encodeURIComponent(key)}/audit`),
+
+  // ----- Billing & payments -----
+  listInvoices: (params?: { status?: string; customer_id?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set("status", params.status);
+    if (params?.customer_id) q.set("customer_id", params.customer_id);
+    const qs = q.toString();
+    return request<AdminInvoice[]>(`/payment/admin/invoices${qs ? "?" + qs : ""}`);
+  },
+  getInvoice: (id: string) => request<AdminInvoiceFull>(`/payment/admin/invoices/${id}`),
+  createInvoice: (input: AdminCreateInvoiceInput) =>
+    request<AdminInvoiceFull>("/payment/admin/invoices", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateInvoice: (id: string, input: AdminUpdateInvoiceInput) =>
+    request<AdminInvoiceFull>(`/payment/admin/invoices/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  issueInvoice: (id: string) =>
+    request<AdminInvoiceFull>(`/payment/admin/invoices/${id}/issue`, { method: "POST" }),
+  voidInvoice: (id: string, reason: string) =>
+    request<AdminInvoiceFull>(`/payment/admin/invoices/${id}/void`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+
+  listPayments: (params?: { status?: string; method?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set("status", params.status);
+    if (params?.method) q.set("method", params.method);
+    const qs = q.toString();
+    return request<AdminPaymentRow[]>(`/payment/admin/payments${qs ? "?" + qs : ""}`);
+  },
+  verifyPayment: (id: string) =>
+    request<{ status: string }>(`/payment/admin/payments/${id}/verify`, { method: "POST" }),
+  rejectPayment: (id: string, reason: string) =>
+    request<{ status: string }>(`/payment/admin/payments/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+
+  listPaymentMethods: () =>
+    request<AdminPaymentMethodConfig[]>("/payment/admin/methods"),
+  updatePaymentMethod: (method: string, input: Partial<AdminPaymentMethodConfig>) =>
+    request<{ status: string }>(`/payment/admin/methods/${method}`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+
+  // ----- Per-payment-method sandbox helpers -----
+  // The global mode toggle is gone — each method now carries its own
+  // mode in payment_methods_config.mode (see updatePaymentMethod below).
+  // Sandbox endpoints validate the relevant method's mode per call.
+  sandboxInvoices: () => request<SandboxInvoiceRow[]>("/payment/admin/sandbox/invoices"),
+  sandboxPayments: () => request<SandboxPaymentRow[]>("/payment/admin/sandbox/payments"),
+  sandboxSeed: () =>
+    request<SandboxSeedResp>("/payment/admin/sandbox/seed", { method: "POST" }),
+  sandboxCompletePayment: (id: string) =>
+    request<{ status: string }>(`/payment/admin/sandbox/payments/${id}/complete`, { method: "POST" }),
+  sandboxSimulateWebhook: (id: string) =>
+    request<SandboxSimulateResp>(`/payment/admin/sandbox/payments/${id}/simulate-webhook`, { method: "POST" }),
+  sandboxPurge: () =>
+    request<{ deleted: number }>("/payment/admin/sandbox/purge", { method: "POST" }),
+
+  // ----- Billing profile (Thai tax-invoice metadata) -----
+  getBillingProfile: (customerID: string) =>
+    request<BillingProfile>(`/payment/admin/customers/${customerID}/billing-profile`),
+  upsertBillingProfile: (customerID: string, input: BillingProfile) =>
+    request<BillingProfile>(`/payment/admin/customers/${customerID}/billing-profile`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+
+  // ----- Subscriptions (recurring billing) -----
+  listSubscriptions: (params?: { status?: string }) => {
+    const q = params?.status ? `?status=${params.status}` : "";
+    return request<AdminSubscription[]>(`/payment/admin/subscriptions${q}`);
+  },
+  createSubscription: (input: AdminSubscriptionInput) =>
+    request<{ id: string }>("/payment/admin/subscriptions", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  setSubscriptionStatus: (id: string, status: "active" | "paused" | "cancelled") =>
+    request<{ status: string }>(`/payment/admin/subscriptions/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+
+  // ----- Refunds -----
+  listRefunds: (params?: { status?: string }) => {
+    const q = params?.status ? `?status=${params.status}` : "";
+    return request<AdminRefund[]>(`/payment/admin/refunds${q}`);
+  },
+  createRefund: (input: AdminRefundInput) =>
+    request<AdminRefundResp>("/payment/admin/refunds", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  // ----- Dashboard summary -----
+  paymentDashboard: () =>
+    request<PaymentDashboardSummary>("/payment/admin/dashboard/summary"),
+
+  // ----- Product catalog (for subscription create form) -----
+  paymentCatalog: (customerID?: string) => {
+    const q = customerID ? `?customer_id=${customerID}` : "";
+    return request<PaymentCatalog>(`/payment/admin/catalog${q}`);
+  },
+
+  // ----- Bank statement reconciliation -----
+  listBankImports: () => request<BankImport[]>("/payment/admin/bank-imports"),
+  getBankImport: (id: string) => request<BankImportFull>(`/payment/admin/bank-imports/${id}`),
+  uploadBankImport: async (file: File, sourceName: string) => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+    const t = sessionStorage.getItem("f2_access_token");
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("source_name", sourceName);
+    const res = await fetch(`${apiBase}/payment/admin/bank-imports`, {
+      method: "POST",
+      headers: t ? { Authorization: `Bearer ${t}` } : undefined,
+      body: fd,
+    });
+    if (!res.ok) throw new HttpError(res.status, await res.text());
+    return (await res.json()) as BankImportFull;
+  },
+  applyBankImport: (id: string) =>
+    request<{ applied: number; import: BankImportFull }>(`/payment/admin/bank-imports/${id}/apply`, { method: "POST" }),
+
+  // ----- Bulk invoice actions -----
+  bulkIssueInvoices: (ids: string[]) =>
+    request<BulkResp>("/payment/admin/invoices/bulk-issue", {
+      method: "POST", body: JSON.stringify({ ids }),
+    }),
+  bulkVoidInvoices: (ids: string[], reason: string) =>
+    request<BulkResp>("/payment/admin/invoices/bulk-void", {
+      method: "POST", body: JSON.stringify({ ids, reason }),
+    }),
+
+  // ----- Webhook events -----
+  listWebhookEvents: (params?: { provider?: string; processed?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.provider) q.set("provider", params.provider);
+    if (params?.processed) q.set("processed", params.processed);
+    const qs = q.toString();
+    return request<WebhookEvent[]>(`/payment/admin/webhooks${qs ? "?" + qs : ""}`);
+  },
+  getWebhookEvent: (id: string) =>
+    request<WebhookEventDetail>(`/payment/admin/webhooks/${id}`),
+  replayWebhookEvent: (id: string) =>
+    request<{ status: string }>(`/payment/admin/webhooks/${id}/replay`, { method: "POST" }),
+
+  // Disputes (driven by PayPal CUSTOMER.DISPUTE.* webhooks)
+  listDisputes: (params?: { status?: string }) => {
+    const q = params?.status ? `?status=${params.status}` : "";
+    return request<AdminDispute[]>(`/payment/admin/disputes${q}`);
+  },
+
+  // Server-rendered PDF — returns a path the caller can hit with the
+  // auth header to download a binary. Frontend uses fetch+blob since
+  // <a download> can't carry Authorization headers.
+  invoicePDFPath: (id: string) => `/payment/admin/invoices/${id}/pdf`,
+
+  // ----- Analytics -----
+  analyticsMRR: () => request<MRRPoint[]>("/payment/admin/analytics/mrr"),
+  analyticsAging: () => request<ARAgingResp>("/payment/admin/analytics/aging"),
+  analyticsChurn: () => request<ChurnPoint[]>("/payment/admin/analytics/churn"),
+
+  // ----- Service suspensions (driven by dunning scheduler) -----
+  listSuspensions: (params?: { status?: string }) => {
+    const q = params?.status ? `?status=${params.status}` : "";
+    return request<AdminSuspension[]>(`/payment/admin/suspensions${q}`);
+  },
+  restoreSuspension: (id: string) =>
+    request<{ status: string }>(`/payment/admin/suspensions/${id}/restore`, { method: "POST" }),
+  overrideSuspension: (id: string, reason: string) =>
+    request<{ status: string }>(`/payment/admin/suspensions/${id}/override`, {
+      method: "POST", body: JSON.stringify({ reason }),
+    }),
+
+  // AI orchestrator (migration 050, ai-orchestrator-api on :8009)
+  listAIRouting: () =>
+    request<{ routes: AIRoutingRow[] }>("/ai/admin/routing"),
+  updateAIRoute: (id: string, patch: AIRoutingPatch) =>
+    request<void>(`/ai/admin/routing/${id}`, {
+      method: "PATCH", body: JSON.stringify(patch),
+    }),
+  getAIUsageSummary: () =>
+    request<AIUsageSummary>("/ai/admin/usage"),
+  listAIUsageEntries: (params?: { limit?: number; task_type?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.limit) q.set("limit", String(params.limit));
+    if (params?.task_type) q.set("task_type", params.task_type);
+    const qs = q.toString();
+    return request<{ entries: AIUsageEntry[] }>(
+      `/ai/admin/usage/entries${qs ? `?${qs}` : ""}`,
+    );
+  },
 };
+
+// -------------------- AI orchestrator types --------------------
+
+export type AIProvider = "anthropic" | "ollama" | "openai" | "voyage";
+export type AITier = "primary" | "fallback" | "batch";
+
+export interface AIRoutingRow {
+  id: string;
+  task_type: string;
+  tier: AITier;
+  provider: AIProvider;
+  model: string;
+  max_tokens_in: number | null;
+  max_tokens_out: number | null;
+  enabled: boolean;
+  notes: string | null;
+  updated_at: string;
+}
+
+export interface AIRoutingPatch {
+  provider?: AIProvider;
+  model?: string;
+  max_tokens_in?: number | null;
+  max_tokens_out?: number | null;
+  enabled?: boolean;
+  notes?: string | null;
+}
+
+export interface AIUsageSummary {
+  mtd_cost_usd: number;
+  today_cost_usd: number;
+  budget_usd: number;
+  pct_used: number;
+  calls_mtd: number;
+  by_task: Array<{
+    task_type: string;
+    calls: number;
+    tokens_in: number;
+    tokens_out: number;
+    cost_usd: number;
+  }>;
+  by_provider: Array<{
+    provider: string;
+    calls: number;
+    tokens_in: number;
+    tokens_out: number;
+    cost_usd: number;
+  }>;
+}
+
+export interface AIUsageEntry {
+  at: string;
+  task_type: string;
+  provider: string;
+  model: string;
+  tokens_in: number;
+  tokens_out: number;
+  cost_usd: number;
+  latency_ms: number;
+  error?: string | null;
+}
+
+export interface AdminSuspension {
+  id: string;
+  invoice_id: string;
+  invoice_number: string;
+  customer_id: string;
+  customer_name: string;
+  product_type: "subscription" | "sla" | "hosting" | "msp" | "custom";
+  product_ref: string | null;
+  previous_state: string | null;
+  status: "active" | "restored" | "overridden";
+  reason: string | null;
+  suspended_at: string;
+  restored_at: string | null;
+}
+
+export interface MRRPoint {
+  month: string;             // YYYY-MM
+  all_revenue_cents: number;
+  sub_revenue_cents: number;
+  payments_count: number;
+  sub_payments_count: number;
+}
+export interface ARAgingBucket {
+  label: "current" | "1_30" | "31_60" | "61_90" | "90_plus";
+  cents: number;
+  count: number;
+}
+export interface ARAgingResp {
+  as_of: string;
+  buckets: ARAgingBucket[];
+}
+export interface ChurnPoint {
+  month: string;
+  cancelled_count: number;
+  active_at_start: number;
+  churn_rate_percent: number;
+}
+
+export interface AdminDispute {
+  id: string;
+  payment_id: string;
+  invoice_id: string;
+  provider: string;
+  provider_dispute_id: string;
+  reason: string | null;
+  status: "open" | "waiting_buyer" | "waiting_seller" | "under_review" | "resolved" | "closed";
+  outcome: string | null;
+  amount_cents: number;
+  currency: "THB" | "USD";
+  seller_response_due: string | null;
+  opened_at: string;
+  resolved_at: string | null;
+  payment_number: string;
+  invoice_number: string;
+  customer_name: string;
+}
+
+export interface BulkResp {
+  succeeded: number;
+  skipped: number;
+  errors?: string[];
+}
+
+export interface WebhookEvent {
+  id: string;
+  provider: string;
+  event_id: string;
+  event_type: string;
+  signature_ok: boolean;
+  processed_at: string | null;
+  payment_id: string | null;
+  payment_number: string | null;
+  invoice_id: string | null;
+  error: string | null;
+  received_at: string;
+}
+
+export interface WebhookEventDetail extends Omit<WebhookEvent, "payment_number" | "invoice_id"> {
+  payload: string;
+}
+
+export interface PaymentCatalog {
+  hosting: CatalogHosting[];
+  sla: CatalogSLA[];
+}
+export interface CatalogHosting {
+  id: string;
+  slug: string;
+  name_en: string;
+  name_th: string;
+  monthly_cents: number;
+  annually_cents: number;
+}
+export interface CatalogSLA {
+  id: string;
+  title: string;
+  starts_on: string;
+  ends_on: string;
+  status: string;
+}
+
+export interface BankImport {
+  id: string;
+  source_name: string | null;
+  raw_filename: string | null;
+  status: "pending" | "applied" | "discarded";
+  parsed_rows: number;
+  matched_rows: number;
+  applied_rows: number;
+  created_at: string;
+  applied_at: string | null;
+}
+
+export interface BankImportRow {
+  id: string;
+  line_number: number;
+  transferred_at: string;
+  amount_cents: number;
+  bank_ref: string | null;
+  description: string | null;
+  match_status: "unmatched" | "proposed" | "applied" | "skipped";
+  matched_payment_id: string | null;
+  payment_number: string | null;
+  invoice_id: string | null;
+  invoice_number: string | null;
+  customer_name: string | null;
+}
+
+export interface BankImportFull extends BankImport {
+  rows: BankImportRow[];
+}
+
+export interface BillingProfile {
+  customer_id?: string;
+  legal_name: string;
+  tax_id?: string;
+  branch_code: string;
+  address_line1?: string;
+  address_line2?: string;
+  subdistrict?: string;
+  district?: string;
+  province?: string;
+  postal_code?: string;
+  country: string;
+  billing_email?: string;
+  notes?: string;
+}
+
+export interface AdminSubscription {
+  id: string;
+  customer_id: string;
+  customer_name?: string;
+  title: string;
+  product_type: "hosting" | "sla" | "msp" | "custom";
+  product_ref: string | null;
+  billing_cycle: "monthly" | "quarterly" | "annually";
+  amount_cents: number;
+  currency: "THB" | "USD";
+  status: "active" | "paused" | "cancelled";
+  starts_on: string;
+  ends_on: string | null;
+  last_billed_on: string | null;
+  next_billing_at: string;
+  created_at: string;
+}
+
+export interface AdminSubscriptionInput {
+  customer_id: string;
+  title: string;
+  product_type: "hosting" | "sla" | "msp" | "custom";
+  product_ref?: string;
+  billing_cycle: "monthly" | "quarterly" | "annually";
+  amount_cents: number;
+  currency: "THB" | "USD";
+  starts_on: string;
+  ends_on?: string;
+}
+
+export interface AdminRefund {
+  id: string;
+  refund_number: string;
+  payment_id: string;
+  payment_number: string;
+  invoice_id: string;
+  invoice_number: string;
+  customer_name: string;
+  method: string;
+  amount_cents: number;
+  currency: "THB" | "USD";
+  reason: string;
+  status: "pending" | "completed" | "failed";
+  provider_refund_id: string | null;
+  bank_ref: string | null;
+  proof_url: string | null;
+  completed_at: string | null;
+  failure_reason: string | null;
+  created_at: string;
+}
+
+export interface AdminRefundInput {
+  payment_id: string;
+  amount_cents?: number;
+  reason: string;
+  bank_ref?: string;
+  proof_url?: string;
+}
+
+export interface AdminRefundResp {
+  id: string;
+  refund_number: string;
+  status: string;
+}
+
+export interface PaymentDashboardSummary {
+  outstanding_cents: number;
+  outstanding_count: number;
+  overdue_cents: number;
+  overdue_count: number;
+  month_revenue_cents: number;
+  month_payments_count: number;
+  verification_queue_count: number;
+}
+
+export interface SandboxInvoiceRow {
+  id: string;
+  invoice_number: string;
+  status: string;
+  total_cents: number;
+  amount_paid_cents: number;
+  currency: "THB" | "USD";
+  created_at: string;
+  customer_name: string;
+}
+export interface SandboxPaymentRow {
+  id: string;
+  payment_number: string;
+  invoice_id: string;
+  invoice_number: string;
+  customer_name: string;
+  method: "bank_transfer" | "thai_qr" | "promptpay" | "paypal";
+  status: string;
+  amount_cents: number;
+  currency: "THB" | "USD";
+  order_id: string | null;
+  created_at: string;
+}
+export interface SandboxSeedResp {
+  invoice_id: string;
+  invoice_number: string;
+  customer_id: string;
+  customer_name: string;
+  total_cents: number;
+  currency: "THB" | "USD";
+}
+export interface SandboxSimulateResp {
+  status: string;
+  event_id: string;
+  capture_id: string;
+  order_id: string;
+}
+
+import type {
+  Invoice as _Invoice,
+  InvoiceItem as _InvoiceItem,
+  Payment as _Payment,
+  PaymentMethodConfig as _PaymentMethodConfig,
+} from "@/lib/payment-types";
+
+export type AdminInvoice = _Invoice;
+export type AdminInvoiceFull = _Invoice & { items: _InvoiceItem[]; payments: _Payment[] };
+export type AdminPaymentRow = _Payment & { customer_name?: string; invoice_number?: string };
+export type AdminPaymentMethodConfig = _PaymentMethodConfig;
+
+export interface AdminCreateInvoiceInput {
+  customer_id: string;
+  contact_id?: string;
+  currency?: "THB" | "USD";
+  vat_rate_bp?: number;
+  due_date?: string;
+  notes?: string;
+  items: Array<{
+    product_type: "domain" | "hosting" | "sla" | "msp" | "custom";
+    product_ref?: string;
+    description_en: string;
+    description_th?: string;
+    quantity: number;
+    unit_price_cents: number;
+    period_start?: string;
+    period_end?: string;
+  }>;
+}
+
+export interface AdminUpdateInvoiceInput {
+  due_date?: string;
+  notes?: string;
+  items?: AdminCreateInvoiceInput["items"];
+}
 
 export interface ModuleAuditEntry {
   actor_email: string | null;
@@ -383,6 +1041,44 @@ export interface AdminCustomer {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+
+  // Public showcase + PDPA consent (migration 046). Managed via
+  // adminApi.updateCustomerShowcase — do NOT set through updateCustomer.
+  show_on_website: boolean;
+  website_display_name: string | null;
+  website_logo_url: string | null;
+  website_industry_label: string | null;
+  website_industry_label_th: string | null;
+  website_sort_order: number;
+  consent_document_url: string | null;
+  consent_granted_at: string | null;
+  consent_granted_by: string | null;
+  consent_expires_at: string | null;
+  consent_notes: string | null;
+}
+
+// Every field is optional and typed as `T | null` — the backend treats
+// "field missing from JSON" as "leave unchanged" and explicit `null` as
+// "clear this column". Never pass `undefined` — omit the key instead.
+export interface CustomerShowcasePatch {
+  show_on_website?: boolean;
+  website_display_name?: string | null;
+  website_logo_url?: string | null;
+  website_industry_label?: string | null;
+  website_industry_label_th?: string | null;
+  website_sort_order?: number;
+  consent_document_url?: string | null;
+  consent_granted_at?: string | null;
+  consent_granted_by?: string | null;
+  consent_expires_at?: string | null;
+  consent_notes?: string | null;
+}
+
+export interface CustomerShowcaseAuditEntry {
+  actor_email?: string | null;
+  action: string;
+  changes: Record<string, { from: unknown; to: unknown }>;
+  at: string;
 }
 
 export interface CustomerContactRow {
@@ -542,4 +1238,122 @@ export interface BlogPostWriteInput {
   tags?: string[];
   is_published?: boolean;
   published_at?: string | null;
+}
+
+// Services (admin — raw JSONB for both locales)
+export interface AdminService {
+  id: string;
+  slug: string;
+  title: { en: string; th?: string };
+  short_summary: { en: string; th?: string };
+  description: { en: string; th?: string };
+  icon: string | null;
+  category: "core" | "support" | "opportunistic" | "marketing";
+  sort_order: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceWriteInput {
+  slug?: string;
+  title_en?: string;
+  title_th?: string;
+  short_summary_en?: string;
+  short_summary_th?: string;
+  description_en?: string;
+  description_th?: string;
+  icon?: string | null;
+  category?: "core" | "support" | "opportunistic" | "marketing";
+  sort_order?: number;
+  is_published?: boolean;
+}
+
+// Case studies (admin — raw JSONB for both locales)
+export interface AdminCaseStudy {
+  id: string;
+  slug: string;
+  client_name: string;
+  industry: string;
+  location: string | null;
+  relationship_years: number | null;
+  hero_image_url: string | null;
+  summary: { en: string; th?: string };
+  challenge: { en: string; th?: string };
+  solution: { en: string; th?: string };
+  results: { en: string; th?: string };
+  quote_text: { en?: string; th?: string };
+  quote_author: string | null;
+  services_used: string[];
+  sort_order: number;
+  is_published: boolean;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CaseStudyWriteInput {
+  slug?: string;
+  client_name?: string;
+  industry?: string;
+  location?: string | null;
+  relationship_years?: number | null;
+  hero_image_url?: string | null;
+  summary_en?: string;
+  summary_th?: string;
+  challenge_en?: string;
+  challenge_th?: string;
+  solution_en?: string;
+  solution_th?: string;
+  results_en?: string;
+  results_th?: string;
+  quote_text_en?: string;
+  quote_text_th?: string;
+  quote_author?: string | null;
+  services_used?: string[];
+  sort_order?: number;
+  is_published?: boolean;
+  published_at?: string | null;
+}
+
+// Global app-mode indicator (production / trial / maintenance).
+export type AppMode = "production" | "trial" | "maintenance";
+export interface AdminAppMode {
+  mode: AppMode;
+  message_en: string;
+  message_th: string;
+  updated_at: string;
+}
+
+// Home page content — one row per copy block, bilingual value.
+export interface AdminHomeContentItem {
+  key: string;
+  value: { en: string; th?: string };
+  updated_at: string;
+}
+
+// Static pages (about, privacy, terms, dpa, custom slugs)
+export interface AdminPage {
+  id: string;
+  slug: string;
+  title: { en: string; th?: string };
+  body_md: { en: string; th?: string };
+  seo_title: { en: string; th?: string };
+  seo_description: { en: string; th?: string };
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PageWriteInput {
+  slug?: string;
+  title_en?: string;
+  title_th?: string;
+  body_md_en?: string;
+  body_md_th?: string;
+  seo_title_en?: string;
+  seo_title_th?: string;
+  seo_description_en?: string;
+  seo_description_th?: string;
+  is_published?: boolean;
 }

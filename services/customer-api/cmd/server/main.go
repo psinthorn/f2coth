@@ -89,6 +89,12 @@ func main() {
 		r.Get("/customers/{id}", ah.GetCustomer)
 		r.Patch("/customers/{id}", ah.UpdateCustomer)
 
+		// Public showcase + PDPA consent (migration 046). Separate endpoint
+		// from the generic PATCH so every consent change writes a discrete
+		// audit_log row (resource_type='customer_showcase').
+		r.Patch("/customers/{id}/showcase", ah.UpdateShowcase)
+		r.Get("/customers/{id}/showcase/audit", ah.ListShowcaseAudit)
+
 		// Customer contacts
 		r.Get("/customers/{id}/contacts", ah.ListContacts)
 		r.Post("/customers/{id}/contacts", ah.CreateContact)

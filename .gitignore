@@ -4,6 +4,9 @@
 .env.*.local
 *.env
 
+# MCP server config — holds DB credentials; committed template lives at .mcp.json.example
+.mcp.json
+
 # Go
 *.exe
 *.exe~

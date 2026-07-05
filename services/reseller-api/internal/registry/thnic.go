@@ -20,7 +20,7 @@ var thOwnedTLDs = map[string]struct{}{
 	"co.th": {}, "or.th": {}, "in.th": {}, "ac.th": {}, "go.th": {},
 }
 
-func (THNICStub) Name() string        { return "thnic_stub" }
+func (THNICStub) Name() string         { return "thnic_stub" }
 func (THNICStub) Owns(tld string) bool { _, ok := thOwnedTLDs[strings.ToLower(tld)]; return ok }
 
 func (THNICStub) Register(_ context.Context, _ PlaceRequest) (models.PlacementResult, error) {

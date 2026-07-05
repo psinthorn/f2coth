@@ -53,6 +53,14 @@ func main() {
 
 	r.Route("/api/notifications", func(r chi.Router) {
 		r.Post("/", h.Enqueue)
+
+		// Admin — SMTP settings CRUD + one-shot test send.
+		r.Route("/admin", func(r chi.Router) {
+			r.Use(handlers.RequireAdmin(cfg.JWTSecret))
+			r.Get("/smtp", h.GetSMTP)
+			r.Put("/smtp", h.PutSMTP)
+			r.Post("/smtp/test", h.TestSMTP)
+		})
 	})
 
 	srv := &http.Server{

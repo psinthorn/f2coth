@@ -217,7 +217,206 @@ export const portalApi = {
     if (!res.ok) throw new Error(String(res.status));
     return (await res.json()) as { results: AvailabilityResult[] };
   },
+
+  // ----- Billing & payments -----
+  listInvoices: () => request<PortalInvoiceSummary[]>("/payment/portal/invoices"),
+  getInvoice: (id: string) => request<PortalInvoiceFull>(`/payment/portal/invoices/${id}`),
+  initPayment: (invoiceId: string, method: PortalPaymentMethod) =>
+    request<PortalInitPaymentResp>(`/payment/portal/invoices/${invoiceId}/pay`, {
+      method: "POST",
+      body: JSON.stringify({ method }),
+    }),
+  uploadSlip: (paymentId: string, input: PortalSlipInput) =>
+    request<{ status: string }>(`/payment/portal/payments/${paymentId}/slip`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  uploadSlipFile: async (paymentId: string, file: File) => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+    const t = sessionStorage.getItem("f2_portal_access_token");
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${apiBase}/payment/portal/payments/${paymentId}/slip-file`, {
+      method: "POST",
+      headers: t ? { Authorization: `Bearer ${t}` } : undefined,
+      body: fd,
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new HttpError(res.status, body);
+    }
+    return (await res.json()) as PortalSlipUploadResp;
+  },
+  capturePayPal: (paymentId: string) =>
+    request<{ status: string }>(`/payment/portal/payments/${paymentId}/paypal/capture`, {
+      method: "POST",
+    }),
+  publicPaymentMethods: async () => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+    const res = await fetch(`${apiBase}/payment/methods`);
+    if (!res.ok) throw new Error(String(res.status));
+    return (await res.json()) as PortalPaymentMethodConfig[];
+  },
+  sandboxStatus: async () => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+    const res = await fetch(`${apiBase}/payment/sandbox/status`);
+    if (!res.ok) throw new Error(String(res.status));
+    return (await res.json()) as PortalSandboxStatus;
+  },
+
+  // ----- Tax-invoice billing profile (customer self-service) -----
+  getBillingProfile: () => request<PortalBillingProfile>("/payment/portal/billing-profile"),
+  upsertBillingProfile: (input: PortalBillingProfile) =>
+    request<PortalBillingProfile>("/payment/portal/billing-profile", {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+  invoicePDFPath: (id: string, docOverride?: "receipt" | "tax_invoice") =>
+    docOverride
+      ? `/payment/portal/invoices/${id}/pdf?doc=${docOverride}`
+      : `/payment/portal/invoices/${id}/pdf`,
+
+  // Customer-visible suspensions: surface in the portal banner so they
+  // see WHY services stopped working. Returns rows with status=active
+  // only — that's enough to flag the situation. Re-uses the admin
+  // list endpoint shape with portal-side auth.
+  listMySuspensions: () =>
+    request<PortalSuspension[]>("/payment/portal/suspensions"),
+
+  // Projects & Checklists — read-only view of what F2 is doing for this
+  // customer (audit checklists, weekly maintenance, progress). Wired to
+  // checklist-api's /portal/* group which gates on aud=customer + customer_id.
+  listMyProjects: () =>
+    request<{ projects: PortalProject[] }>("/checklists/portal/projects"),
+  getMyProjectBoard: (id: string) =>
+    request<PortalProjectBoard>(`/checklists/portal/projects/${id}/board`),
+  getMyProjectProgress: (id: string) =>
+    request<PortalProjectProgress>(`/checklists/portal/projects/${id}/progress`),
 };
+
+// ── Projects & Checklists (portal) ──────────────────────────────────────
+
+export interface PortalProject {
+  id: string;
+  client_name: string;
+  name: string;
+  status: "active" | "paused" | "closed";
+  start_date: string | null;
+  end_date: string | null;
+  customer_id: string | null;
+  customer_name: string | null;
+  visible_to_customer: boolean;
+  created_at: string;
+  updated_at: string;
+  done_count?: number;
+  total_count?: number;
+  fail_count?: number;
+}
+
+export type PortalItemStatus = "pending" | "pass" | "fail" | "na";
+
+export interface PortalProjectItem {
+  id: string;
+  project_module_id: string;
+  text_en: string;
+  text_th: string;
+  sort_order: number;
+  required: boolean;
+  status: PortalItemStatus;
+  note: string | null;
+  photo_url: string | null;
+  checked_at: string | null;
+}
+
+export interface PortalProjectModule {
+  id: string;
+  project_id: string;
+  code: string;
+  name_en: string;
+  name_th: string;
+  position: number;
+  items: PortalProjectItem[];
+}
+
+export interface PortalProjectBoard {
+  project: PortalProject;
+  modules: PortalProjectModule[];
+}
+
+export interface PortalProjectProgress {
+  modules: Array<{
+    project_module_id: string;
+    code: string;
+    name_en: string;
+    name_th: string;
+    total: number;
+    done: number;
+    fail: number;
+    na: number;
+    pending: number;
+  }>;
+  totals: { total: number; done: number; pass: number; fail: number; na: number; pending: number };
+}
+
+export interface PortalSuspension {
+  id: string;
+  invoice_id: string;
+  invoice_number: string;
+  product_type: string;
+  suspended_at: string;
+}
+
+export interface PortalBillingProfile {
+  customer_id?: string;
+  legal_name: string;
+  tax_id?: string;
+  branch_code: string;
+  address_line1?: string;
+  address_line2?: string;
+  subdistrict?: string;
+  district?: string;
+  province?: string;
+  postal_code?: string;
+  country: string;
+  billing_email?: string;
+  notes?: string;
+}
+
+export interface PortalSandboxStatus {
+  // method → mode for every method known to the server
+  methods: Record<string, "sandbox" | "production">;
+  // true when ANY method is in sandbox — drives banner visibility
+  any_sandbox: boolean;
+  paypal_mode: "sandbox" | "live";
+  paypal_configured: boolean;
+}
+
+import type {
+  Invoice as _Invoice,
+  Payment as _Payment,
+  InvoiceItem as _InvoiceItem,
+  PaymentMethod,
+  PaymentMethodConfig,
+  InitPaymentResp,
+} from "@/lib/payment-types";
+
+export type PortalInvoiceSummary = _Invoice;
+export type PortalInvoiceFull = _Invoice & { items: _InvoiceItem[]; payments: _Payment[] };
+export type PortalPaymentMethod = PaymentMethod;
+export type PortalPaymentMethodConfig = PaymentMethodConfig;
+export type PortalInitPaymentResp = InitPaymentResp;
+export interface PortalSlipInput {
+  slip_url: string;
+  bank_ref?: string;
+  transferred_at?: string;
+}
+export interface PortalSlipUploadResp {
+  file_id: string;
+  slip_url: string;
+  size_bytes: number;
+  mime_type: string;
+  status: "awaiting_verification";
+}
 
 export interface PortalDomain {
   id: string;

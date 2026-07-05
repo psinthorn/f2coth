@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import ConditionalChrome from "@/components/ConditionalChrome";
+import AppModeBanner from "@/components/AppModeBanner";
+import MaintenanceSplash from "@/components/MaintenanceSplash";
 import { routing } from "@/i18n/routing";
 import { getEnabledModulesRecord } from "@/lib/modules";
+import { getAppMode } from "@/lib/appMode";
 import { JsonLd, organization, localBusiness, webSite } from "@/lib/schema";
 
 export function generateStaticParams() {
@@ -49,11 +53,26 @@ export default async function PublicLayout({
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
 
-  // Fetch the enabled-modules map server-side and pass it down to the chrome
-  // so Header / Footer can hide links for disabled sections without flashing
-  // them first. React.cache dedups this with any page that also calls
-  // isModuleEnabled() during the same render.
-  const enabledModules = await getEnabledModulesRecord();
+  // Fetch the enabled-modules map + app mode server-side. React.cache dedups
+  // both with any child that asks again during the same render.
+  const [enabledModules, appMode] = await Promise.all([
+    getEnabledModulesRecord(),
+    getAppMode(locale),
+  ]);
+
+  // Maintenance mode blocks the public site and customer portal so no traffic
+  // reaches the running app. Admin routes bypass the block so operators can
+  // still flip the switch back — detected via the x-pathname header stamped
+  // by middleware. (Same header we use in the root layout for locale.)
+  const path = (await headers()).get("x-pathname") ?? "";
+  const isAdminRoute = /^\/(?:[a-z]{2}\/)?admin(?:\/|$)/.test(path);
+  if (appMode.mode === "maintenance" && !isAdminRoute) {
+    return (
+      <NextIntlClientProvider>
+        <MaintenanceSplash locale={locale} />
+      </NextIntlClientProvider>
+    );
+  }
 
   return (
     <NextIntlClientProvider>
@@ -64,6 +83,11 @@ export default async function PublicLayout({
       <JsonLd data={organization()} />
       <JsonLd data={localBusiness()} />
       <JsonLd data={webSite()} />
+
+      {/* Global app-mode banner: silent in production, shows a coloured
+          strip on trial / maintenance. Rendered above chrome so it's the
+          first thing every visitor and staff member sees. */}
+      <AppModeBanner locale={locale} />
 
       <ConditionalChrome locale={locale} enabledModules={enabledModules}>
         {children}

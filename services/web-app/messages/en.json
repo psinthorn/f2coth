@@ -15,6 +15,10 @@
       "title": "Case studies",
       "description": "F2's 10+ year client relationships with SALA Hospitality, Miskawaan Beach Villas, and Putahracsa Hua Hin."
     },
+    "clients": {
+      "title": "Clients we look after",
+      "description": "Luxury hotels, villas, resorts, and hospitality businesses across Thailand that F2 supports with domain, hosting, and IT services."
+    },
     "about": {
       "title": "About F2",
       "description": "F2 Co., Ltd. (formerly Nextgentechs) is Thailand's trusted IT partner for luxury hospitality, headquartered on Koh Samui and serving properties nationwide."
@@ -48,6 +52,7 @@
     "talkToF2": "Talk to F2",
     "talkToF2About": "Talk to F2 about {topic}",
     "home": "Home",
+    "open": "Open",
     "learnMore": "Learn more",
     "readMore": "Read more",
     "viewAll": "View all",
@@ -107,12 +112,15 @@
     },
     "current": "current",
     "errorLoad": "Failed to load. Please refresh.",
-    "all": "All"
+    "all": "All",
+    "saved": "Saved",
+    "saveAll": "Save all"
   },
   "header": {
     "nav": {
       "services": "Services",
       "caseStudies": "Case Studies",
+      "clients": "Clients",
       "products": "Products",
       "infrastructure": "Infrastructure",
       "domains": "Domains",
@@ -133,6 +141,7 @@
       "domains": "Domains",
       "hosting": "Hosting",
       "caseStudies": "Case Studies",
+      "clients": "Clients",
       "products": "Products / iACC",
       "blog": "Blog",
       "about": "About"
@@ -193,11 +202,13 @@
     "groups": {
       "core": "Core services",
       "support": "Support services",
+      "marketing": "Marketing & content",
       "opportunistic": "Specialised services"
     },
     "detail": {
       "back": "All services",
-      "related": "Related services"
+      "related": "Related services",
+      "faqHeading": "Frequently asked questions"
     }
   },
   "caseStudies": {
@@ -213,6 +224,25 @@
       "servicesUsed": "Services used",
       "ctaTitle": "Looking for similar results?",
       "ctaBody": "Tell us about your property and we'll show you what F2 can do."
+    }
+  },
+  "trustedBy": {
+    "title": "Trusted by teams across Thailand",
+    "seeAll": "See all clients"
+  },
+  "clients": {
+    "kicker": "Clients we look after",
+    "title": "Trusted by luxury hospitality across Thailand.",
+    "subtitle": "A selection of hotels, villas, resorts, and hospitality operators who trust F2 with their domain, hosting, and IT infrastructure. Only clients who have given us written permission appear on this page.",
+    "servicesLabel": "Services",
+    "count": "{count, plural, =0 {No clients to show yet.} =1 {# client} other {# clients}}",
+    "empty": {
+      "title": "The showcase is being prepared.",
+      "body": "We're currently collecting written consent from our clients before publishing their names here. Please check back soon, or talk to F2 for references."
+    },
+    "cta": {
+      "title": "Want to join this list?",
+      "body": "Talk to F2 about IT, domain, hosting, and infrastructure services for your property."
     }
   },
   "about": {
@@ -351,6 +381,27 @@
     "closing": {
       "title": "Modern accounting, F2-grade reliability.",
       "subtitle": "Try iACC Core free today, or talk to F2 about which modules fit your business."
+    },
+    "faq": {
+      "heading": "Frequently asked questions",
+      "items": [
+        {
+          "q": "What is iACC?",
+          "a": "iACC is F2's cloud accounting SaaS for Thai hospitality — bookings, agents, allotments, invoicing, tax invoices, VAT, withholding tax, multi-currency. Available at iacc.f2.co.th."
+        },
+        {
+          "q": "Which languages does iACC support?",
+          "a": "The UI ships bilingual Thai and English. Guest-facing outputs (invoices, receipts) can be rendered in either language per document."
+        },
+        {
+          "q": "Does iACC replace my existing PMS?",
+          "a": "No — iACC complements your PMS. We integrate with Opera, Cloudbeds, Mews and others via API so bookings flow from PMS to invoicing without double entry."
+        },
+        {
+          "q": "How is iACC priced?",
+          "a": "Per-property monthly subscription based on user count and transaction volume. Setup and data migration are included in year-one. Contact us for a tailored quote."
+        }
+      ]
     }
   },
   "blog": {
@@ -361,7 +412,8 @@
       "title": "First posts coming soon.",
       "body": "We're finalising our editorial calendar. In the meantime, head to the case studies for detailed accounts of long-running F2 engagements.",
       "cta": "Read case studies"
-    }
+    },
+    "backToList": "Back to blog"
   },
   "contact": {
     "kicker": "Contact",
@@ -401,7 +453,9 @@
       "offices": "Office",
       "officesValue": "Koh Samui, Thailand · nationwide remote",
       "responseTime": "Response time",
-      "responseTimeValue": "Within one business day, Mon–Fri (Asia/Bangkok)."
+      "responseTimeValue": "Within one business day, Mon–Fri (Asia/Bangkok).",
+      "directions": "Get directions →",
+      "mapHeading": "F2 office location"
     }
   },
   "privacy": {
@@ -572,9 +626,29 @@
         "users": "Users",
         "pricing": "Pricing",
         "orders": "Domain Orders",
+        "invoices": "Invoices",
+        "payments": "Payments",
+        "paymentMethods": "Payment methods",
+        "subscriptions": "Subscriptions",
+        "refunds": "Refunds",
+        "bankImports": "Bank reconciliation",
+        "webhooks": "Webhook events",
+        "disputes": "Disputes",
+        "analytics": "Analytics",
+        "suspensions": "Suspensions",
+        "projects": "Projects",
         "dsr": "DSR Queue",
         "blog": "Blog",
-        "features": "Feature inventory"
+        "features": "Feature inventory",
+        "homeContent": "Home page",
+        "servicesEditor": "Services",
+        "caseStudiesEditor": "Case studies",
+        "pagesEditor": "Pages",
+        "appMode": "App mode",
+        "smtp": "SMTP",
+        "aiHome": "AI dashboard",
+        "aiRouting": "AI routing",
+        "aiUsage": "AI usage"
       },
       "signedInAs": "Signed in as",
       "signOut": "Sign out",
@@ -584,6 +658,7 @@
         "workspace": "Workspace",
         "pipeline": "Pipeline",
         "infrastructure": "Infrastructure",
+        "ai": "AI orchestrator",
         "system": "System"
       }
     },
@@ -595,7 +670,30 @@
       "submit": "Sign in",
       "submitting": "Signing in…",
       "error": "Invalid email or password.",
-      "back": "← Back to f2.co.th"
+      "back": "← Back to f2.co.th",
+      "forgotPassword": "Forgot password?",
+      "forgot": {
+        "heading": "Reset your password",
+        "instructions": "Enter your account email. We'll send you a link to reset your password.",
+        "email": "Email",
+        "submit": "Send reset link",
+        "submitting": "Sending…",
+        "sent": "If an account exists for that email, a reset link is on its way. Check your inbox.",
+        "backToLogin": "Back to sign in",
+        "error": "Could not send reset link. Try again in a moment."
+      },
+      "reset": {
+        "heading": "Choose a new password",
+        "requirements": "At least 10 characters, including letters and digits.",
+        "newPassword": "New password",
+        "confirmPassword": "Confirm new password",
+        "mismatch": "Passwords don't match.",
+        "submit": "Reset password",
+        "submitting": "Resetting…",
+        "success": "Password updated. Redirecting to sign in…",
+        "backToLogin": "Back to sign in",
+        "error": "Reset failed."
+      }
     },
     "dashboard": {
       "title": "Dashboard",
@@ -687,6 +785,24 @@
       }
     },
     "customers": {
+      "billingProfile": {
+        "title": "Billing profile (tax invoice)",
+        "subtitle": "Used on issued tax invoices. The current values are snapshotted onto each invoice at issue time so later edits never alter historical documents.",
+        "legalName": "Legal name *",
+        "legalNameRequired": "Legal name is required.",
+        "taxID": "Tax ID (13 digits)",
+        "branchCode": "Branch code",
+        "addressLine1": "Address line 1",
+        "addressLine2": "Address line 2",
+        "subdistrict": "Subdistrict",
+        "district": "District",
+        "province": "Province",
+        "postalCode": "Postal code",
+        "country": "Country",
+        "billingEmail": "Billing email",
+        "save": "Save profile",
+        "saved": "Billing profile saved."
+      },
       "title": "Customers",
       "subtitle": "{count} client organisations",
       "addButton": "Add customer",
@@ -704,9 +820,71 @@
         "industry": "Industry",
         "services": "Services",
         "manager": "Manager",
+        "showcase": "Website",
         "status": "Status",
         "active": "Active",
         "inactive": "Inactive"
+      },
+      "showcaseFilter": {
+        "all": "All",
+        "live": "Live on site",
+        "ready": "Ready to publish",
+        "pending": "Awaiting consent",
+        "expiring": "Expiring / expired",
+        "empty": "No customers match this filter."
+      },
+      "showcase": {
+        "title": "Website showcase & consent",
+        "blurb": "Controls whether this customer appears on the public /clients page and the trusted-by strip. Requires signed consent on file (PDPA มาตรา 24).",
+        "saveButton": "Save showcase settings",
+        "saved": "Showcase settings saved and audit trail updated.",
+        "showAudit": "Show audit history",
+        "hideAudit": "Hide audit history",
+        "expiryWarn": "Consent expires in {days} days — start renewal.",
+        "expiredWarn": "Consent expired {days} days ago — the customer is hidden from public surfaces.",
+        "errors": {
+          "consentRequired": "Cannot publish without a consent date on file."
+        },
+        "status": {
+          "none": "No consent",
+          "consent": "Consent on file",
+          "live": "Live on site",
+          "expiring": "Expiring soon",
+          "expired": "Expired"
+        },
+        "consent": {
+          "title": "PDPA consent record",
+          "help": "Fill this from the signed consent letter. All fields are mirrored to audit_log so PDPA obligations are traceable.",
+          "documentURL": "Signed document URL",
+          "documentURLPlaceholder": "Google Drive link to the signed PDF",
+          "grantedAt": "Consent granted on *",
+          "grantedBy": "Signed by (name + role) *",
+          "grantedByPlaceholder": "e.g. Somchai Panyawattano, General Manager",
+          "expiresAt": "Consent expires on",
+          "expiresAtHelper": "Leave blank for open-ended consent.",
+          "notes": "Internal notes",
+          "templateBasicTH": "Basic consent (TH)",
+          "templateExtendedTH": "Extended consent (TH)"
+        },
+        "display": {
+          "title": "Public display fields",
+          "help": "How this customer appears on /clients and in the trusted-by strip. Leave blank to fall back to the customer's canonical name and industry.",
+          "publish": "Show on public website",
+          "publishHelp": "When on, the customer appears on /clients and the trusted-by strip (both subject to their module toggles).",
+          "publishBlocked": "Record a consent date first before enabling this.",
+          "displayName": "Display name",
+          "displayNameHelper": "Brand-approved wording. Falls back to the canonical customer name.",
+          "logoURL": "Logo URL",
+          "industryEN": "Industry label (EN)",
+          "industryTH": "Industry label (TH)",
+          "sortOrder": "Sort order",
+          "sortOrderHelper": "Lower numbers appear first. Default is 100."
+        },
+        "audit": {
+          "title": "Consent audit history",
+          "empty": "No changes recorded yet for this customer.",
+          "system": "System"
+        }
       },
       "detail": {
         "back": "All customers",
@@ -1021,6 +1199,707 @@
       "auditTitle": "Audit history",
       "auditEmpty": "No audit entries yet for this module.",
       "systemActor": "system"
+    },
+    "invoices": {
+      "title": "Invoices",
+      "subtitle": "Issue, track, and reconcile customer invoices.",
+      "create": "New invoice",
+      "createDraft": "Create draft",
+      "backToList": "Back to invoices",
+      "empty": "No invoices yet.",
+      "all": "All",
+      "issue": "Issue & email",
+      "issued": "Invoice issued.",
+      "print": "Print",
+      "downloadPDF": "PDF",
+      "exportInvoices": "Export invoices CSV",
+      "exportPayments": "Export payments CSV",
+      "selectedCount": "{count, plural, one {1 selected} other {# selected}}",
+      "bulkIssue": "Issue selected",
+      "bulkVoid": "Void selected",
+      "bulkResult": "{succeeded} succeeded · {skipped} skipped",
+      "refund": "Refund",
+      "refundIssued": "Refund issued.",
+      "refundFailed": "Refund failed.",
+      "refundDialogTitle": "Issue a refund",
+      "refundAmount": "Amount",
+      "maxRefund": "max",
+      "refundReason": "Reason",
+      "refundBankRef": "Bank reference (manual refunds)",
+      "refundProofUrl": "Proof URL (manual refunds)",
+      "refundInvalid": "Provide a positive amount within the payment cap and a reason.",
+      "issueRefund": "Issue refund",
+      "cancel": "Cancel",
+      "void": "Void",
+      "voided": "Invoice voided.",
+      "voidReasonPrompt": "Reason for voiding this invoice?",
+      "currency": "Currency",
+      "vatLabel": "VAT rate",
+      "notes": "Internal notes",
+      "items": "Line items",
+      "addItem": "Add item",
+      "descEN": "Description (EN)",
+      "descTH": "Description (TH)",
+      "unitPriceCents": "Unit price (cents)",
+      "pickCustomer": "Pick a customer first.",
+      "invalidItems": "Each item needs a description, quantity ≥ 1, and a non-negative price.",
+      "due": "due",
+      "subtotal": "Subtotal",
+      "vat": "VAT ({rate}%)",
+      "total": "Total",
+      "paid": "Paid",
+      "balanceDue": "Balance due",
+      "paymentsTitle": "Payments",
+      "noPayments": "No payment attempts yet.",
+      "viewSlip": "View slip",
+      "col": {
+        "number": "Number",
+        "customer": "Customer",
+        "issued": "Issued",
+        "due": "Due",
+        "total": "Total",
+        "paid": "Paid",
+        "status": "Status",
+        "description": "Description",
+        "qty": "Qty",
+        "unitPrice": "Unit price",
+        "lineTotal": "Line total"
+      },
+      "status": {
+        "draft": "Draft",
+        "issued": "Issued",
+        "partially_paid": "Partially paid",
+        "paid": "Paid",
+        "overdue": "Overdue",
+        "void": "Void",
+        "refunded": "Refunded"
+      },
+      "methodLabel": {
+        "bank_transfer": "Bank transfer",
+        "thai_qr": "Thai QR",
+        "promptpay": "PromptPay",
+        "paypal": "PayPal"
+      },
+      "payStatus": {
+        "pending": "Pending",
+        "awaiting_verification": "Awaiting verification",
+        "completed": "Completed",
+        "failed": "Failed",
+        "expired": "Expired",
+        "refunded": "Refunded"
+      }
+    },
+    "payments": {
+      "title": "Payments",
+      "subtitle": "Verify bank-transfer slips and reconcile PayPal payments.",
+      "empty": "No payments match this filter.",
+      "all": "All",
+      "verify": "Verify",
+      "verified": "Payment verified and invoice reconciled.",
+      "reject": "Reject",
+      "rejected": "Payment rejected.",
+      "rejectReasonPrompt": "Why are you rejecting this payment?",
+      "viewSlip": "Open slip",
+      "col": {
+        "payment": "Payment",
+        "invoice": "Invoice",
+        "customer": "Customer",
+        "method": "Method",
+        "slip": "Slip",
+        "amount": "Amount",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "methodLabel": {
+        "bank_transfer": "Bank transfer",
+        "thai_qr": "Thai QR",
+        "promptpay": "PromptPay",
+        "paypal": "PayPal"
+      },
+      "payStatus": {
+        "pending": "Pending",
+        "awaiting_verification": "Awaiting verification",
+        "completed": "Completed",
+        "failed": "Failed",
+        "expired": "Expired",
+        "refunded": "Refunded"
+      }
+    },
+    "paymentMethods": {
+      "title": "Payment methods",
+      "subtitle": "Configure how customers can pay. Disabled methods are hidden from the portal pay screen.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "displayNameEN": "Display name (EN)",
+      "displayNameTH": "Display name (TH)",
+      "instructionsEN": "Customer instructions (EN)",
+      "instructionsTH": "Customer instructions (TH)",
+      "methodConfig": "Method configuration",
+      "save": "Save",
+      "saved": "Saved",
+      "labels": {
+        "bank_transfer": "Bank Transfer",
+        "thai_qr": "Thai QR",
+        "promptpay": "PromptPay",
+        "paypal": "PayPal"
+      },
+      "modeLabel": "Mode",
+      "modeSandbox": "Sandbox",
+      "modeProduction": "Production",
+      "methodSandboxBody": "Test mode — payments through this method are simulated and the sandbox helpers (force complete, simulate webhook) can act on them.",
+      "methodProductionBody": "Live mode — real money will move. Sandbox helpers will refuse to touch payments for this method.",
+      "confirmGoLive": "Switch {method} to PRODUCTION? Real customer payments through this method will be processed. Continue?",
+      "confirmGoSandbox": "Switch {method} back to SANDBOX? Live payments through this method will be disabled until you switch back. Continue?",
+      "modeAdminOnly": "Only users with the admin role can change a payment method's mode.",
+      "paypalSandboxLabel": "Sandbox credentials",
+      "paypalLiveLabel": "Live credentials",
+      "paypalActiveBadge": "Active",
+      "paypalClientID": "Client ID",
+      "paypalClientSecret": "Client secret",
+      "paypalWebhookID": "Webhook ID",
+      "paypalMerchantEmail": "Merchant email",
+      "paypalSecretSet": "Set",
+      "paypalSetSecret": "Click to set the client secret",
+      "paypalChangeSecret": "Change",
+      "paypalKeepSecret": "Keep existing",
+      "paypalRevealSecret": "Reveal secret",
+      "paypalHideSecret": "Hide secret",
+      "paypalSecretPlaceholder": "Paste the client secret from PayPal Developer Dashboard"
+    },
+    "subscriptions": {
+      "title": "Subscriptions",
+      "subtitle": "Recurring billing for hosting plans, SLA contracts, and managed services. The scheduler auto-issues an invoice 7 days before each renewal date.",
+      "create": "New subscription",
+      "all": "All",
+      "empty": "No subscriptions yet.",
+      "invalid": "Customer, title, and a positive amount in cents are required.",
+      "pause": "Pause",
+      "resume": "Resume",
+      "cancel": "Cancel",
+      "amountCents": "Amount (cents)",
+      "startsOn": "Starts on",
+      "pickFromCatalog": "Pre-fill from catalog",
+      "custom": "Custom subscription",
+      "catalogHosting": "Hosting plans",
+      "catalogSLA": "SLA contracts",
+      "status": {
+        "active": "Active",
+        "paused": "Paused",
+        "cancelled": "Cancelled"
+      },
+      "cycle": {
+        "monthly": "Monthly",
+        "quarterly": "Quarterly",
+        "annually": "Annually"
+      },
+      "col": {
+        "title": "Title",
+        "customer": "Customer",
+        "product": "Product",
+        "cycle": "Cycle",
+        "amount": "Amount",
+        "nextBilling": "Next bill",
+        "status": "Status",
+        "actions": "Actions"
+      }
+    },
+    "refunds": {
+      "title": "Refunds",
+      "subtitle": "Refund history across all methods. PayPal refunds go through the Refunds v2 API; manual refunds (bank, QR, PromptPay) are recorded here for audit.",
+      "all": "All",
+      "empty": "No refunds yet.",
+      "status": {
+        "pending": "Pending",
+        "completed": "Completed",
+        "failed": "Failed"
+      },
+      "col": {
+        "refund": "Refund",
+        "invoice": "Invoice",
+        "customer": "Customer",
+        "method": "Method",
+        "amount": "Amount",
+        "reason": "Reason",
+        "status": "Status"
+      }
+    },
+    "bankImports": {
+      "title": "Bank reconciliation",
+      "subtitle": "Upload a CSV of recent bank transfers and auto-match them to pending bank-transfer payments — much faster than verifying slips one by one.",
+      "uploadTitle": "Upload statement",
+      "uploadHint": "CSV with one row per transfer. Required columns:",
+      "sourceName": "Statement label",
+      "sourceNamePlaceholder": "e.g. Kasikorn March 2026",
+      "upload": "Upload & match",
+      "uploaded": "Parsed {parsed} rows, matched {matched}.",
+      "apply": "Apply {count} matches",
+      "applyConfirm": "Apply {count} proposed matches? This will mark each matched payment as completed.",
+      "applied": "{count} payments verified.",
+      "parsedSummary": "{parsed} parsed · {matched} matched · {applied} applied",
+      "recent": "Recent imports",
+      "empty": "No imports yet.",
+      "noMatch": "No match",
+      "status": {
+        "pending": "Pending",
+        "applied": "Applied",
+        "discarded": "Discarded"
+      },
+      "matchStatus": {
+        "unmatched": "Unmatched",
+        "proposed": "Proposed",
+        "applied": "Applied",
+        "skipped": "Skipped"
+      },
+      "col": {
+        "source": "Source",
+        "parsed": "Parsed",
+        "matched": "Matched",
+        "applied": "Applied",
+        "status": "Status",
+        "uploaded": "Uploaded",
+        "date": "Date",
+        "amount": "Amount",
+        "ref": "Reference",
+        "match": "Match"
+      }
+    },
+    "dashboardWidget": {
+      "title": "Billing snapshot",
+      "viewAll": "View all invoices",
+      "thisMonth": "This month",
+      "outstanding": "Outstanding",
+      "overdue": "Overdue",
+      "verificationQueue": "Awaiting verify",
+      "paymentsCount": "{count, plural, one {# payment} other {# payments}}",
+      "invoicesCount": "{count, plural, one {# invoice} other {# invoices}}",
+      "paymentsAwaiting": "to verify"
+    },
+    "webhooks": {
+      "title": "Webhook events",
+      "subtitle": "Every PayPal webhook received — signature status, processing result, link to the related payment. Useful when reconciling missing PayPal captures.",
+      "empty": "No webhook events received yet.",
+      "verified": "Signed",
+      "unverified": "Unsigned",
+      "errored": "Error",
+      "notProcessed": "—",
+      "error": "Error",
+      "payload": "Payload",
+      "replay": "Replay",
+      "replayHint": "Re-run the processing path for this event (idempotent for completed captures)",
+      "replayed": {
+        "replayed": "Replayed — payment reconciled.",
+        "noop": "No action needed for this event type."
+      },
+      "filter": {
+        "all": "All",
+        "processed": "Processed",
+        "unprocessed": "Unprocessed"
+      },
+      "col": {
+        "received": "Received",
+        "provider": "Provider",
+        "event": "Event type",
+        "signature": "Signature",
+        "processed": "Processed",
+        "payment": "Payment"
+      }
+    },
+    "suspensions": {
+      "title": "Service suspensions",
+      "subtitle": "Services automatically paused by the dunning scheduler after the final notice + 14 days. Auto-restore when the invoice gets paid; admins can manually restore (flip the resource back) or override (mark cleared without touching the resource).",
+      "all": "All",
+      "empty": "No suspensions — every account is in good standing.",
+      "restore": "Restore",
+      "override": "Override",
+      "restored": "Service restored.",
+      "overridden": "Suspension overridden.",
+      "overridePrompt": "Why are you cancelling this suspension without restoring the resource?",
+      "status": {
+        "active": "Active (paused)",
+        "restored": "Restored",
+        "overridden": "Overridden"
+      },
+      "col": {
+        "suspendedAt": "Suspended",
+        "customer": "Customer",
+        "invoice": "Invoice",
+        "product": "Resource",
+        "previousState": "Previous state",
+        "status": "Status",
+        "actions": "Actions"
+      }
+    },
+    "analytics": {
+      "title": "Billing analytics",
+      "subtitle": "Trailing 12 months of revenue + accounts-receivable aging + subscription churn. All numbers come straight from the live tables — no cache.",
+      "mrrTitle": "Monthly revenue",
+      "mrrSubtitle": "Completed payments by month. Sub revenue is the slice generated by recurring subscriptions.",
+      "agingTitle": "Accounts receivable aging",
+      "agingSubtitle": "Outstanding balances bucketed by how many days past due they are.",
+      "churnTitle": "Subscription churn",
+      "churnSubtitle": "Cancellations per month and the resulting churn rate vs. the active-at-start cohort.",
+      "legendAll": "Total revenue",
+      "legendSub": "Subscription revenue",
+      "invoiceCount": "{count, plural, one {1 invoice} other {# invoices}}",
+      "bucket": {
+        "current": "Not yet due",
+        "1_30": "1-30 days",
+        "31_60": "31-60 days",
+        "61_90": "61-90 days",
+        "90_plus": "90+ days"
+      },
+      "col": {
+        "month": "Month",
+        "allRevenue": "All revenue",
+        "subRevenue": "Sub revenue",
+        "payments": "Payments",
+        "trend": "Trend",
+        "cancelled": "Cancelled",
+        "activeStart": "Active @ start",
+        "churnRate": "Churn %"
+      }
+    },
+    "disputes": {
+      "title": "Disputes & chargebacks",
+      "subtitle": "PayPal-initiated disputes received via the CUSTOMER.DISPUTE.* webhooks. Open and waiting_seller rows need a response before the seller-response-due date or PayPal sides with the buyer automatically.",
+      "all": "All",
+      "empty": "No disputes — nice.",
+      "status": {
+        "open": "Open",
+        "waiting_buyer": "Waiting on buyer",
+        "waiting_seller": "Waiting on us",
+        "under_review": "Under review",
+        "resolved": "Resolved",
+        "closed": "Closed"
+      },
+      "col": {
+        "disputeID": "Dispute ID",
+        "invoice": "Invoice",
+        "customer": "Customer",
+        "reason": "Reason",
+        "amount": "Amount",
+        "opened": "Opened",
+        "due": "Response due",
+        "status": "Status"
+      }
+    },
+    "sandbox": {
+      "title": "Payment sandbox",
+      "subtitle": "Seed test invoices, force-complete payments, and simulate PayPal webhooks without touching real money.",
+      "seedInvoice": "Seed test invoice",
+      "seeded": "Test invoice {number} created.",
+      "purge": "Purge all sandbox data",
+      "purgeConfirm": "Delete every sandbox invoice and payment? This cannot be undone.",
+      "purged": "Deleted {count} sandbox invoice(s).",
+      "pendingPayments": "Pending sandbox payments",
+      "noPending": "No pending payments — seed an invoice and pay it from the portal to create one.",
+      "testInvoices": "Test invoices",
+      "noInvoices": "No sandbox invoices yet. Click \"Seed test invoice\" to create one.",
+      "forceComplete": "Force complete",
+      "simulateWebhook": "Simulate webhook",
+      "payCompleted": "Payment forced to completed.",
+      "webhookFired": "PayPal webhook simulated · event {event}",
+      "disabledTitle": "Sandbox is off",
+      "disabledBody": "Set PAYMENT_SANDBOX_MODE=true in .env and restart payment-api to use these tools.",
+      "col": {
+        "payment": "Payment",
+        "invoice": "Invoice",
+        "customer": "Customer",
+        "method": "Method",
+        "amount": "Amount",
+        "status": "Status",
+        "actions": "Actions",
+        "total": "Total",
+        "paid": "Paid"
+      }
+    },
+    "services": {
+      "title": "Services",
+      "subtitle": "{total, plural, one {# service} other {# services}} total",
+      "newService": "New service",
+      "newTitle": "New service",
+      "editTitle": "Edit service",
+      "noneYet": "No services yet — create the first one.",
+      "deleteService": "Delete service",
+      "deleteConfirm": "Delete this service? This cannot be undone.",
+      "saveError": "Failed to save. Please try again.",
+      "deleteError": "Failed to delete. Please try again.",
+      "col": {
+        "title": "Title",
+        "slug": "Slug",
+        "category": "Category",
+        "order": "Order",
+        "status": "Status"
+      },
+      "status": {
+        "published": "Published",
+        "draft": "Draft"
+      },
+      "field": {
+        "title": "Title",
+        "shortSummary": "Short summary",
+        "description": "Description",
+        "slug": "URL slug",
+        "icon": "Icon (Lucide name)",
+        "iconHint": "e.g. server, cloud, shield-check",
+        "category": "Category",
+        "sortOrder": "Sort order"
+      },
+      "section": {
+        "settings": "Service settings"
+      }
+    },
+    "caseStudies": {
+      "title": "Case studies",
+      "subtitle": "{total, plural, one {# case study} other {# case studies}} total",
+      "newCase": "New case study",
+      "newTitle": "New case study",
+      "editTitle": "Edit case study",
+      "noneYet": "No case studies yet — create the first one.",
+      "deleteCase": "Delete case study",
+      "deleteConfirm": "Delete this case study? This cannot be undone.",
+      "saveError": "Failed to save. Please try again.",
+      "deleteError": "Failed to delete. Please try again.",
+      "col": {
+        "client": "Client",
+        "slug": "Slug",
+        "industry": "Industry",
+        "years": "Years",
+        "order": "Order",
+        "status": "Status"
+      },
+      "status": {
+        "published": "Published",
+        "draft": "Draft"
+      },
+      "field": {
+        "clientName": "Client name",
+        "slug": "URL slug",
+        "industry": "Industry",
+        "location": "Location",
+        "years": "Relationship years",
+        "heroImageURL": "Hero image URL",
+        "summary": "Summary",
+        "challenge": "Challenge",
+        "solution": "Solution",
+        "results": "Results",
+        "quote": "Quote text",
+        "quoteAuthor": "Quote author",
+        "servicesUsed": "Services used",
+        "servicesUsedHint": "Comma-separated slugs",
+        "sortOrder": "Sort order"
+      },
+      "section": {
+        "settings": "Case study settings"
+      }
+    },
+    "homeContent": {
+      "title": "Home page content",
+      "subtitle": "Edit the hero and CTAs across the landing, services, and case-studies pages.",
+      "saveError": "Failed to save. Please try again.",
+      "group": {
+        "hero": "Hero",
+        "services": "Services section",
+        "trustedBy": "Trusted by",
+        "cta": "Final CTA",
+        "servicesPage": "Services page hero",
+        "caseStudiesPage": "Case studies page hero"
+      }
+    },
+    "pages": {
+      "title": "Static pages",
+      "subtitle": "{total, plural, one {# page} other {# pages}} total",
+      "newPage": "New page",
+      "newTitle": "New page",
+      "editTitle": "Edit page",
+      "noneYet": "No pages yet — create the first one.",
+      "deletePage": "Delete page",
+      "deleteConfirm": "Delete this page? This cannot be undone.",
+      "saveError": "Failed to save. Please try again.",
+      "deleteError": "Failed to delete. Please try again.",
+      "viewLive": "View live",
+      "col": {
+        "title": "Title",
+        "slug": "Slug",
+        "url": "URL",
+        "status": "Status",
+        "updated": "Updated"
+      },
+      "status": {
+        "published": "Published",
+        "draft": "Draft"
+      },
+      "field": {
+        "title": "Title",
+        "body": "Body",
+        "bodyHint": "Markdown — headings (#), lists, links, bold, italic. When filled, this replaces the hand-crafted layout on the public site.",
+        "slug": "URL slug",
+        "slugReserved": "This slug is reserved — pick another.",
+        "seoTitle": "SEO title (≤70 chars)",
+        "seoDescription": "SEO description (≤200 chars)"
+      },
+      "section": {
+        "settings": "Page settings",
+        "seo": "SEO metadata",
+        "completeness": "Content completeness"
+      }
+    },
+    "appMode": {
+      "title": "App mode",
+      "subtitle": "Global site-wide state. Applies to public site, customer portal, and admin console immediately after save.",
+      "lastUpdated": "Last changed: {when}",
+      "saveError": "Failed to save. Please try again.",
+      "messageHeading": "Custom message",
+      "messageHelp": "Shown in the banner and on the maintenance splash. Leave empty to use the built-in default text.",
+      "messagePlaceholderEN": "e.g. Migrating payments — back in 15 minutes.",
+      "messagePlaceholderTH": "เช่น กำลังย้ายระบบชำระเงิน กลับมาใน 15 นาที",
+      "modes": {
+        "production": {
+          "label": "Production",
+          "description": "Normal live operation.",
+          "effect": "No banner shown. Full functionality."
+        },
+        "trial": {
+          "label": "Trial run",
+          "description": "Pre-production preview.",
+          "effect": "Amber banner across public, portal, and admin. Full functionality preserved."
+        },
+        "maintenance": {
+          "label": "Maintenance",
+          "description": "Site offline for repairs.",
+          "effect": "Public + portal show a maintenance splash. Admin remains accessible so you can flip back."
+        }
+      }
+    },
+    "projects": {
+      "title": "Projects & Checklists",
+      "subtitle": "Client IT projects — audit checklists, weekly maintenance, reports.",
+      "newProject": "New project",
+      "noneYet": "No projects yet. Create one to start attaching checklist modules.",
+      "progress": "Progress",
+      "failCount": "{count} item(s) failed",
+      "status": {
+        "active": "Active",
+        "paused": "Paused",
+        "closed": "Closed"
+      },
+      "form": {
+        "clientName": "Client name",
+        "name": "Project name",
+        "cancel": "Cancel",
+        "create": "Create",
+        "customer": "Customer (portal account)",
+        "customerNone": "— No linked customer —",
+        "customerHint": "Link a customer so their contacts can see this project in the portal. Leave empty for early-stage prospects.",
+        "visibleToCustomer": "Visible to customer in portal"
+      },
+      "board": {
+        "library": "Module library",
+        "libraryHint": "Drag a module onto the project.",
+        "attached": "This project",
+        "emptyHint": "Drop modules here to build the project checklist.",
+        "openChecklist": "Open checklist",
+        "report": "Report",
+        "backToBoard": "Back to board",
+        "confirmDetach": "Remove this module and all its items? This cannot be undone.",
+        "notFound": "Project not found.",
+        "viewCustomer": "View customer →",
+        "visibleToCustomer": "Visible in portal",
+        "hiddenFromCustomer": "Hidden from portal",
+        "linkCustomerFirst": "Link a customer first to control portal visibility."
+      },
+      "checklist": {
+        "subtitle": "Tap the status button to cycle: pending → pass → fail → n/a.",
+        "notePlaceholder": "Add a note…",
+        "viewPhoto": "View photo",
+        "attachPhoto": "Attach photo",
+        "uploading": "Uploading…"
+      },
+      "report": {
+        "title": "Report",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "print": "Print",
+        "summary": "Summary",
+        "total": "Total",
+        "pass": "Pass",
+        "fail": "Fail",
+        "pending": "Pending",
+        "changes": "Item changes",
+        "noChanges": "No item changes in this range.",
+        "visits": "Visits",
+        "noVisits": "No visits in this range.",
+        "billable": "Billable",
+        "sendWeekly": "Send weekly summary"
+      },
+      "hiddenFromCustomer": "Hidden from customer"
+    },
+    "smtp": {
+      "title": "SMTP settings",
+      "subtitle": "Server credentials used to send email from every F2 service.",
+      "server": "Mail server",
+      "host": "Host",
+      "port": "Port",
+      "username": "Username",
+      "password": "Password",
+      "passwordHint": "Leave blank to keep the current password.",
+      "fromAddress": "From address",
+      "tlsMode": "TLS mode",
+      "save": "Save",
+      "saved": "Settings saved.",
+      "testTitle": "Send a test email",
+      "testHint": "Uses the currently-saved settings — save first, then test.",
+      "testSend": "Send test",
+      "testSent": "Test email sent to {to}."
+    },
+    "ai": {
+      "home": {
+        "title": "AI orchestrator",
+        "subtitle": "Provider-agnostic routing for every AI task in the F2 platform. Local Ollama + cloud Anthropic, switchable per-task without deploy.",
+        "mtdSpend": "Month-to-date spend",
+        "todaySpend": "Today",
+        "budget": "Monthly budget",
+        "used": "used",
+        "today": "today",
+        "calls": "calls",
+        "cost": "Cost",
+        "provider": "Provider",
+        "task": "Task",
+        "byProvider": "Spend by provider (MTD)",
+        "byTask": "Spend by task (MTD)",
+        "noActivity": "No activity recorded yet.",
+        "goRouting": "Manage routing",
+        "goRoutingBody": "Change which provider serves each task. Effective within 30 seconds.",
+        "goUsage": "View request log",
+        "goUsageBody": "Latest requests with cost, latency, and errors."
+      },
+      "routing": {
+        "title": "AI routing",
+        "subtitle": "Every AI task has a primary route and (usually) a fallback. Edit here to swap provider or model without redeploying. Backend polls every 30s.",
+        "tier": "Tier",
+        "provider": "Provider",
+        "model": "Model",
+        "maxOut": "Max out",
+        "enabled": "Enabled"
+      },
+      "usage": {
+        "title": "AI usage log",
+        "subtitle": "Latest generate + embed requests. Shows what each call cost, how long it took, and any provider errors.",
+        "filterTask": "Task:",
+        "allTasks": "All tasks",
+        "noEntries": "No usage recorded yet — start generating to see requests here.",
+        "time": "Time",
+        "task": "Task",
+        "provider": "Provider",
+        "model": "Model",
+        "tokensIn": "Tokens in",
+        "tokensOut": "Tokens out",
+        "costUSD": "Cost (USD)",
+        "latencyMs": "Latency (ms)",
+        "status": "Status",
+        "ok": "OK",
+        "errored": "Error"
+      }
     }
   },
   "portal": {
@@ -1031,7 +1910,10 @@
         "account": "Account",
         "tickets": "Tickets",
         "domains": "Domains",
-        "sla": "SLA"
+        "sla": "SLA",
+        "billing": "Billing",
+        "billingProfile": "Tax invoice info",
+        "projects": "Projects"
       },
       "organisation": "Organisation",
       "signedInAs": "Signed in as",
@@ -1051,7 +1933,30 @@
       "submit": "Sign in",
       "submitting": "Signing in…",
       "error": "Invalid email or password.",
-      "back": "← Back to f2.co.th"
+      "back": "← Back to f2.co.th",
+      "forgotPassword": "Forgot password?",
+      "forgot": {
+        "heading": "Reset your password",
+        "instructions": "Enter your account email. We'll send you a link to reset your password.",
+        "email": "Email",
+        "submit": "Send reset link",
+        "submitting": "Sending…",
+        "sent": "If an account exists for that email, a reset link is on its way. Check your inbox.",
+        "backToLogin": "Back to sign in",
+        "error": "Could not send reset link. Try again in a moment."
+      },
+      "reset": {
+        "heading": "Choose a new password",
+        "requirements": "At least 10 characters, including letters and digits.",
+        "newPassword": "New password",
+        "confirmPassword": "Confirm new password",
+        "mismatch": "Passwords don't match.",
+        "submit": "Reset password",
+        "submitting": "Resetting…",
+        "success": "Password updated. Redirecting to sign in…",
+        "backToLogin": "Back to sign in",
+        "error": "Reset failed."
+      }
     },
     "home": {
       "welcome": "Welcome back,",
@@ -1195,6 +2100,182 @@
       "errorContactRequired": "Registrant name and email are required.",
       "errorCheckFailed": "We couldn't check availability right now — try again in a moment.",
       "errorSubmitFailed": "We couldn't submit your request — try again or open a ticket."
+    },
+    "suspendedBanner": {
+      "badge": "SERVICES PAUSED",
+      "body": "{count, plural, one {1 service is paused} other {# services are paused}} because invoice {invoice} is past due.",
+      "payNow": "Pay now"
+    },
+    "billingProfile": {
+      "title": "Tax invoice info",
+      "subtitle": "Used on every tax invoice we issue you. Keep your legal name + tax ID + address up to date so your accountant can match invoices to bank statements.",
+      "legalName": "Legal name",
+      "legalNameRequired": "Legal name is required.",
+      "taxID": "Tax ID (13 digits)",
+      "branchCode": "Branch code",
+      "addressLine1": "Address line 1",
+      "addressLine2": "Address line 2",
+      "subdistrict": "Subdistrict",
+      "district": "District",
+      "province": "Province",
+      "postalCode": "Postal code",
+      "country": "Country",
+      "billingEmail": "Billing email",
+      "save": "Save",
+      "saved": "Saved."
+    },
+    "billing": {
+      "title": "Billing & invoices",
+      "subtitle": "Your invoices and payment history.",
+      "noneYet": "You don't have any invoices yet.",
+      "outstandingTitle": "Outstanding",
+      "historyTitle": "History",
+      "loadError": "Couldn't load invoices.",
+      "notFound": "Invoice not found.",
+      "backToList": "All invoices",
+      "issued": "Issued",
+      "due": "Due",
+      "dueAmount": "{amount} due",
+      "subtotal": "Subtotal",
+      "vat": "VAT ({rate}%)",
+      "total": "Total",
+      "paid": "Paid",
+      "balanceDue": "Balance due",
+      "payTitle": "Pay this invoice",
+      "paySubtitle": "Choose a payment method.",
+      "noMethods": "No payment methods are enabled. Please contact F2.",
+      "continueToPay": "Continue",
+      "continueToPayPal": "Continue to PayPal",
+      "uploadSlip": "Upload your transfer slip",
+      "uploadSlipHint": "Paste a publicly accessible URL of your slip image. We'll verify within 1 business day.",
+      "uploadSlipHintV2": "Drop a screenshot or PDF of your slip below (max 5 MB). We'll verify within 1 business day.",
+      "slipDropHere": "Click or drop a file here",
+      "slipAccept": "JPG, PNG, WEBP, GIF, or PDF · up to 5 MB",
+      "slipUploaded": "Slip uploaded",
+      "slipReplace": "Replace",
+      "slipFileTooBig": "File too large — keep it under 5 MB.",
+      "slipFileError": "Upload failed. Try again or paste a slip URL instead.",
+      "printDocument": "Print",
+      "downloadPDF": "Download PDF",
+      "downloadReceipt": "Download receipt",
+      "print": {
+        "back": "Back",
+        "print": "Print",
+        "docInvoiceEN": "INVOICE",
+        "docInvoiceTH": "ใบแจ้งหนี้",
+        "docTaxInvoiceEN": "TAX INVOICE",
+        "docTaxInvoiceTH": "ใบกำกับภาษี",
+        "docReceiptEN": "RECEIPT",
+        "docReceiptTH": "ใบเสร็จรับเงิน",
+        "docQuotationEN": "QUOTATION",
+        "docQuotationTH": "ใบเสนอราคา",
+        "companyTaxID": "Tax ID",
+        "number": "No.",
+        "issueDate": "Date",
+        "dueDate": "Due",
+        "billTo": "Bill to",
+        "taxID": "Tax ID:",
+        "branch": "Branch:",
+        "notes": "Notes",
+        "description": "Description",
+        "qty": "Qty",
+        "unitPrice": "Unit price",
+        "lineTotal": "Total",
+        "subtotal": "Subtotal",
+        "vat": "VAT {rate}%",
+        "total": "Total",
+        "paid": "Paid",
+        "balanceDue": "Balance due",
+        "paymentInfo": "Payment details",
+        "paymentInstructions": "Pay through the F2 client portal — bank transfer, Thai QR, PromptPay, or PayPal accepted. Reference the invoice number on any manual transfer.",
+        "authorizedSignature": "Authorized signature",
+        "thanks": "Thank you for your business"
+      },
+      "slipUrl": "Slip URL *",
+      "bankRef": "Bank reference (optional)",
+      "transferredAt": "Transferred at",
+      "submitSlip": "Submit slip",
+      "slipSubmitted": "Slip received — awaiting verification.",
+      "slipUrlRequired": "Please paste a slip URL.",
+      "payError": "Couldn't start payment — try another method or contact F2.",
+      "paymentHistory": "Payment history",
+      "col": {
+        "description": "Description",
+        "qty": "Qty",
+        "unitPrice": "Unit price",
+        "total": "Total"
+      },
+      "status": {
+        "draft": "Draft",
+        "issued": "Issued",
+        "partially_paid": "Partially paid",
+        "paid": "Paid",
+        "overdue": "Overdue",
+        "void": "Void",
+        "refunded": "Refunded"
+      },
+      "methodLabel": {
+        "bank_transfer": "Bank transfer",
+        "thai_qr": "Thai QR",
+        "promptpay": "PromptPay",
+        "paypal": "PayPal"
+      },
+      "payStatus": {
+        "pending": "Pending",
+        "awaiting_verification": "Awaiting verification",
+        "completed": "Completed",
+        "failed": "Failed",
+        "expired": "Expired",
+        "refunded": "Refunded"
+      },
+      "payInstructions": {
+        "bank_transfer": "Transfer to this account",
+        "thai_qr": "Scan and pay",
+        "promptpay": "PromptPay details"
+      },
+      "cfg": {
+        "bank_name": "Bank",
+        "account_name": "Account name",
+        "account_number": "Account number",
+        "branch": "Branch",
+        "swift": "SWIFT",
+        "merchant_name": "Merchant",
+        "promptpay_id": "PromptPay ID",
+        "qr_image_url": "QR code",
+        "environment": "Environment",
+        "client_id_public": "Client ID",
+        "merchant_email": "Merchant email"
+      }
+    },
+    "projects": {
+      "title": "Projects & Checklists",
+      "subtitle": "Live status of the work F2 is doing for you.",
+      "noneYet": "No projects to show yet.",
+      "notFound": "Project not found or not visible.",
+      "progress": "Progress",
+      "backToList": "Back to projects",
+      "status": {
+        "active": "Active",
+        "paused": "Paused",
+        "closed": "Closed"
+      }
+    }
+  },
+  "payments": {
+    "paypal": {
+      "capturing": "Confirming your payment with PayPal…",
+      "successTitle": "Payment confirmed",
+      "successBody": "Thank you — your payment has been received. A receipt has been emailed to you.",
+      "errorTitle": "Payment couldn't be confirmed",
+      "errorBody": "We couldn't finalise this payment. If money left your account, contact F2 and we'll reconcile it for you.",
+      "cancelTitle": "Payment cancelled",
+      "cancelBody": "You cancelled the PayPal flow. Your invoice is still open — feel free to try again or pick another method.",
+      "backToBilling": "Back to billing"
+    },
+    "sandbox": {
+      "badge": "SANDBOX MODE",
+      "methodsInSandbox": "{count, plural, one {{methods} is in test mode} other {{count} methods in test mode ({methods})}}",
+      "openDashboard": "Open dashboard"
     }
   },
   "chat": {
@@ -1326,6 +2407,38 @@
       "title": "Bigger workload?",
       "body": "If your traffic, plug-in stack, or compliance posture has outgrown shared hosting, look at our managed Cloud & VPS service — built on DigitalOcean and run by the same F2 team.",
       "button": "Cloud & VPS"
+    },
+    "faq": {
+      "heading": "Frequently asked questions",
+      "items": [
+        {
+          "q": "Where are your servers located?",
+          "a": "Thailand — tier-3 data centres in Bangkok. Data residency and low latency for Thai hospitality bookings and back-office systems."
+        },
+        {
+          "q": "Is SSL included?",
+          "a": "Yes — every plan includes SSL via Let's Encrypt with auto-renewal at no extra cost."
+        },
+        {
+          "q": "What's your uptime SLA?",
+          "a": "99.9% monthly uptime guaranteed. If we miss the SLA, you get service credits automatically applied to the next invoice."
+        },
+        {
+          "q": "Do you handle domain registration too?",
+          "a": "Yes — .co.th, .th, .com and 200+ TLDs. See our Domain Marketplace for pricing and lookup."
+        },
+        {
+          "q": "Can I migrate an existing site?",
+          "a": "Yes. Free migration on Professional and Business plans. cPanel-to-cPanel is automated; other stacks we handle manually."
+        }
+      ]
+    },
+    "table": {
+      "title": "Compare all plans",
+      "caption": "Side-by-side comparison of F2 web hosting plans, including price, storage, sites, emails, bandwidth, SSL, and daily backups.",
+      "plan": "Plan",
+      "priceMonthly": "Monthly",
+      "priceAnnually": "Annually"
     }
   },
   "cookieBanner": {
@@ -1342,5 +2455,12 @@
     "essentialOnly": "Essential only",
     "manage": "Manage",
     "savePreferences": "Save preferences"
+  },
+  "appMode": {
+    "trial": "Trial run",
+    "maintenance": "Maintenance mode",
+    "trialDefault": "You are viewing a pre-production preview. Data and features may change without notice.",
+    "maintenanceDefault": "We're briefly offline for maintenance. Please try again soon.",
+    "splashTitle": "We'll be right back."
   }
 }

@@ -1,11 +1,12 @@
 import {
-  Bot, Cloud, GitBranch, Globe, Headset, LayoutDashboard, Server, ShieldCheck,
-  Sparkles, Sun, Wrench, type LucideIcon,
+  Bot, Building2, Chrome, Cloud, GitBranch, Globe, Headset, LayoutDashboard,
+  Mail, Network, Palette, Server, ShieldCheck, Sparkles, Sun, Wrench,
+  type LucideIcon,
 } from "lucide-react";
 
 const map: Record<string, LucideIcon> = {
-  Bot, Cloud, GitBranch, Globe, Headset, LayoutDashboard, Server, ShieldCheck,
-  Sparkles, Sun, Wrench,
+  Bot, Building2, Chrome, Cloud, GitBranch, Globe, Headset, LayoutDashboard,
+  Mail, Network, Palette, Server, ShieldCheck, Sparkles, Sun, Wrench,
 };
 
 export function ServiceIcon({

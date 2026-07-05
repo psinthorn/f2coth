@@ -10,7 +10,24 @@
 --   3. Set NOT NULL + CHECK (? 'en')
 --   4. Drop old TEXT column
 --   5. Rename ${name}_i18n -> ${name}
+--
+-- Re-run guard: `make migrate` replays every file each time. If services.title
+-- is already JSONB, this migration has already run. Bail before the ADD/UPDATE
+-- steps re-wrap the JSONB values into {en: {en:..., th:...}} garbage. The rest
+-- of the migration is skipped by the \q command below.
 -- =============================================================
+
+-- Re-run guard: if services.title is already JSONB, this migration has been
+-- applied — quit before the ADD/UPDATE steps re-wrap the JSONB into
+-- {"en": {"en": ..., "th": ...}, "th": ...} garbage.
+SELECT CASE
+    WHEN (SELECT data_type FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'services' AND column_name = 'title') = 'jsonb'
+    THEN true ELSE false END AS already_applied \gset
+\if :already_applied
+    \echo '011_i18n: already applied — skipping'
+    \q
+\endif
 
 -- Drop search indexes that reference soon-to-be-replaced columns.
 DROP INDEX IF EXISTS idx_case_studies_search;

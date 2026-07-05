@@ -2,14 +2,17 @@ import type { Metadata } from "next";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { pageAlternates, pageOpenGraph, pageBreadcrumb } from "@/lib/seo";
 import { JsonLd, breadcrumbList } from "@/lib/schema";
+import { cms } from "@/lib/api";
+import CMSPageBody from "@/components/CMSPageBody";
 
 export async function generateMetadata({
   params,
 }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.dpa" });
-  const title = t("title");
-  const description = t("description");
+  const page = await cms.getPage("dpa", locale);
+  const title = page?.seo_title || page?.title || t("title");
+  const description = page?.seo_description || t("description");
   return {
     title,
     description,
@@ -28,17 +31,33 @@ export default async function DPAPage({
   setRequestLocale(locale);
   const t = await getTranslations("dpa");
   const tCommon = await getTranslations("common");
+  const page = await cms.getPage("dpa", locale);
+
   const breadcrumbs = pageBreadcrumb(
     locale,
-    [{ name: t("title"), path: "/dpa" }],
+    [{ name: page?.title || t("title"), path: "/dpa" }],
     tCommon("home"),
   );
+
+  const cmsBody = page?.body_md?.trim();
+  if (cmsBody) {
+    return (
+      <section className="container-page py-16">
+        <JsonLd data={breadcrumbList(breadcrumbs)} />
+        <div className="prose-f2 mx-auto max-w-3xl">
+          <h1 className="font-display text-4xl text-navy-900">{page?.title || t("title")}</h1>
+          <p className="text-slate-500 text-sm">{t("lastUpdated")}</p>
+          <CMSPageBody markdown={cmsBody} />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="container-page py-16">
       <JsonLd data={breadcrumbList(breadcrumbs)} />
       <div className="prose-f2 mx-auto max-w-3xl">
-        <h1 className="font-display text-4xl text-navy-900">{t("title")}</h1>
+        <h1 className="font-display text-4xl text-navy-900">{page?.title || t("title")}</h1>
         <p className="text-slate-500 text-sm">{t("lastUpdated")}</p>
         <p className="rounded-lg border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-800">
           {t("lead")}

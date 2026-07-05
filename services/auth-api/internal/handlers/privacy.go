@@ -53,9 +53,10 @@ type dsrSubmitReq struct {
 
 // dsrUpdateReq uses pointer fields so the handler can distinguish three states
 // per field (PATCH semantics):
-//   nil pointer  → field absent from request, leave the column unchanged
-//   empty string → explicit clear (NULL for nullable columns, error for NOT NULL)
-//   value        → set to value
+//
+//	nil pointer  → field absent from request, leave the column unchanged
+//	empty string → explicit clear (NULL for nullable columns, error for NOT NULL)
+//	value        → set to value
 type dsrUpdateReq struct {
 	Status        *string `json:"status"`
 	AssignedTo    *string `json:"assigned_to"`

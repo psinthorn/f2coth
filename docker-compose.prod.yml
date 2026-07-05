@@ -1,64 +1,286 @@
 # docker-compose.prod.yml
 #
-# Production overrides — apply on top of docker-compose.yml:
+# Production overlay for f2.co.th.
 #
+# Apply on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #
-# Changes from dev baseline:
-#   • Traefik dashboard disabled (api.dashboard=false, api.insecure removed)
-#   • Traefik port 8080 not exposed
-#   • Log level raised to WARN to reduce noise
-#   • restart: always on every service
+# Design:
+#   - Images are pulled from GHCR — CI builds & pushes on merge to main.
+#     The base file's `build:` blocks are ignored because we do not run
+#     `docker compose build` in prod; `pull_policy: always` guarantees the
+#     tagged image is fetched.
+#   - Traefik terminates TLS via Let's Encrypt (HTTP-01 challenge on :80).
+#     All HTTP traffic redirects to HTTPS.
+#   - Postgres port is not exposed to the host or the internet.
+#   - Every service has memory + log rotation limits.
+#   - Restart policy: always.
 #
-# All application env vars (POSTGRES_*, JWT_SECRET, ANTHROPIC_API_KEY, …)
-# are still loaded from the .env file you create from .env.example.
+# Required env in .env on the server:
+#   IMAGE_TAG            e.g. main-<sha> or latest — pinned by deploy step
+#   GHCR_OWNER           GitHub owner (e.g. f2coltd) — owner of the GHCR images
+#   ACME_EMAIL           info@f2.co.th
+#   DOMAIN               f2.co.th
+#   All app secrets from .env.example (POSTGRES_*, JWT_SECRET, ANTHROPIC_API_KEY, SMTP_*, …)
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-app-defaults: &app-defaults
+  restart: always
+  logging: *default-logging
+  pull_policy: always
 
 services:
+  # ----------------------------------------------------------------
+  # Edge — Traefik with Let's Encrypt
+  # ----------------------------------------------------------------
   traefik:
-    restart: always
+    <<: *app-defaults
     command:
       - --api.dashboard=false
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      # Cloudflare sits in front — trust its IPs so X-Forwarded-For is honored
+      # and rate-limit middleware sees the real client IP, not a CF edge IP.
+      # Keep this list refreshed via scripts/refresh-cloudflare-ips.sh (monthly cron).
+      - --entrypoints.web.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22,2400:cb00::/32,2606:4700::/32,2803:f800::/32,2405:b500::/32,2405:8100::/32,2a06:98c0::/29,2c0f:f248::/32
+      - --entrypoints.websecure.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22,2400:cb00::/32,2606:4700::/32,2803:f800::/32,2405:b500::/32,2405:8100::/32,2a06:98c0::/29,2c0f:f248::/32
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
       - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
       - --log.level=WARN
+      - --accesslog=true
+      - --accesslog.filepath=/var/log/traefik/access.log
+      - --accesslog.bufferingsize=100
     ports:
       - "80:80"
       - "443:443"
-      # Port 8080 (insecure dashboard) is intentionally NOT published in prod
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-letsencrypt:/letsencrypt
+      - traefik-logs:/var/log/traefik
+    mem_limit: 256m
 
+  # ----------------------------------------------------------------
+  # Database — internal only, no host port
+  # ----------------------------------------------------------------
   postgres:
-    restart: always
+    <<: *app-defaults
+    pull_policy: missing
+    ports: !reset []
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Migrations volume removed in prod — migrations are applied by
+      # `make migrate` as a controlled deploy step, not on container start.
+    mem_limit: 2g
+    shm_size: 256m
 
+  # ----------------------------------------------------------------
+  # Go microservices — pulled from GHCR
+  # ----------------------------------------------------------------
   cms-api:
-    restart: always
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-cms-api:${IMAGE_TAG:-latest}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.cms.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/cms`)
+      - traefik.http.routers.cms.entrypoints=websecure
+      - traefik.http.routers.cms.tls.certresolver=letsencrypt
+      - traefik.http.services.cms.loadbalancer.server.port=8001
+
+  checklist-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-checklist-api:${IMAGE_TAG:-latest}
+    mem_limit: 256m
+    volumes:
+      - checklist-uploads:/data/uploads
+    environment:
+      UPLOADS_DIR: /data/uploads
+      SITE_URL: https://${DOMAIN}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.checklist.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/checklists`)
+      - traefik.http.routers.checklist.entrypoints=websecure
+      - traefik.http.routers.checklist.tls.certresolver=letsencrypt
+      - traefik.http.services.checklist.loadbalancer.server.port=8008
+      - traefik.http.routers.checklist-portal.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/checklists/portal`)
+      - traefik.http.routers.checklist-portal.entrypoints=websecure
+      - traefik.http.routers.checklist-portal.tls.certresolver=letsencrypt
+      - traefik.http.routers.checklist-portal.service=checklist
+      - traefik.http.routers.checklist-portal.priority=100
+      - traefik.http.routers.checklist-portal.middlewares=checklist-portal-ratelimit
+      - traefik.http.middlewares.checklist-portal-ratelimit.ratelimit.average=30
+      - traefik.http.middlewares.checklist-portal-ratelimit.ratelimit.burst=60
+      - traefik.http.middlewares.checklist-portal-ratelimit.ratelimit.period=1m
+      # POST /uploads — tight limit so a misbehaving tech can't fill the volume.
+      - traefik.http.routers.checklist-upload.rule=Host(`${DOMAIN}`) && Path(`/api/checklists/uploads`)
+      - traefik.http.routers.checklist-upload.entrypoints=websecure
+      - traefik.http.routers.checklist-upload.tls.certresolver=letsencrypt
+      - traefik.http.routers.checklist-upload.service=checklist
+      - traefik.http.routers.checklist-upload.priority=150
+      - traefik.http.routers.checklist-upload.middlewares=checklist-upload-ratelimit
+      - traefik.http.middlewares.checklist-upload-ratelimit.ratelimit.average=10
+      - traefik.http.middlewares.checklist-upload-ratelimit.ratelimit.burst=5
+      - traefik.http.middlewares.checklist-upload-ratelimit.ratelimit.period=1m
 
   lead-api:
-    restart: always
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-lead-api:${IMAGE_TAG:-latest}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.lead.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/leads`)
+      - traefik.http.routers.lead.entrypoints=websecure
+      - traefik.http.routers.lead.tls.certresolver=letsencrypt
+      - traefik.http.routers.lead.middlewares=lead-ratelimit
+      - traefik.http.middlewares.lead-ratelimit.ratelimit.average=30
+      - traefik.http.middlewares.lead-ratelimit.ratelimit.burst=10
+      - traefik.http.middlewares.lead-ratelimit.ratelimit.period=1m
+      - traefik.http.services.lead.loadbalancer.server.port=8002
+      - traefik.http.routers.consent.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/consent`)
+      - traefik.http.routers.consent.entrypoints=websecure
+      - traefik.http.routers.consent.tls.certresolver=letsencrypt
+      - traefik.http.routers.consent.service=lead
+      - traefik.http.routers.consent.middlewares=consent-ratelimit
+      - traefik.http.middlewares.consent-ratelimit.ratelimit.average=5
+      - traefik.http.middlewares.consent-ratelimit.ratelimit.burst=3
+      - traefik.http.middlewares.consent-ratelimit.ratelimit.period=1m
 
   ai-chat-api:
-    restart: always
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-ai-chat-api:${IMAGE_TAG:-latest}
+    mem_limit: 512m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.chat.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/chat`)
+      - traefik.http.routers.chat.entrypoints=websecure
+      - traefik.http.routers.chat.tls.certresolver=letsencrypt
+      - traefik.http.routers.chat.middlewares=chat-ratelimit
+      - traefik.http.middlewares.chat-ratelimit.ratelimit.average=10
+      - traefik.http.middlewares.chat-ratelimit.ratelimit.burst=5
+      - traefik.http.middlewares.chat-ratelimit.ratelimit.period=1m
+      - traefik.http.services.chat.loadbalancer.server.port=8003
 
   auth-api:
-    restart: always
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-auth-api:${IMAGE_TAG:-latest}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.auth.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/auth`)
+      - traefik.http.routers.auth.entrypoints=websecure
+      - traefik.http.routers.auth.tls.certresolver=letsencrypt
+      - traefik.http.routers.auth.middlewares=auth-ratelimit
+      - traefik.http.middlewares.auth-ratelimit.ratelimit.average=10
+      - traefik.http.middlewares.auth-ratelimit.ratelimit.burst=5
+      - traefik.http.middlewares.auth-ratelimit.ratelimit.period=1m
+      - traefik.http.services.auth.loadbalancer.server.port=8004
+      - traefik.http.routers.privacy.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/privacy`)
+      - traefik.http.routers.privacy.entrypoints=websecure
+      - traefik.http.routers.privacy.tls.certresolver=letsencrypt
+      - traefik.http.routers.privacy.service=auth
+      - traefik.http.routers.privacy.middlewares=privacy-ratelimit
+      - traefik.http.middlewares.privacy-ratelimit.ratelimit.average=5
+      - traefik.http.middlewares.privacy-ratelimit.ratelimit.burst=3
+      - traefik.http.middlewares.privacy-ratelimit.ratelimit.period=1m
+      # Password-reset — 5 attempts / min per IP so brute-force enumeration
+      # is impractical. Covers staff (/api/auth/forgot|reset-password) and
+      # customer (/api/auth/customer/...) variants.
+      - traefik.http.routers.pwreset.rule=Host(`${DOMAIN}`) && PathRegexp(`^/api/auth/(customer/)?(forgot|reset)-password$`)
+      - traefik.http.routers.pwreset.entrypoints=websecure
+      - traefik.http.routers.pwreset.tls.certresolver=letsencrypt
+      - traefik.http.routers.pwreset.service=auth
+      - traefik.http.routers.pwreset.priority=200
+      - traefik.http.routers.pwreset.middlewares=pwreset-ratelimit
+      - traefik.http.middlewares.pwreset-ratelimit.ratelimit.average=5
+      - traefik.http.middlewares.pwreset-ratelimit.ratelimit.burst=3
+      - traefik.http.middlewares.pwreset-ratelimit.ratelimit.period=1m
 
   notification-api:
-    restart: always
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-notification-api:${IMAGE_TAG:-latest}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.notify.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/notifications`)
+      - traefik.http.routers.notify.entrypoints=websecure
+      - traefik.http.routers.notify.tls.certresolver=letsencrypt
+      - traefik.http.services.notify.loadbalancer.server.port=8005
 
   customer-api:
-    restart: always
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-customer-api:${IMAGE_TAG:-latest}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.portal.rule=Host(`${DOMAIN}`) && (PathPrefix(`/api/portal`) || PathPrefix(`/api/customer`))
+      - traefik.http.routers.portal.entrypoints=websecure
+      - traefik.http.routers.portal.tls.certresolver=letsencrypt
+      - traefik.http.services.portal.loadbalancer.server.port=8006
 
   reseller-api:
-    restart: always
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-reseller-api:${IMAGE_TAG:-latest}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.reseller.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/reseller`)
+      - traefik.http.routers.reseller.entrypoints=websecure
+      - traefik.http.routers.reseller.tls.certresolver=letsencrypt
+      - traefik.http.services.reseller.loadbalancer.server.port=8007
 
+  payment-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-payment-api:${IMAGE_TAG:-latest}
+    mem_limit: 256m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.payment.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/payment`)
+      - traefik.http.routers.payment.entrypoints=websecure
+      - traefik.http.routers.payment.tls.certresolver=letsencrypt
+      - traefik.http.routers.payment.middlewares=payment-ratelimit
+      - traefik.http.middlewares.payment-ratelimit.ratelimit.average=60
+      - traefik.http.middlewares.payment-ratelimit.ratelimit.burst=20
+      - traefik.http.middlewares.payment-ratelimit.ratelimit.period=1m
+      - traefik.http.services.payment.loadbalancer.server.port=8008
+
+  # ----------------------------------------------------------------
+  # Next.js frontend
+  # ----------------------------------------------------------------
   web-app:
-    restart: always
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-web-app:${IMAGE_TAG:-latest}
+    mem_limit: 1g
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE: https://${DOMAIN}/api
+      NEXT_PUBLIC_SITE_URL: https://${DOMAIN}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.web.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)
+      - traefik.http.routers.web.entrypoints=websecure
+      - traefik.http.routers.web.tls.certresolver=letsencrypt
+      - traefik.http.routers.web.priority=1
+      - traefik.http.services.web.loadbalancer.server.port=3000
+      # www → apex redirect
+      - traefik.http.routers.web.middlewares=www-redirect
+      - traefik.http.middlewares.www-redirect.redirectregex.regex=^https://www\.(.*)
+      - traefik.http.middlewares.www-redirect.redirectregex.replacement=https://$$1
+      - traefik.http.middlewares.www-redirect.redirectregex.permanent=true
 
 volumes:
   traefik-letsencrypt:
+  traefik-logs:
+  checklist-uploads:
