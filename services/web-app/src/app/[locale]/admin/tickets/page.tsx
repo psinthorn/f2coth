@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
-import { Loader2, Inbox, AlertCircle } from "lucide-react";
+import { Loader2, Inbox, AlertCircle, Plus } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import { adminApi, type AdminTicket, type TicketStats } from "@/lib/admin-api";
 
@@ -47,9 +47,14 @@ export default function AdminTicketsQueuePage() {
 
   return (
     <AdminShell>
-      <header className="mb-6">
-        <h1 className="font-display text-3xl text-navy-900">{t("title")}</h1>
-        <p className="mt-1 text-sm text-navy-600">{t("subtitle")}</p>
+      <header className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl text-navy-900">{t("title")}</h1>
+          <p className="mt-1 text-sm text-navy-600">{t("subtitle")}</p>
+        </div>
+        <Link href={"/admin/tickets/new" as any} className="btn-accent shrink-0">
+          <Plus className="h-4 w-4" /> {t("newTicket")}
+        </Link>
       </header>
 
       {stats && (
