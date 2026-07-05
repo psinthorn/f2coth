@@ -1,4 +1,4 @@
-.PHONY: help up down build rebuild logs ps clean db-shell migrate seed test fmt tidy prod-up prod-down prod-logs staging-up staging-down staging-logs
+.PHONY: help up down build rebuild logs ps clean db-shell migrate seed test test-integration fmt tidy prod-up prod-down prod-logs staging-up staging-down staging-logs
 
 SERVICES := cms-api lead-api ai-chat-api auth-api notification-api customer-api reseller-api payment-api checklist-api
 COMPOSE  := docker compose
@@ -52,13 +52,29 @@ tidy: ## Run go mod tidy across all Go services
 fmt: ## gofmt all Go services
 	@for s in $(SERVICES); do (cd services/$$s && gofmt -w .); done
 
-test: ## Run go test across all Go services + shared pkg/ modules
+test: ## Run go test across all Go services + shared pkg/ modules (unit + regression only; skips DB-backed integration tests)
 	@for s in $(SERVICES); do \
 		echo ">>> testing $$s"; \
 		(cd services/$$s && go test ./...) || exit 1; \
 	done
 	@echo ">>> testing pkg/modulegate"
 	@(cd pkg/modulegate && go test ./...) || exit 1
+
+# Integration tests hit a real Postgres. They are guarded by
+# TEST_DATABASE_URL so `make test` stays fast + hermetic on machines
+# without a DB. This target sets TEST_DATABASE_URL to the docker-compose
+# postgres instance (pulling credentials from .env) so a developer can
+# run the full suite by starting the stack + `make test-integration`.
+# Each integration test wraps its fixtures in a tx that rolls back, so
+# nothing leaks into the dev DB.
+test-integration: ## Run DB-backed integration tests against the local docker postgres (needs `make up`)
+	@set -a; . ./.env; set +a; \
+	  export TEST_DATABASE_URL="postgres://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@localhost:$${POSTGRES_PORT:-5432}/$${POSTGRES_DB}"; \
+	  for s in $(SERVICES); do \
+	    echo ">>> integration testing $$s"; \
+	    (cd services/$$s && TEST_DATABASE_URL="$$TEST_DATABASE_URL" go test -count=1 ./...) || exit 1; \
+	  done
+	@echo "✅  Integration tests passed."
 
 web-dev: ## Run the Next.js app locally (outside docker)
 	cd services/web-app && npm install && npm run dev
