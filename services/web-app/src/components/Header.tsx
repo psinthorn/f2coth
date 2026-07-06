@@ -5,6 +5,7 @@ import { ChevronDown, LogIn, Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/routing";
 import LanguageSwitcher from "./LanguageSwitcher";
+import F2LogoMark from "./F2LogoMark";
 import { isEnabledIn } from "@/lib/modules";
 
 type NavLeaf = { kind: "leaf"; href: string; labelKey: string; moduleKey: string };
@@ -62,8 +63,8 @@ export default function Header({
       <div className="container-page flex h-16 items-center justify-between gap-4">
         {/* Logo (also home link) */}
         <Link href="/" className="flex shrink-0 items-center" aria-label="F2 Co., Ltd.">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-navy-800 font-display text-lg font-bold text-white">
-            F2
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-navy-800 text-white">
+            <F2LogoMark className="h-5 w-5" />
           </span>
         </Link>
 

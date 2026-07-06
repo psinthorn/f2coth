@@ -1,5 +1,6 @@
 "use client";
 
+import F2LogoMark from "@/components/F2LogoMark";
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
@@ -54,7 +55,7 @@ export default function AdminResetPasswordPage({ params }: { params: Promise<{ t
       <div className="absolute top-4 right-4"><LanguageSwitcher /></div>
       <form onSubmit={onSubmit} className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <span className="grid h-10 w-10 place-items-center mx-auto rounded-lg bg-navy-900 font-display text-base font-bold text-white">F2</span>
+          <span className="grid h-10 w-10 place-items-center mx-auto rounded-lg bg-navy-900 text-white"><F2LogoMark className="h-6 w-6" /></span>
         </div>
         <div className="card space-y-4">
           <div className="flex items-center gap-2 text-navy-700">

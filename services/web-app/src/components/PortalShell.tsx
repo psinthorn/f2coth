@@ -9,6 +9,7 @@ import {
 import { portalApi, clearPortalAuth, redirectToPortalLogin, type PortalContact, type PortalCustomer } from "@/lib/portal-api";
 import SandboxBanner from "@/components/SandboxBanner";
 import SuspendedServicesBanner from "@/components/SuspendedServicesBanner";
+import F2LogoMark from "@/components/F2LogoMark";
 
 type GroupKey = "workspace" | "support" | "services";
 
@@ -130,7 +131,9 @@ export default function PortalShell({ children }: { children: React.ReactNode })
       <SuspendedServicesBanner />
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-navy-100 bg-white px-4 py-3 lg:hidden">
         <Link href="/portal" className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-700 font-display text-sm font-bold text-white">F2</span>
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-700 text-white">
+            <F2LogoMark className="h-4 w-4" />
+          </span>
           <span className="font-display text-base text-navy-900">{t("title")}</span>
         </Link>
         <button

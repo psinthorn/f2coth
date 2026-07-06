@@ -34,24 +34,28 @@ export default function manifest(): MetadataRoute.Manifest {
     // rendering). Next produces PNGs at build time. The purpose=any
     // maskable icon is required by Android/Chrome for adaptive icons.
     icons: [
-      // Next serves the dynamic icon routes at /icon and /apple-icon
-      // (without .png suffix). Content-Type is still image/png because
-      // the route handler uses ImageResponse to render a PNG. See
-      // src/app/icon.tsx and src/app/apple-icon.tsx for the pixels.
+      // Static SVG for anything modern (Chrome, Edge, Firefox, Safari
+      // 16+). sizes="any" tells the browser to scale the vector — no
+      // fallback bitmap needed at each PWA size. Next.js auto-serves
+      // src/app/icon.svg at /icon.svg.
       {
-        src: "/icon",
-        sizes: "512x512",
-        type: "image/png",
+        src: "/icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
         purpose: "any",
       },
       {
-        src: "/icon",
-        sizes: "512x512",
-        type: "image/png",
+        src: "/icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
         purpose: "maskable",
       },
+      // Static PNG at 180×180 for iOS home-screen (iOS ignores the PWA
+      // manifest for icons and uses <link rel="apple-touch-icon">
+      // instead, but adding it here keeps parity across platforms).
+      // Next.js auto-serves src/app/apple-icon.png at /apple-icon.png.
       {
-        src: "/apple-icon",
+        src: "/apple-icon.png",
         sizes: "180x180",
         type: "image/png",
       },

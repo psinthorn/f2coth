@@ -4,6 +4,7 @@
 // inline so it renders even without network.
 
 import type { Metadata } from "next";
+import F2LogoMark from "@/components/F2LogoMark";
 
 export const metadata: Metadata = {
   title: "Offline · F2",
@@ -15,8 +16,8 @@ export default function OfflinePage() {
   return (
     <main className="min-h-[70vh] flex items-center justify-center px-6">
       <div className="max-w-md text-center">
-        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-navy-900 font-display text-2xl font-bold text-white">
-          F2
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-navy-900 text-white">
+          <F2LogoMark className="h-8 w-8" />
         </div>
         <h1 className="font-display text-3xl text-navy-900">You&apos;re offline</h1>
         <p className="mt-3 text-navy-600">

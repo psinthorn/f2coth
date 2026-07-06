@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="F2 Co., Ltd.">
+  <title>F2 Co., Ltd.</title>
+  <!-- Clean SVG replica of the F2 letterform (F + horizontally-mirrored F).
+       Colours picked as `currentColor` so callers control the fill via
+       CSS `color`. For the brand-approved marketing composite (letterform
+       on the keyword-collage background), see /brand/f2-logo.jpg. -->
+
+  <!-- Left F: left stem + top bar + middle bar -->
+  <path fill="currentColor" d="
+    M 24 24
+    L 128 24
+    L 128 62
+    L 62 62
+    L 62 100
+    L 118 100
+    L 118 138
+    L 62 138
+    L 62 216
+    L 24 216
+    Z
+  "/>
+
+  <!-- Right mirrored F (Ǝ): right stem + top bar + middle bar,
+       positioned to interlock with the left F through the shared centre. -->
+  <path fill="currentColor" d="
+    M 216 24
+    L 112 24
+    L 112 62
+    L 178 62
+    L 178 100
+    L 122 100
+    L 122 138
+    L 178 138
+    L 178 216
+    L 216 216
+    Z
+  "/>
+</svg>
