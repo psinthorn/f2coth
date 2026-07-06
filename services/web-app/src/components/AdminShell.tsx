@@ -234,9 +234,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-navy-100 bg-white px-4 py-3 lg:hidden">
         <Link href="/admin" className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-navy-900 text-white">
-            <F2LogoMark className="h-4 w-4" />
-          </span>
+          <F2LogoMark className="h-8 w-8 rounded-lg" />
           <span className="font-display text-base text-navy-900">{t("brand")}</span>
         </Link>
         <div className="flex items-center gap-2">

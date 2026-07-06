@@ -1,38 +1,34 @@
-// F2 wordmark — clean F+F ligature drawn as inline SVG paths so callers
-// control colour via `currentColor` and never have to fetch an image.
-// Pair it with the navy tile wrapper the site's shells already use, e.g.:
+// F2 Co., Ltd. logo — the official brand mark ships with its own
+// background (F+F letterform overlaid on a keyword collage), so this
+// component just serves the source JPEG. Callers control the tile size
+// and shape via `className` (typically `h-N w-N rounded-lg` on shells,
+// bigger on splash/login pages) and DO NOT wrap it in a coloured tile —
+// the JPEG's own background is intentional and should not be framed.
 //
-//   <span className="grid h-9 w-9 place-items-center rounded-lg bg-navy-800 text-white">
-//     <F2LogoMark className="h-5 w-5" />
-//   </span>
-//
-// The same shape is also served statically at:
-//   /icon.svg          — favicon + PWA manifest (Chrome/Edge/Firefox/Safari)
-//   /apple-icon.png    — iOS home-screen touch icon (180×180)
-//   /brand/f2-mark.svg — canonical source (mirrored to src/app/icon.svg)
-//   /brand/f2-logo.jpg — full-colour marketing composite (keyword grid)
+// Assets:
+//   /brand/f2-logo.jpg — source of truth, 789×789 JPEG
+//   /brand/f2-mark.svg — clean SVG replica kept for future icon-only
+//     surfaces where a monochrome mark makes more sense (favicon,
+//     watermark, PDF header). Not used by this component.
 
-import type { SVGProps } from "react";
+import type { ImgHTMLAttributes } from "react";
 
 export default function F2LogoMark({
-  title = "F2 Co., Ltd.",
+  alt = "F2 Co., Ltd.",
+  className,
   ...props
-}: SVGProps<SVGSVGElement> & { title?: string }) {
+}: Omit<ImgHTMLAttributes<HTMLImageElement>, "src">) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 240 240"
-      role="img"
-      aria-label={title}
-      fill="currentColor"
+    // Plain <img> rather than next/image: this component is used inside
+    // several client components and shells where prop-passing a fixed
+    // width/height fights with utility-class sizing. The asset is <60 KB,
+    // served from /public, cached by the SW.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/brand/f2-logo.jpg"
+      alt={alt}
+      className={className}
       {...props}
-    >
-      <title>{title}</title>
-      {/* Left F: left stem + top bar + middle bar */}
-      <path d="M 24 24 L 128 24 L 128 62 L 62 62 L 62 100 L 118 100 L 118 138 L 62 138 L 62 216 L 24 216 Z" />
-      {/* Right mirrored F (Ǝ): right stem + top bar + middle bar,
-          positioned to interlock with the left F through the shared centre. */}
-      <path d="M 216 24 L 112 24 L 112 62 L 178 62 L 178 100 L 122 100 L 122 138 L 178 138 L 178 216 L 216 216 Z" />
-    </svg>
+    />
   );
 }

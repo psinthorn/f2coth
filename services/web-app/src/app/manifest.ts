@@ -34,30 +34,31 @@ export default function manifest(): MetadataRoute.Manifest {
     // rendering). Next produces PNGs at build time. The purpose=any
     // maskable icon is required by Android/Chrome for adaptive icons.
     icons: [
-      // Static SVG for anything modern (Chrome, Edge, Firefox, Safari
-      // 16+). sizes="any" tells the browser to scale the vector — no
-      // fallback bitmap needed at each PWA size. Next.js auto-serves
-      // src/app/icon.svg at /icon.svg.
+      // The F2 mark ships as a raster JPEG (F+F letterform on the
+      // company's keyword-collage background). Chrome/Android/Edge/iOS
+      // all accept image/jpeg in PWA manifest icons — no PNG conversion
+      // needed. Next.js auto-serves src/app/icon.jpg → /icon.jpg.
       {
-        src: "/icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/icon.jpg",
+        sizes: "789x789",
+        type: "image/jpeg",
         purpose: "any",
       },
+      // maskable purpose so Android's adaptive-icon mask has an
+      // explicit safe-zone hint (JPEG is a full-bleed square already).
       {
-        src: "/icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/icon.jpg",
+        sizes: "789x789",
+        type: "image/jpeg",
         purpose: "maskable",
       },
-      // Static PNG at 180×180 for iOS home-screen (iOS ignores the PWA
-      // manifest for icons and uses <link rel="apple-touch-icon">
-      // instead, but adding it here keeps parity across platforms).
-      // Next.js auto-serves src/app/apple-icon.png at /apple-icon.png.
+      // 180×180 downsample for iOS home-screen. iOS reads
+      // <link rel="apple-touch-icon"> more reliably than the manifest,
+      // but listing it here keeps parity across install platforms.
       {
-        src: "/apple-icon.png",
+        src: "/apple-icon.jpg",
         sizes: "180x180",
-        type: "image/png",
+        type: "image/jpeg",
       },
     ],
     // App-shortcuts land in the OS long-press menu on the installed icon.

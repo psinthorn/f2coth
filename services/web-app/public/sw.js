@@ -79,8 +79,9 @@ self.addEventListener("fetch", (event) => {
   // Next-generated hashed static assets are content-addressed → cache-first.
   if (
     url.pathname.startsWith("/_next/static/") ||
-    url.pathname === "/icon" ||
-    url.pathname === "/apple-icon" ||
+    url.pathname === "/icon.jpg" ||
+    url.pathname === "/apple-icon.jpg" ||
+    url.pathname.startsWith("/brand/") ||
     url.pathname === "/manifest.webmanifest" ||
     url.pathname === "/sw.js"
   ) {

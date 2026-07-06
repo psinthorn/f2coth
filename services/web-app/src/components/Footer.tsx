@@ -34,9 +34,7 @@ export default function Footer({
       <div className="container-page py-12 grid gap-10 md:grid-cols-4">
         <div className="md:col-span-1">
           <div className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-white text-navy-900">
-              <F2LogoMark className="h-5 w-5" />
-            </span>
+            <F2LogoMark className="h-9 w-9 rounded-lg" />
             <span className="font-display text-lg">F2 Co., Ltd.</span>
           </div>
           <p className="mt-4 max-w-md text-sm text-navy-300">{t("tagline")}</p>

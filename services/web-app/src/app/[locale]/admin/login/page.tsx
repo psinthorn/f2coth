@@ -64,7 +64,7 @@ function LoginForm() {
       <form onSubmit={onSubmit} className="w-full max-w-md">
         <div className="mb-6 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-navy-900 text-white"><F2LogoMark className="h-6 w-6" /></span>
+            <F2LogoMark className="h-10 w-10 rounded-lg" />
             <span className="font-display text-xl text-navy-900">{t("brandTitle")}</span>
           </Link>
         </div>

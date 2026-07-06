@@ -16,9 +16,7 @@ export default function OfflinePage() {
   return (
     <main className="min-h-[70vh] flex items-center justify-center px-6">
       <div className="max-w-md text-center">
-        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-navy-900 text-white">
-          <F2LogoMark className="h-8 w-8" />
-        </div>
+        <F2LogoMark className="mx-auto mb-4 h-14 w-14 rounded-2xl" />
         <h1 className="font-display text-3xl text-navy-900">You&apos;re offline</h1>
         <p className="mt-3 text-navy-600">
           F2 will pick up where you left off as soon as your connection is back.

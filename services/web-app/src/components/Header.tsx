@@ -63,9 +63,7 @@ export default function Header({
       <div className="container-page flex h-16 items-center justify-between gap-4">
         {/* Logo (also home link) */}
         <Link href="/" className="flex shrink-0 items-center" aria-label="F2 Co., Ltd.">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-navy-800 text-white">
-            <F2LogoMark className="h-5 w-5" />
-          </span>
+          <F2LogoMark className="h-9 w-9 rounded-lg" />
         </Link>
 
         {/* Primary nav (desktop ≥ lg) */}

@@ -55,7 +55,7 @@ export default function AdminResetPasswordPage({ params }: { params: Promise<{ t
       <div className="absolute top-4 right-4"><LanguageSwitcher /></div>
       <form onSubmit={onSubmit} className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <span className="grid h-10 w-10 place-items-center mx-auto rounded-lg bg-navy-900 text-white"><F2LogoMark className="h-6 w-6" /></span>
+          <F2LogoMark className="h-10 w-10 rounded-lg mx-auto" />
         </div>
         <div className="card space-y-4">
           <div className="flex items-center gap-2 text-navy-700">
