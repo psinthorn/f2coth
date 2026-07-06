@@ -12,8 +12,13 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
+    // camera + geolocation are needed by AttachmentUploader's "Take
+    // photo" flow (device camera capture + navigator.geolocation for
+    // GPS-tagged site photos). Allow same-origin only. microphone stays
+    // off — we don't record audio anywhere. interest-cohort off blocks
+    // FLoC tracking.
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    value: "camera=(self), microphone=(), geolocation=(self), interest-cohort=()",
   },
   // Content-Security-Policy is set per-request in middleware.ts using a
   // cryptographic nonce, eliminating 'unsafe-inline' for script-src.

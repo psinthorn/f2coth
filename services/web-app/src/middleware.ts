@@ -92,9 +92,12 @@ export default function middleware(request: NextRequest) {
 
 // i18n middleware applies to ALL non-API paths now (Phase 3C). Public
 // pages, /admin, and /portal all sit under app/[locale]/ and use locale
-// routing. Static assets, _next, _vercel, sitemap, robots bypass.
+// routing. Static assets, _next, _vercel, sitemap, robots bypass — as
+// do the PWA metadata routes (manifest, icons, service worker, offline
+// fallback), which are intentionally locale-agnostic and served from
+// app/ root rather than app/[locale]/.
 export const config = {
   matcher: [
-    "/((?!api|_next|_vercel|sitemap.xml|robots.txt|.*\\..*).*)",
+    "/((?!api|_next|_vercel|sitemap.xml|robots.txt|manifest.webmanifest|sw.js|icon|apple-icon|offline|.*\\..*).*)",
   ],
 };
