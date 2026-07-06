@@ -34,23 +34,43 @@ export default function manifest(): MetadataRoute.Manifest {
     // rendering). Next produces PNGs at build time. The purpose=any
     // maskable icon is required by Android/Chrome for adaptive icons.
     icons: [
-      // The F2 mark ships as a raster JPEG (F+F letterform on the
-      // company's keyword-collage background). Chrome/Android/Edge/iOS
-      // all accept image/jpeg in PWA manifest icons — no PNG conversion
-      // needed. Next.js auto-serves src/app/icon.jpg → /icon.jpg.
+      // Chrome's PWA install-criteria checker specifically looks for a
+      // 192×192 AND a 512×512 icon declaration. Without both, the
+      // browser will not offer install even though the manifest is
+      // otherwise valid. Both are downsampled from /brand/f2-logo.jpg
+      // via `sips -z {192|512}`. purpose="any" so they're eligible for
+      // install; a duplicate maskable set gives Android a safe-zone
+      // hint for adaptive icons.
+      {
+        src: "/brand/icon-192.jpg",
+        sizes: "192x192",
+        type: "image/jpeg",
+        purpose: "any",
+      },
+      {
+        src: "/brand/icon-512.jpg",
+        sizes: "512x512",
+        type: "image/jpeg",
+        purpose: "any",
+      },
+      {
+        src: "/brand/icon-192.jpg",
+        sizes: "192x192",
+        type: "image/jpeg",
+        purpose: "maskable",
+      },
+      {
+        src: "/brand/icon-512.jpg",
+        sizes: "512x512",
+        type: "image/jpeg",
+        purpose: "maskable",
+      },
+      // Full-resolution source for anything that scales past 512.
       {
         src: "/icon.jpg",
         sizes: "789x789",
         type: "image/jpeg",
         purpose: "any",
-      },
-      // maskable purpose so Android's adaptive-icon mask has an
-      // explicit safe-zone hint (JPEG is a full-bleed square already).
-      {
-        src: "/icon.jpg",
-        sizes: "789x789",
-        type: "image/jpeg",
-        purpose: "maskable",
       },
       // 180×180 downsample for iOS home-screen. iOS reads
       // <link rel="apple-touch-icon"> more reliably than the manifest,
