@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import {
-  LayoutDashboard, Users, Inbox, LogOut, Menu, X, Loader2, Building2, Ticket, DollarSign, Globe, ShieldCheck, FileText, ListChecks, CreditCard, Wallet, Repeat, Undo2, Landmark, Webhook, AlertOctagon, BarChart3, PauseCircle, Home, Layers, Award, FileCode, ToggleRight, ClipboardCheck, Mail, Bot, Route, Coins,
+  LayoutDashboard, Users, Inbox, LogOut, Menu, X, Loader2, Building2, Ticket, DollarSign, Globe, ShieldCheck, FileText, ListChecks, CreditCard, Wallet, Repeat, Undo2, Landmark, Webhook, AlertOctagon, BarChart3, PauseCircle, Home, Layers, Award, FileCode, ToggleRight, ClipboardCheck, Mail, Bot, Route, Coins, FileSignature,
 } from "lucide-react";
 import { adminApi, clearAuth, redirectToLogin, type User } from "@/lib/admin-api";
 import SandboxBanner from "@/components/SandboxBanner";
@@ -41,12 +41,13 @@ type NavItem = {
     | "/admin/analytics"
     | "/admin/suspensions"
     | "/admin/projects"
+    | "/admin/contracts"
     | "/admin/settings/smtp"
     | "/admin/features"
     | "/admin/ai"
     | "/admin/ai/routing"
     | "/admin/ai/usage";
-  labelKey: "dashboard" | "leads" | "tickets" | "customers" | "dsr" | "blog" | "appMode" | "homeContent" | "pagesEditor" | "servicesEditor" | "caseStudiesEditor" | "users" | "pricing" | "orders" | "invoices" | "payments" | "paymentMethods" | "subscriptions" | "refunds" | "bankImports" | "webhooks" | "disputes" | "analytics" | "suspensions" | "projects" | "smtp" | "features" | "aiHome" | "aiRouting" | "aiUsage";
+  labelKey: "dashboard" | "leads" | "tickets" | "customers" | "dsr" | "blog" | "appMode" | "homeContent" | "pagesEditor" | "servicesEditor" | "caseStudiesEditor" | "users" | "pricing" | "orders" | "invoices" | "payments" | "paymentMethods" | "subscriptions" | "refunds" | "bankImports" | "webhooks" | "disputes" | "analytics" | "suspensions" | "projects" | "contracts" | "smtp" | "features" | "aiHome" | "aiRouting" | "aiUsage";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   adminOnly?: boolean;
@@ -70,6 +71,7 @@ const NAV: NavGroup[] = [
       { href: "/admin/tickets",   labelKey: "tickets",   icon: Ticket,      moduleKey: "admin.tickets" },
       { href: "/admin/customers", labelKey: "customers", icon: Building2,   moduleKey: "admin.customers" },
       { href: "/admin/projects",  labelKey: "projects",  icon: ClipboardCheck, moduleKey: "admin.projects" },
+      { href: "/admin/contracts", labelKey: "contracts", icon: FileSignature,  moduleKey: "admin.contracts" },
       { href: "/admin/dsr",           labelKey: "dsr",                icon: ShieldCheck, moduleKey: "admin.dsr" },
       { href: "/admin/blog",          labelKey: "blog",               icon: FileText,    moduleKey: "admin.blog" },
       { href: "/admin/home-content",  labelKey: "homeContent",        icon: Home,        moduleKey: "admin.home_content" },

@@ -1,0 +1,19 @@
+{
+  "name": "f2-docgen",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Internal bilingual docx/PDF generator for F2 contract-api",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "render:sample": "node scripts/render-sample.js"
+  },
+  "dependencies": {
+    "docx": "8.5.0",
+    "express": "4.21.2",
+    "jszip": "3.10.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -4,6 +4,40 @@ Append-only. One entry per completed feature so future agents can reason about w
 
 ---
 
+## 2026-07-08 — Contract Management module (docgen + contract-api + /admin/contracts)
+
+**Scope:** F2's master service agreement as a reusable, multi-template skeleton — staff create a contract from a customer's details, generate a print-ready bilingual PDF for signing, and upload the signed scan back onto the record. Multi-contract AND multi-template (code-defined layouts).
+
+**Phase-0 reuse decisions (documented in `docs/contract-management-plan.md`):**
+
+- **Projects module** (checklist-api, `projects` table) already built → `contracts.project_id` nullable FK; iACC company id sourced from linked project.
+- **Volume upload mechanism** (checklist-api `uploads.go` + `checklist-uploads` volume) → mirrored with a new `contract-uploads` volume (spec mandates "volume, never Postgres"; note this diverges from mig-053 `attachments` BYTEA convention on purpose — signed scans/PDFs are larger).
+- **iACC stub** (`checklist-api/internal/iacc`) → interface copied into contract-api; drafts queued in `iacc_outbox` on status→active.
+- **docgen skeleton** (`docs/contract-template-skeleton/`) → parameterised (every Miskawaan literal → merge field).
+- **Party data:** NEW `contract_parties` table (per user decision) with optional FK back to `customers` — not an extension of the thin `customers` table.
+
+**New services:**
+
+- **`services/docgen`** (Node 20, internal-only, NOT on Traefik; `http://docgen:8080`). Builder registry (`lib/builders/index.js`) maps template `code` → render fn; shared docx primitives in `lib/shared/docx-kit.js`. Ships TWO builders: `service-agreement` (full 12-section skeleton) + `mutual-nda` (different shape, no fees — proves the registry). `embed-fonts.js` is a Node port of the skeleton's `embed_fonts.py` (odttf XOR obfuscation) — mandatory Thai-font embedding. `to-pdf.js` = LibreOffice headless. `POST /render` 404s unknown template (no silent blank doc); `GET /templates` = capability list.
+- **`services/contract-api`** (Go, cloned from checklist-api; internal port 8008, Traefik `/api/contracts`). Handlers: templates/parties CRUD, contracts CRUD + list/filter (`?status=&party=&customer=&expiring=N`), `/generate`, `/status`, multipart `/files` upload + download. State machine (`status.go`) server-enforced (illegal jumps → 409). Doc-no `F2-<prefix>-<year>-<seq>` allocated via `contract_doc_seq` `INSERT … ON CONFLICT DO UPDATE RETURNING` (row lock ⇒ concurrency-safe). RBAC: admin = write incl. delete + template mgmt; editor/viewer = read-only on contracts. Template create/edit validates `code` against docgen `GET /templates` (422 if no builder) — this keeps layouts code-defined.
+
+**DB:** `054_contract_management.sql` (contract_parties, contract_templates, contracts, contract_files, contract_status_events, contract_doc_seq, iacc_outbox + module rows `admin.contracts`/`api.contracts`/`service.docgen`), `055_seed_contract_templates.sql` (seeds both templates with `merge_schema`). Doc-prefix per template: F2-AGR / F2-NDA.
+
+**Frontend:** `src/lib/contract-api.ts` (mirrors checklist-api auth). `/admin/contracts` list (status badges draft-grey/sent-amber/signed-green/active-navy/expired-red/terminated-slate, expiring-≤30d highlight + card), `/new` wizard (template → party → schema-driven form from `merge_schema`), `/[id]` detail (edit-while-draft, files panel, generate draft/signing, drag-drop + phone-camera signed upload, activate, status timeline), `/templates` admin (edit defaults/toggle, no layout authoring). AdminShell nav entry added (`FileSignature`, `moduleKey: admin.contracts`).
+
+**Verified (live, against real stack):** both migrations applied on real PG (7 tables, 2 templates 11+7 fields, 3 module rows); doc-no concurrency test (50 goroutines, unique+gap-free) PASS; docgen renders real PDFs in-container for both templates; **full lifecycle e2e** via minted admin JWT — create (F2-AGR-2026-001) → generate draft (docx 128KB + pdf 96KB) → generate signing (draft→sent) → upload signed (sent→signed) → activate (signed→active, iacc_outbox row queued) → 2nd contract increments to -002 → expiring filter 30→0 / 90→1. `make ci` green (contract-api tests, i18n parity 1985/1985, modulegate 9/9). Go build/vet/gofmt clean; web-app tsc 0 errors.
+
+**Bug caught + fixed during e2e:** expiring filter used `($n || ' days')::interval` which failed with a bound int param → changed to `$n * INTERVAL '1 day'`.
+
+**Follow-ups noted, not done:**
+
+- iACC outbox drain worker (rows queue but nothing sends yet — stub only, by design).
+- "Create linked project" wizard checkbox wired to checklist-api (hook designed, not yet called).
+- Playwright `admin-contracts-wizard.spec.ts` needs `ADMIN_JWT` + live stack to run (skips otherwise, matches projects suite).
+- Full `make up` of the entire stack (validated services individually + integration, not one single `make up`).
+
+---
+
 ## 2026-07-04 — Cloudflare edge topology (playbook + firewall lockdown + refresh tooling)
 
 **Scope:** ship the "Cloudflare in front of the VPS" story so production go-live is a documented sequence of dashboard clicks rather than an ad-hoc decision.

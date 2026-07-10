@@ -35,10 +35,10 @@ Currently ships: domain-hosting, managed-hosting, private-cloud, cloud-storage, 
 
 - **public** (12): home, about, services, case_studies, blog, products, domains, hosting, contact, terms, privacy, dpa
 - **portal** (7): login, dashboard, tickets, domains, sla, **projects**, billing
-- **admin** (25): dashboard, app_mode, leads, tickets, customers, orders_domains, blog, home_content, pages, services, case_studies, dsr, pricing, invoices, payments, payment_methods, subscriptions, refunds, bank_imports, disputes, suspensions, users, features, **projects**
-- **api** (12): auth, consent, leads, dsr, cms, chat, notifications, reseller, portal, payment, payment_scheduler, **checklists**
+- **admin** (26): dashboard, app_mode, leads, tickets, customers, orders_domains, blog, home_content, pages, services, case_studies, dsr, pricing, invoices, payments, payment_methods, subscriptions, refunds, bank_imports, disputes, suspensions, users, features, **projects**, **contracts**
+- **api** (14): auth, consent, leads, dsr, cms, chat, notifications, reseller, portal, payment, payment_scheduler, **checklists**, **contracts**, **docgen** (service.docgen)
 
-Bold = added by migrations 038–040 (checklist-api). `core=true` items (login, home, dashboard, contact, terms, privacy, users, features, portal.login/dashboard) cannot be toggled off from the UI.
+Bold = added by migrations 038–040 (checklist-api) and 054 (contracts). `core=true` items (login, home, dashboard, contact, terms, privacy, users, features, portal.login/dashboard) cannot be toggled off from the UI.
 
 Read the live list any time with:
 
@@ -56,6 +56,17 @@ SELECT area, key, name_en, enabled FROM modules ORDER BY area, sort_order;
 - **project_modules** — attached templates on a project, ordered by `position` (drag-drop)
 - **project_items** — snapshot copy at attach time; status ∈ {pending, pass, fail, na}
 - **visit_logs** — weekly visit records; `billable` + `amount` are the iACC bridge
+
+---
+
+## Contract entities (migrations 054–055, contract-api)
+
+- **contract_templates** (2 seeded) — `service-agreement` (doc_prefix F2-AGR, 11 merge fields) + `mutual-nda` (F2-NDA, 7 fields). `code` maps 1:1 to a **docgen builder** (`services/docgen/lib/builders/`); admin can edit name/version/`merge_schema` defaults + toggle active but NOT the code/layout (layouts are code-defined; validated vs docgen `GET /templates`).
+- **contract_parties** — the customer/legal entity on a contract (legal_name_en/th, tax_id, address, notice_email…). Optional FK to `customers` (a party may link a portal account without needing one). Separate table, **not** an extension of `customers`.
+- **contracts** — one agreement. `doc_no` = `F2-<prefix>-<year>-<seq>` from `contract_doc_seq` (concurrency-safe). Status ∈ {draft→sent→signed→active→expired/terminated}, server-enforced (illegal jumps → 409). `project_id` nullable FK to `projects`. `merge_data` JSONB snapshot.
+- **contract_files** — metadata only (kind ∈ generated_docx/generated_pdf/signed_scan). Bytes on the **contract-uploads volume**, never in Postgres. 20 MB cap.
+- **contract_status_events** — status timeline / audit trail.
+- **iacc_outbox** — invoice-draft payload queued on status→active (drain worker TBD).
 
 ---
 

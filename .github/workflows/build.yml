@@ -21,6 +21,7 @@ jobs:
           - auth-api
           - checklist-api
           - cms-api
+          - contract-api
           - customer-api
           - lead-api
           - notification-api

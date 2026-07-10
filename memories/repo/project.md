@@ -1,6 +1,6 @@
 # F2 Website — Repo Snapshot
 
-**Last verified:** 2026-07-04 (production-ready + Cloudflare playbook) · 44 migrations, 52 tables, 10 services · checklist-api E2E baseline: 50/50 green, stack health 10/10. **All 8 SEO audit gaps closed. All 7 production-readiness blockers cleared** (CI/CD + scheduler + upload quota + SMTP encryption + OG fonts + observability + backups). Edge topology recommended: **Cloudflare Free plan in front of the VPS** — playbook at [docs/cloudflare-setup.md](../../docs/cloudflare-setup.md). See [docs/production-readiness.md](../../docs/production-readiness.md) for the go-live sequence.
+**Last verified:** 2026-07-08 (Contract Management module shipped) · 55 migrations, 12 services (contract-api + internal docgen added) · contract lifecycle e2e green (create→generate PDF→sign→activate), doc-no concurrency PASS. **All 8 SEO audit gaps closed. All 7 production-readiness blockers cleared** (CI/CD + scheduler + upload quota + SMTP encryption + OG fonts + observability + backups). Edge topology recommended: **Cloudflare Free plan in front of the VPS** — playbook at [docs/cloudflare-setup.md](../../docs/cloudflare-setup.md). See [docs/production-readiness.md](../../docs/production-readiness.md) for the go-live sequence.
 
 Load this before doing anything so you don't reinvent a service, table, route, or component that already exists. Cross-check against `/admin/features` (the live module registry) for the current on/off state.
 
@@ -18,10 +18,13 @@ Load this before doing anything so you don't reinvent a service, table, route, o
 | customer-api     | 8006 | /api/customer      | customers, contacts, tickets, SLA, domains, billing profile          |
 | reseller-api     | 8007 | /api/reseller      | domain availability + ordering (ResellerClub, THNIC)                 |
 | checklist-api    | 8008 | /api/checklists    | project boards, checklist templates, visit logs, portal read-view    |
+| ai-orchestrator  | 8009 | /api/ai            | AI routing/orchestration + usage/budget                              |
 | payment-api      | 8010 | /api/payment       | invoices, payments, subs, refunds, disputes, dunning, suspensions    |
+| contract-api     | 8008 | /api/contracts     | contract templates, parties, contracts, doc-no, signed-scan upload   |
+| docgen           | 8080 | (internal, no Traefik) | bilingual docx+PDF generator (LibreOffice); called by contract-api |
 | web-app          | 3000 | /                  | Next.js 16 · App Router · TS · Tailwind · next-intl (en/th)          |
 
-Payment-api runs on 8010 (customer-api took 8006 before payment was split). **Don't put a new service on 8006, 8009, or reuse any allocated port.** Next free: 8011+.
+Internal `SERVICE_PORT` is per-container-netns, so contract-api reuses 8008 like checklist-api (separate containers, Traefik routes by path). **docgen is internal-only** (reachable at `http://docgen:8080` on f2-net; never exposed). Payment-api runs on 8010. **Don't reuse a host-exposed port.**
 
 ---
 
@@ -38,9 +41,9 @@ Any new service that gates on identity **must** distinguish these — a staff `R
 
 001 extensions · 002 auth (users, refresh, login_events) · 003 cms (services, case_studies, blog, media, hosting_plans, pages) · 004 leads + activities · 005 chat sessions/messages · 006 notifications + templates · 007 seed data · 008 admin v1 · 009 customers + contacts + tickets · 010 customer_assets/domains · 011 i18n JSONB conversion · 012–017 pricing/domain-orders/SLA/billing-profile · 018 dsr_audit_log → 019 modules + audit_log (generic) · 020 remove Bangkok office · 021–031 payments stack (invoices, methods, settings, PayPal, slip files, tax invoice, subs, refunds, bank imports, disputes, dunning) · 032 service_suspensions · 033 home_page_content · 034 fix i18n double nesting · 035 admin_pages_and_dpa_seed · 036 admin editable page heroes · 037 app_mode · **038 projects_checklists** · **039 checklist_seed (12 templates, 78 items)** · **040 projects_customer_link (customer_id FK + visible_to_customer + portal.projects module)**
 
-(041–052 added since this list was last curated — read `database/migrations/` for the authoritative sequence) · **053 attachments (polymorphic `attachments` table: multi-doc / multi-image / geo-tagged live-photo BYTEA storage for tickets + projects; `api.attachments` module toggle)**
+(041–052 added since this list was last curated — read `database/migrations/` for the authoritative sequence) · **053 attachments (polymorphic `attachments` table: multi-doc / multi-image / geo-tagged live-photo BYTEA storage for tickets + projects; `api.attachments` module toggle)** · **054 contract_management (contract_parties, contract_templates, contracts, contract_files, contract_status_events, contract_doc_seq, iacc_outbox + `admin.contracts`/`api.contracts`/`service.docgen` modules)** · **055 seed_contract_templates (service-agreement + mutual-nda)**
 
-Next migration number: **054_*.sql**.
+Next migration number: **056_*.sql**.
 
 All migrations are idempotent (`CREATE TABLE IF NOT EXISTS`, `ON CONFLICT DO NOTHING`). Re-run via `make migrate`.
 
@@ -70,6 +73,7 @@ Foreign keys converge on `users.id` (staff) and `customers.id` (org). `project_i
 - `/api/customer/*` customer-api · `/api/reseller/*` reseller-api
 - `/api/checklists/*` checklist-api (three gate groups: `/templates`, `/projects/*` = staff; `/portal/*` = customer; `/admin/*` = admin-only)
 - `/api/payment/*` payment-api
+- `/api/contracts/*` contract-api (reads = any staff; writes = admin-only, tech read-only; module `api.contracts`). Calls internal `docgen` (`http://docgen:8080`, no Traefik) to render docx+PDF.
 
 Frontend groups (Next App Router):
 
@@ -114,7 +118,7 @@ bash services/checklist-api/e2e/checklist_e2e.sh   # 50 checks — templates/pro
 
 ## Open roadmap items
 
-- **iACC integration** (see `services/checklist-api/internal/iacc/`) — stub only. Push monthly billable visits → invoice drafts via iACC REST API.
+- **iACC integration** (stubs in `services/checklist-api/internal/iacc/` + `services/contract-api/internal/iacc/`) — stub only. contract-api already **queues** invoice-draft payloads into `iacc_outbox` on contract status→active; still needs the drain worker to POST them to iACC REST API. Push monthly billable visits + activated-contract invoices → drafts.
 - **Photo storage for checklist items** — `project_items.photo_url` is URL-only; no `/uploads` endpoint yet.
 - **Playwright browsers not installed** — `npx playwright install chromium` required before `npm run test:e2e`.
 - **`memories/repo/agents.md`** not yet written (referenced by CLAUDE.md); agent-pipeline docs live in `ai/prompts/` for now.

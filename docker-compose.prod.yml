@@ -256,6 +256,38 @@ services:
       - traefik.http.middlewares.payment-ratelimit.ratelimit.period=1m
       - traefik.http.services.payment.loadbalancer.server.port=8008
 
+  # Internal docx→PDF generator for contract-api. Not exposed via Traefik —
+  # reachable only on f2-net at http://docgen:8080. LibreOffice headless needs
+  # extra headroom during conversion, hence the larger mem_limit.
+  docgen:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-docgen:${IMAGE_TAG:-latest}
+    mem_limit: 768m
+
+  contract-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-contract-api:${IMAGE_TAG:-latest}
+    mem_limit: 256m
+    volumes:
+      - contract-uploads:/data/uploads
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.contract.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/contracts`)
+      - traefik.http.routers.contract.entrypoints=websecure
+      - traefik.http.routers.contract.tls.certresolver=letsencrypt
+      - traefik.http.services.contract.loadbalancer.server.port=8008
+      # Signed-scan upload (POST /api/contracts/{id}/files) — tight limit so a
+      # misbehaving client can't fill the volume. 10 uploads/min per IP, burst 5.
+      - traefik.http.routers.contract-upload.rule=Host(`${DOMAIN}`) && PathRegexp(`^/api/contracts/[^/]+/files$`)
+      - traefik.http.routers.contract-upload.entrypoints=websecure
+      - traefik.http.routers.contract-upload.tls.certresolver=letsencrypt
+      - traefik.http.routers.contract-upload.service=contract
+      - traefik.http.routers.contract-upload.priority=150
+      - traefik.http.routers.contract-upload.middlewares=contract-upload-ratelimit
+      - traefik.http.middlewares.contract-upload-ratelimit.ratelimit.average=10
+      - traefik.http.middlewares.contract-upload-ratelimit.ratelimit.burst=5
+      - traefik.http.middlewares.contract-upload-ratelimit.ratelimit.period=1m
+
   # ----------------------------------------------------------------
   # Next.js frontend
   # ----------------------------------------------------------------
@@ -284,3 +316,4 @@ volumes:
   traefik-letsencrypt:
   traefik-logs:
   checklist-uploads:
+  contract-uploads:

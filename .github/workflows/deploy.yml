@@ -52,7 +52,9 @@ jobs:
           - auth-api
           - checklist-api
           - cms-api
+          - contract-api
           - customer-api
+          - docgen
           - lead-api
           - notification-api
           - payment-api

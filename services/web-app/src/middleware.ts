@@ -35,7 +35,9 @@ export default function middleware(request: NextRequest) {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
     // Tailwind ships a single CSS file — no runtime style injection in prod.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
+    // blob: is required for attachment thumbnails — images are fetched with an
+    // Authorization header and rendered via URL.createObjectURL (blob: URLs).
+    "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
     `connect-src ${connectSrc}`,
     // Google Maps embed on /contact — no-key iframe from maps.google.com.

@@ -28,6 +28,7 @@ CONSUMERS=(
   services/payment-api/internal/middleware/modulegate.go
   services/customer-api/internal/middleware/modulegate.go
   services/checklist-api/internal/middleware/modulegate.go
+  services/contract-api/internal/middleware/modulegate.go
 )
 
 CHECK_ONLY=0

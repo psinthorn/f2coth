@@ -114,7 +114,8 @@
     "errorLoad": "Failed to load. Please refresh.",
     "all": "All",
     "saved": "Saved",
-    "saveAll": "Save all"
+    "saveAll": "Save all",
+    "next": "Next"
   },
   "header": {
     "nav": {
@@ -648,7 +649,8 @@
         "smtp": "SMTP",
         "aiHome": "AI dashboard",
         "aiRouting": "AI routing",
-        "aiUsage": "AI usage"
+        "aiUsage": "AI usage",
+        "contracts": "Contracts"
       },
       "signedInAs": "Signed in as",
       "signOut": "Sign out",
@@ -1933,6 +1935,115 @@
         "status": "Status",
         "ok": "OK",
         "errored": "Error"
+      }
+    },
+    "contracts": {
+      "title": "Contracts",
+      "subtitle": "Create, generate and track service agreements.",
+      "newContract": "New contract",
+      "noneYet": "No contracts yet.",
+      "backToList": "Back to contracts",
+      "notFound": "Contract not found.",
+      "daysLeft": "{days}d left",
+      "expiringCard": "{count} active contract(s) expiring within 30 days — review for renewal.",
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "signed": "Signed",
+        "active": "Active",
+        "expired": "Expired",
+        "terminated": "Terminated"
+      },
+      "col": {
+        "docNo": "Doc no.",
+        "customer": "Customer",
+        "status": "Status",
+        "effective": "Effective",
+        "end": "End date",
+        "fee": "Fee"
+      },
+      "filter": {
+        "allStatuses": "All statuses",
+        "customer": "Filter by customer"
+      },
+      "wizard": {
+        "title": "New contract",
+        "step1": "Template",
+        "step2": "Customer",
+        "step3": "Details",
+        "templateMeta": "{code} · v{version}",
+        "existingParty": "Existing customer",
+        "newParty": "New customer",
+        "searchParty": "Search customers…",
+        "noParties": "No customers found.",
+        "partyNameRequired": "Both legal names are required.",
+        "pickParty": "Pick or create a customer.",
+        "summary": "Summary",
+        "template": "Template",
+        "create": "Create contract",
+        "arrayHint": "Edit as JSON — one entry per schedule row."
+      },
+      "party": {
+        "legalNameEn": "Legal name (EN)",
+        "legalNameTh": "Legal name (TH)",
+        "brandName": "Brand name",
+        "taxId": "Tax ID",
+        "noticeEmail": "Notice email",
+        "phone": "Phone",
+        "address": "Address"
+      },
+      "actions": {
+        "title": "Actions",
+        "generateDraft": "Generate draft",
+        "generateSigning": "Generate signing version",
+        "terminate": "Terminate"
+      },
+      "upload": {
+        "title": "Upload signed copy",
+        "hint": "Drag a file here, or tap to photograph the signed pages",
+        "formats": "PDF, JPG or PNG · up to 20 MB"
+      },
+      "activate": {
+        "title": "Activate contract",
+        "hint": "Confirm the effective and end dates to put the contract in force.",
+        "confirm": "Confirm active"
+      },
+      "files": {
+        "title": "Files",
+        "none": "No files generated yet.",
+        "print": "Print PDF",
+        "view": "View",
+        "download": "Download",
+        "kind": {
+          "generated_docx": "Generated (Word)",
+          "generated_pdf": "Generated (PDF)",
+          "signed_scan": "Signed scan"
+        }
+      },
+      "meta": {
+        "title": "Details"
+      },
+      "timeline": {
+        "title": "Status timeline"
+      },
+      "mergeData": {
+        "title": "Contract data",
+        "lockedHint": "Editable only while the contract is a draft.",
+        "save": "Save changes"
+      },
+      "templates": {
+        "manage": "Templates",
+        "title": "Contract templates",
+        "subtitle": "Edit template defaults and toggle availability. Layouts are code-defined.",
+        "codeLocked": "code is bound to a document builder and cannot be changed",
+        "active": "Active",
+        "inactive": "Inactive",
+        "name": "Name",
+        "version": "Version",
+        "docPrefix": "Doc-no prefix",
+        "mergeSchema": "Merge schema (field definitions)",
+        "save": "Save template",
+        "saved": "Saved."
       }
     }
   },
