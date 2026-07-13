@@ -54,6 +54,19 @@ func (h *SandboxHandler) AdminSeed(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 403, "no payment methods are in sandbox mode")
 		return
 	}
+
+	// Optional currency — THB (default) or USD. Seed USD to get a
+	// PayPal-payable invoice (PayPal rejects THB) for a repeatable live
+	// click-through. Body is optional; a missing/blank currency = THB.
+	var body struct {
+		Currency string `json:"currency"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	currency := "THB"
+	if strings.ToUpper(strings.TrimSpace(body.Currency)) == "USD" {
+		currency = "USD"
+	}
+
 	ctx, cancel := makeCtx()
 	defer cancel()
 
@@ -112,11 +125,11 @@ func (h *SandboxHandler) AdminSeed(w http.ResponseWriter, r *http.Request) {
 			invoice_number, customer_id, status, currency,
 			subtotal_cents, vat_rate_bp, vat_cents, total_cents,
 			issue_date, due_date, notes, metadata, created_by
-		) VALUES ($1,$2,'issued','THB',$3,$4,$5,$6,
+		) VALUES ($1,$2,'issued',$8,$3,$4,$5,$6,
 		          CURRENT_DATE, CURRENT_DATE + INTERVAL '7 days',
 		          'Sandbox test invoice', '{"sandbox":true}'::jsonb, $7)
 		RETURNING id`,
-		number, customerID, subtotal, vatBP, vat, total, creator).Scan(&invID)
+		number, customerID, subtotal, vatBP, vat, total, creator, currency).Scan(&invID)
 	if err != nil {
 		writeErr(w, 500, "create invoice: "+err.Error())
 		return
@@ -148,7 +161,7 @@ func (h *SandboxHandler) AdminSeed(w http.ResponseWriter, r *http.Request) {
 		"customer_id":    customerID,
 		"customer_name":  "F2 SANDBOX TEST",
 		"total_cents":    total,
-		"currency":       "THB",
+		"currency":       currency,
 	})
 }
 

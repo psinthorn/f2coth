@@ -1622,7 +1622,8 @@
     "sandbox": {
       "title": "Payment sandbox",
       "subtitle": "Seed test invoices, force-complete payments, and simulate PayPal webhooks without touching real money.",
-      "seedInvoice": "Seed test invoice",
+      "seedInvoice": "Seed test invoice (THB)",
+      "seedInvoiceUSD": "Seed USD invoice (PayPal)",
       "seeded": "Test invoice {number} created.",
       "purge": "Purge all sandbox data",
       "purgeConfirm": "Delete every sandbox invoice and payment? This cannot be undone.",

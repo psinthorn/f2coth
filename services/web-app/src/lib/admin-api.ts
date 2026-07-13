@@ -496,8 +496,11 @@ export const adminApi = {
   // Sandbox endpoints validate the relevant method's mode per call.
   sandboxInvoices: () => request<SandboxInvoiceRow[]>("/payment/admin/sandbox/invoices"),
   sandboxPayments: () => request<SandboxPaymentRow[]>("/payment/admin/sandbox/payments"),
-  sandboxSeed: () =>
-    request<SandboxSeedResp>("/payment/admin/sandbox/seed", { method: "POST" }),
+  sandboxSeed: (currency?: "THB" | "USD") =>
+    request<SandboxSeedResp>("/payment/admin/sandbox/seed", {
+      method: "POST",
+      body: currency ? JSON.stringify({ currency }) : undefined,
+    }),
   sandboxCompletePayment: (id: string) =>
     request<{ status: string }>(`/payment/admin/sandbox/payments/${id}/complete`, { method: "POST" }),
   sandboxSimulateWebhook: (id: string) =>
