@@ -384,6 +384,7 @@ function BankTransferAccounts({
             {row(t("cfg.account_name"), b.account_name)}
             {row(t("cfg.account_number"), b.account_number)}
             {b.branch ? row(t("cfg.branch"), b.branch) : null}
+            {b.branch_address ? row(t("cfg.branch_address"), b.branch_address) : null}
             {b.swift ? row(t("cfg.swift"), b.swift) : null}
           </dl>
         </div>

@@ -480,7 +480,7 @@ function BankAccountsPanel({
       {
         id: crypto.randomUUID(),
         bank_code: "", bank_name: "", account_name: "",
-        account_number: "", branch: "", swift: "", enabled: true,
+        account_number: "", branch: "", branch_address: "", swift: "", enabled: true,
       },
     ]);
   }
@@ -562,6 +562,12 @@ function BankAccountsPanel({
               <input type="text" value={b.swift ?? ""}
                 onChange={(e) => update(i, { swift: e.target.value })}
                 className="rounded-md border border-navy-200 px-3 py-2 text-sm font-mono" />
+            </label>
+            <label className="grid gap-1 text-xs text-navy-600 sm:col-span-2">
+              {t("bankBranchAddress")}
+              <textarea rows={2} value={b.branch_address ?? ""}
+                onChange={(e) => update(i, { branch_address: e.target.value })}
+                className="rounded-md border border-navy-200 px-3 py-2 text-sm" />
             </label>
           </div>
         </div>

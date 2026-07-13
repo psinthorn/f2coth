@@ -19,6 +19,7 @@ export interface BankAccount {
   account_name: string;
   account_number: string;
   branch?: string;
+  branch_address?: string;
   swift?: string;
   enabled: boolean;
 }
