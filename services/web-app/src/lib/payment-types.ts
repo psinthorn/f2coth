@@ -9,6 +9,37 @@ export type PaymentMethod =
   | "promptpay"
   | "paypal";
 
+// One bank account under the bank_transfer method. Stored as an entry in
+// payment_methods_config.config.banks[]. Admins manage the list; the
+// portal shows every `enabled` account on the pay screen.
+export interface BankAccount {
+  id: string;
+  bank_code?: string;
+  bank_name: string;
+  account_name: string;
+  account_number: string;
+  branch?: string;
+  swift?: string;
+  enabled: boolean;
+}
+
+// Preset Thai banks for the admin picker. SWIFT is a sensible default and
+// stays editable per account. Ordered by how commonly F2's clients pay.
+export const THAI_BANKS: { code: string; name: string; swift: string }[] = [
+  { code: "scb", name: "Siam Commercial Bank (SCB)", swift: "SICOTHBK" },
+  { code: "kbank", name: "Kasikornbank (KBank)", swift: "KASITHBK" },
+  { code: "bbl", name: "Bangkok Bank (BBL)", swift: "BKKBTHBK" },
+  { code: "ktb", name: "Krungthai Bank (KTB)", swift: "KRTHTHBK" },
+  { code: "bay", name: "Bank of Ayudhya (Krungsri)", swift: "AYUDTHBK" },
+  { code: "ttb", name: "TMBThanachart Bank (ttb)", swift: "TMBKTHBK" },
+  { code: "gsb", name: "Government Savings Bank (GSB)", swift: "GSBATHBK" },
+  { code: "kkp", name: "Kiatnakin Phatra Bank (KKP)", swift: "KKPBTHBK" },
+  { code: "cimb", name: "CIMB Thai Bank", swift: "UBOBTHBK" },
+  { code: "uob", name: "UOB Thailand", swift: "UOVBTHBK" },
+  { code: "lhb", name: "Land and Houses Bank (LH Bank)", swift: "LAHRTHB2" },
+  { code: "ghb", name: "Government Housing Bank (GHB)", swift: "GOHUTHB1" },
+];
+
 export type InvoiceStatus =
   | "draft"
   | "issued"

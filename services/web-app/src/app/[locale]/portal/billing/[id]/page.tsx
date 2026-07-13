@@ -16,7 +16,7 @@ import {
 } from "@/lib/portal-api";
 import {
   formatMoney, invoiceStatusTone, paymentStatusTone,
-  type PaymentMethod,
+  type PaymentMethod, type BankAccount,
 } from "@/lib/payment-types";
 
 const METHOD_ICONS: Record<PaymentMethod, typeof Landmark> = {
@@ -354,6 +354,44 @@ export default function PortalInvoiceDetailPage() {
   );
 }
 
+// Renders every enabled bank account under the bank_transfer method. The
+// customer picks whichever bank is easiest and transfers to it.
+function BankTransferAccounts({
+  banks, t,
+}: {
+  banks: BankAccount[];
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const shown = banks.filter((b) => b.enabled && b.account_number);
+  if (shown.length === 0) {
+    return <p className="mb-5 text-sm text-navy-500">{t("noBanks")}</p>;
+  }
+  const row = (label: string, value: string) => (
+    <div className="flex items-start justify-between gap-3 border-b border-navy-50 pb-1">
+      <dt className="text-navy-500 text-xs uppercase tracking-wider">{label}</dt>
+      <dd className="text-navy-900 font-mono text-right break-all">{value}</dd>
+    </div>
+  );
+  return (
+    <div className="mb-5 grid gap-3">
+      {shown.length > 1 && <p className="text-xs text-navy-500">{t("bankChooseAny")}</p>}
+      {shown.map((b) => (
+        <div key={b.id} className="rounded-lg border border-navy-100 bg-navy-50/40 p-3">
+          <p className="mb-2 inline-flex items-center gap-2 font-semibold text-navy-900">
+            <Landmark className="h-4 w-4 text-navy-400" /> {b.bank_name}
+          </p>
+          <dl className="grid gap-1.5 text-sm">
+            {row(t("cfg.account_name"), b.account_name)}
+            {row(t("cfg.account_number"), b.account_number)}
+            {b.branch ? row(t("cfg.branch"), b.branch) : null}
+            {b.swift ? row(t("cfg.swift"), b.swift) : null}
+          </dl>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ManualPayInstructions({
   method, config, slip, setSlip, submit, busy, locale, paymentId,
 }: {
@@ -370,24 +408,28 @@ function ManualPayInstructions({
   return (
     <section className="card mb-6">
       <h2 className="font-display text-lg text-navy-900 mb-3">{t(`payInstructions.${method}`)}</h2>
-      <dl className="grid gap-2 text-sm mb-5">
-        {Object.entries(config).map(([k, v]) => {
-          if (!v) return null;
-          if (k === "qr_image_url" && typeof v === "string") {
+      {Array.isArray((config as { banks?: unknown }).banks) ? (
+        <BankTransferAccounts banks={(config as { banks: BankAccount[] }).banks} t={t} />
+      ) : (
+        <dl className="grid gap-2 text-sm mb-5">
+          {Object.entries(config).map(([k, v]) => {
+            if (!v) return null;
+            if (k === "qr_image_url" && typeof v === "string") {
+              return (
+                <div key={k} className="my-2">
+                  <img src={v} alt="QR" className="mx-auto h-48 w-48 rounded-md border border-navy-100" />
+                </div>
+              );
+            }
             return (
-              <div key={k} className="my-2">
-                <img src={v} alt="QR" className="mx-auto h-48 w-48 rounded-md border border-navy-100" />
+              <div key={k} className="flex items-start justify-between gap-3 border-b border-navy-50 pb-1">
+                <dt className="text-navy-500 text-xs uppercase tracking-wider">{t(`cfg.${k}`, { defaultMessage: k })}</dt>
+                <dd className="text-navy-900 font-mono text-right break-all">{String(v)}</dd>
               </div>
             );
-          }
-          return (
-            <div key={k} className="flex items-start justify-between gap-3 border-b border-navy-50 pb-1">
-              <dt className="text-navy-500 text-xs uppercase tracking-wider">{t(`cfg.${k}`, { defaultMessage: k })}</dt>
-              <dd className="text-navy-900 font-mono text-right break-all">{String(v)}</dd>
-            </div>
-          );
-        })}
-      </dl>
+          })}
+        </dl>
+      )}
 
       <h3 className="text-sm font-semibold text-navy-900 mb-2">{t("uploadSlip")}</h3>
       <p className="text-xs text-navy-500 mb-3">{t("uploadSlipHintV2")}</p>
