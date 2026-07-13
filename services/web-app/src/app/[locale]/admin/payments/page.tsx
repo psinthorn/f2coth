@@ -105,7 +105,7 @@ export default function AdminPaymentsPage() {
                   <td className="px-4 py-3 font-medium text-navy-900">{p.payment_number}</td>
                   <td className="px-4 py-3">
                     <Link
-                      href={{ pathname: "/admin/invoices/[id]", params: { id: p.invoice_id } } as never}
+                      href={`/admin/invoices/${p.invoice_id}`}
                       className="text-accent-700 hover:underline"
                     >
                       {p.invoice_number ?? "—"}

@@ -44,7 +44,7 @@ export default function SuspendedServicesBanner() {
           </span>
         </p>
         <Link
-          href={{ pathname: "/portal/billing/[id]", params: { id: firstInvoiceID } } as never}
+          href={`/portal/billing/${firstInvoiceID}`}
           className="rounded-md bg-red-200 px-2 py-1 font-medium hover:bg-red-300 whitespace-nowrap"
         >
           {t("payNow")}

@@ -351,6 +351,10 @@ type RefundInput struct {
 	Amount      Money // empty value = full refund
 	NoteToPayer string
 	InvoiceID   string
+	// RequestID is sent as PayPal-Request-Id — PayPal dedupes refunds
+	// carrying the same value, so retrying a refund for the same local
+	// refund row can never move money twice.
+	RequestID string
 }
 
 // RefundCapture issues a refund against a capture. Returns PayPal's
@@ -380,6 +384,12 @@ func (c *Client) RefundCapture(ctx context.Context, in RefundInput) (string, err
 	req.Header.Set("Authorization", "Bearer "+tok)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	// Idempotency: PayPal treats two refund POSTs with the same
+	// PayPal-Request-Id as one, returning the original refund instead of
+	// issuing a second. Safe to retry a refund for the same local row.
+	if in.RequestID != "" {
+		req.Header.Set("PayPal-Request-Id", in.RequestID)
+	}
 
 	resp, err := c.http.Do(req)
 	if err != nil {

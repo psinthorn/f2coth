@@ -176,7 +176,7 @@ export default function AdminInvoicesPage() {
                   </td>
                   <td className="px-4 py-3">
                     <Link
-                      href={{ pathname: "/admin/invoices/[id]", params: { id: inv.id } } as never}
+                      href={`/admin/invoices/${inv.id}`}
                       className="flex items-center gap-2 font-medium text-navy-900 hover:text-accent-700"
                     >
                       <Receipt className="h-3.5 w-3.5 text-navy-400" />

@@ -170,7 +170,7 @@ export default function PortalInvoiceDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           <Link
-            href={{ pathname: "/portal/billing/[id]/print", params: { id: invoice.id } } as never}
+            href={`/portal/billing/${invoice.id}/print`}
             target="_blank"
             className="btn-secondary text-xs"
           >

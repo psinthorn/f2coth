@@ -183,7 +183,7 @@ export default function AdminBankImportsPage() {
                     <td className="px-3 py-2 text-xs">
                       {row.matched_payment_id ? (
                         <>
-                          <Link href={{ pathname: "/admin/invoices/[id]", params: { id: row.invoice_id ?? "" } } as never}
+                          <Link href={`/admin/invoices/${row.invoice_id ?? ""}`}
                             className="text-accent-700 hover:underline">
                             {row.invoice_number ?? row.payment_number}
                           </Link>

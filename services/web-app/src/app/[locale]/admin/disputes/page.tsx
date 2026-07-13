@@ -67,7 +67,7 @@ export default function AdminDisputesPage() {
                 <tr key={d.id}>
                   <td className="px-4 py-3 font-mono text-xs">{d.provider_dispute_id}</td>
                   <td className="px-4 py-3">
-                    <Link href={{ pathname: "/admin/invoices/[id]", params: { id: d.invoice_id } } as never}
+                    <Link href={`/admin/invoices/${d.invoice_id}`}
                       className="text-accent-700 hover:underline">
                       {d.invoice_number}
                     </Link>

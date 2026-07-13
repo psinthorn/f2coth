@@ -10,6 +10,7 @@ import { portalApi, clearPortalAuth, redirectToPortalLogin, type PortalContact, 
 import SandboxBanner from "@/components/SandboxBanner";
 import SuspendedServicesBanner from "@/components/SuspendedServicesBanner";
 import F2LogoMark from "@/components/F2LogoMark";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 type GroupKey = "workspace" | "support" | "services";
 
@@ -223,6 +224,9 @@ export default function PortalShell({ children }: { children: React.ReactNode })
                 <p className="truncate text-sm font-medium text-navy-900">{contact.full_name}</p>
                 <p className="truncate text-xs text-navy-500">{contact.email}</p>
               </div>
+            </div>
+            <div className="mt-2 flex justify-center">
+              <LanguageSwitcher />
             </div>
             <button
               onClick={logout}

@@ -176,7 +176,7 @@ export default function AdminSandboxPage() {
                     <td className="px-4 py-3 font-mono text-xs text-navy-700">{p.payment_number}</td>
                     <td className="px-4 py-3">
                       <Link
-                        href={{ pathname: "/admin/invoices/[id]", params: { id: p.invoice_id } } as never}
+                        href={`/admin/invoices/${p.invoice_id}`}
                         className="text-accent-700 hover:underline"
                       >
                         {p.invoice_number}
@@ -254,7 +254,7 @@ export default function AdminSandboxPage() {
                     </td>
                     <td className="px-4 py-3">
                       <Link
-                        href={{ pathname: "/admin/invoices/[id]", params: { id: inv.id } } as never}
+                        href={`/admin/invoices/${inv.id}`}
                         className="text-accent-700 hover:underline inline-flex items-center gap-1 text-xs"
                       >
                         {tc("open")} <ExternalLink className="h-3 w-3" />
