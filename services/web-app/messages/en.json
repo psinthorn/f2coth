@@ -631,6 +631,7 @@
         "payments": "Payments",
         "paymentMethods": "Payment methods",
         "subscriptions": "Subscriptions",
+        "renewals": "Renewals",
         "refunds": "Refunds",
         "bankImports": "Bank reconciliation",
         "webhooks": "Webhook events",
@@ -1038,6 +1039,8 @@
         "renew": "Renew / 1y",
         "transfer": "Transfer in",
         "privacy": "Privacy",
+        "graceFee": "Grace fee",
+        "redemptionFee": "Redemption fee",
         "thaiOnly": "Thai entities only",
         "active": "Active",
         "inactive": "Inactive",
@@ -1415,6 +1418,44 @@
       "paypalRevealSecret": "Reveal secret",
       "paypalHideSecret": "Hide secret",
       "paypalSecretPlaceholder": "Paste the client secret from PayPal Developer Dashboard"
+    },
+    "renewals": {
+      "title": "Renewals",
+      "subtitle": "What the renewal engine is about to bill, and what it recently notified.",
+      "window": "{days} days",
+      "refresh": "Refresh",
+      "loading": "Loading renewals…",
+      "empty": "Nothing in this window.",
+      "inDays": "in {days}d",
+      "expired": "expired {days}d ago",
+      "subs": { "title": "Upcoming subscription renewals" },
+      "domains": { "title": "Upcoming domain expiries" },
+      "log": { "title": "Recent reminders & notices", "empty": "No reminders sent yet." },
+      "cols": {
+        "customer": "Customer",
+        "service": "Service",
+        "cycle": "Cycle",
+        "amount": "Amount",
+        "renews": "Renews",
+        "domain": "Domain",
+        "registrar": "Registrar",
+        "autoRenew": "Auto-renew",
+        "expires": "Expires",
+        "sent": "Sent",
+        "type": "Type",
+        "item": "Item",
+        "notice": "Notice"
+      },
+      "types": { "subscription": "Subscription", "domain": "Domain" },
+      "cycles": {
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "quarterly": "Quarterly",
+        "semiannually": "Semi-annually",
+        "annually": "Annually",
+        "biennially": "Biennially",
+        "triennially": "Triennially"
+      }
     },
     "subscriptions": {
       "title": "Subscriptions",
@@ -2072,6 +2113,7 @@
         "domains": "Domains",
         "sla": "SLA",
         "billing": "Billing",
+        "subscriptions": "Subscriptions",
         "billingProfile": "Tax invoice info",
         "projects": "Projects"
       },
@@ -2285,6 +2327,29 @@
       "billingEmail": "Billing email",
       "save": "Save",
       "saved": "Saved."
+    },
+    "subscriptions": {
+      "title": "My subscriptions",
+      "subtitle": "Your recurring services. Cancel any time — it stays active until the paid-through date.",
+      "loading": "Loading subscriptions…",
+      "empty": "You have no recurring subscriptions.",
+      "renewsOn": "Renews {date}",
+      "paidThrough": "Active until {date}",
+      "cancel": "Cancel renewal",
+      "confirm": "Cancel this subscription?",
+      "confirmYes": "Yes, cancel",
+      "keep": "Keep it",
+      "cancelNote": "Cancelling stops future renewals. Your service stays active until the current paid period ends.",
+      "status": { "active": "Active", "paused": "Paused", "cancelled": "Cancelled" },
+      "cycles": {
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "quarterly": "Quarterly",
+        "semiannually": "Semi-annually",
+        "annually": "Annually",
+        "biennially": "Biennially",
+        "triennially": "Triennially"
+      }
     },
     "billing": {
       "title": "Billing & invoices",

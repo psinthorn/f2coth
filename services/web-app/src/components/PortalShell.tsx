@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import {
-  LayoutDashboard, Inbox, LogOut, Menu, X, Loader2, Building2, Globe, ShieldCheck, Receipt, FileSignature, ClipboardCheck,
+  LayoutDashboard, Inbox, LogOut, Menu, X, Loader2, Building2, Globe, ShieldCheck, Receipt, FileSignature, ClipboardCheck, Repeat,
 } from "lucide-react";
 import { portalApi, clearPortalAuth, redirectToPortalLogin, type PortalContact, type PortalCustomer } from "@/lib/portal-api";
 import SandboxBanner from "@/components/SandboxBanner";
@@ -15,8 +15,8 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 type GroupKey = "workspace" | "support" | "services";
 
 type NavItem = {
-  href: "/portal" | "/portal/tickets" | "/portal/domains" | "/portal/sla" | "/portal/billing" | "/portal/billing-profile" | "/portal/projects";
-  labelKey: "account" | "tickets" | "domains" | "sla" | "billing" | "billingProfile" | "projects";
+  href: "/portal" | "/portal/tickets" | "/portal/domains" | "/portal/sla" | "/portal/billing" | "/portal/subscriptions" | "/portal/billing-profile" | "/portal/projects";
+  labelKey: "account" | "tickets" | "domains" | "sla" | "billing" | "subscriptions" | "billingProfile" | "projects";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   requireService?: string;
@@ -31,6 +31,7 @@ const NAV: NavGroup[] = [
     items: [
       { href: "/portal", labelKey: "account", icon: LayoutDashboard, exact: true },
       { href: "/portal/billing", labelKey: "billing", icon: Receipt },
+      { href: "/portal/subscriptions", labelKey: "subscriptions", icon: Repeat },
       { href: "/portal/billing-profile", labelKey: "billingProfile", icon: FileSignature },
     ],
   },

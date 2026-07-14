@@ -50,6 +50,8 @@ func main() {
 	slh := &handlers.SlipHandler{DB: pool, Cfg: cfg}
 	bph := &handlers.BillingProfileHandler{DB: pool, Cfg: cfg}
 	subh := &handlers.SubscriptionHandler{DB: pool, Cfg: cfg}
+	couponh := &handlers.CouponHandler{DB: pool}
+	renh := &handlers.RenewalsHandler{DB: pool}
 	rfh := &handlers.RefundHandler{DB: pool, Cfg: cfg, Notify: notifier, PayPal: pp}
 	dh := &handlers.DashboardHandler{DB: pool, Cfg: cfg}
 	cath := &handlers.CatalogHandler{DB: pool, Cfg: cfg}
@@ -118,6 +120,11 @@ func main() {
 
 			// Active service suspensions (drives portal banner).
 			r.Get("/suspensions", susp.PortalList)
+
+			// Self-service recurring services: view own subscriptions and
+			// cancel at period end.
+			r.Get("/subscriptions", subh.PortalList)
+			r.Post("/subscriptions/{id}/cancel", subh.PortalCancel)
 		})
 
 		// Admin — aud=staff, role admin|editor
@@ -167,6 +174,11 @@ func main() {
 			r.Get("/subscriptions", subh.AdminList)
 			r.Post("/subscriptions", subh.AdminCreate)
 			r.Patch("/subscriptions/{id}/status", subh.AdminUpdateStatus)
+			r.Patch("/subscriptions/{id}/plan", subh.AdminChangePlan)
+			r.Get("/coupons", couponh.AdminList)
+			r.Post("/coupons", couponh.AdminCreate)
+			r.Patch("/coupons/{id}/active", couponh.AdminSetActive)
+			r.Get("/renewals", renh.AdminRenewals)
 
 			// Refunds.
 			r.Get("/refunds", rfh.AdminList)

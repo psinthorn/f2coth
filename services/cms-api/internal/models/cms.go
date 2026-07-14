@@ -86,11 +86,16 @@ type DomainPricing struct {
 	TransferPriceTHB int       `json:"transfer_price_thb"`
 	PrivacyIncluded  bool      `json:"privacy_included"`
 	IsThaiOnly       bool      `json:"is_thai_only"`
-	Notes            string    `json:"notes"`
-	SortOrder        int       `json:"sort_order"`
-	IsActive         bool      `json:"is_active"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	// Grace/redemption recovery for lapsed domains (migration 060).
+	GracePeriodDays      int       `json:"grace_period_days"`
+	RedemptionPeriodDays int       `json:"redemption_period_days"`
+	GraceFeeTHB          int       `json:"grace_fee_thb"`
+	RedemptionFeeTHB     int       `json:"redemption_fee_thb"`
+	Notes                string    `json:"notes"`
+	SortOrder            int       `json:"sort_order"`
+	IsActive             bool      `json:"is_active"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
 }
 
 type HostingPlan struct {

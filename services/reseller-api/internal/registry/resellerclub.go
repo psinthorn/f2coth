@@ -191,6 +191,116 @@ func (r *ResellerClub) Register(ctx context.Context, req PlaceRequest) (models.P
 	}, nil
 }
 
+// rcDetailsResponse is the relevant subset of domains/details.json with
+// options=OrderDetails. endtime is a unix timestamp (seconds) as a string.
+type rcDetailsResponse struct {
+	EndTime       json.Number `json:"endtime,omitempty"`
+	CurrentStatus string      `json:"currentstatus,omitempty"`
+	DomainName    string      `json:"domainname,omitempty"`
+	Status        string      `json:"status,omitempty"`  // "ERROR" on failure
+	Message       string      `json:"message,omitempty"` // error detail
+}
+
+// GetDetails resolves the domain to its ResellerClub order id (when not
+// already known) and reads the authoritative expiry + status. Two calls:
+// orderid.json (fqdn → order id) then details.json (order id → endtime).
+func (r *ResellerClub) GetDetails(ctx context.Context, fqdn, registryOrderID string) (DomainDetails, error) {
+	orderID := strings.TrimSpace(registryOrderID)
+	// MOCK-* ids come from the dev Mock adapter and aren't real registry
+	// ids, so always re-resolve those from the FQDN.
+	if orderID == "" || strings.HasPrefix(orderID, "MOCK-") {
+		resolved, err := r.resolveOrderID(ctx, fqdn)
+		if err != nil {
+			return DomainDetails{}, err
+		}
+		orderID = resolved
+	}
+
+	q := url.Values{}
+	q.Set("auth-userid", r.AuthUserID)
+	q.Set("api-key", r.APIKey)
+	q.Set("order-id", orderID)
+	q.Add("options", "OrderDetails")
+
+	endpoint := fmt.Sprintf("%s/api/domains/details.json?%s", strings.TrimRight(r.BaseURL, "/"), q.Encode())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return DomainDetails{}, err
+	}
+	res, err := r.HTTPClient.Do(req)
+	if err != nil {
+		return DomainDetails{}, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		return DomainDetails{}, fmt.Errorf("resellerclub details: status %d", res.StatusCode)
+	}
+
+	var parsed rcDetailsResponse
+	if err := json.NewDecoder(res.Body).Decode(&parsed); err != nil {
+		return DomainDetails{}, fmt.Errorf("resellerclub details: decode: %w", err)
+	}
+	if strings.EqualFold(parsed.Status, "ERROR") {
+		msg := parsed.Message
+		if msg == "" {
+			msg = "registry returned ERROR"
+		}
+		return DomainDetails{}, fmt.Errorf("resellerclub details: %s", msg)
+	}
+
+	unix, err := parsed.EndTime.Int64()
+	if err != nil || unix <= 0 {
+		return DomainDetails{}, fmt.Errorf("resellerclub details: missing/invalid endtime for %s", fqdn)
+	}
+
+	return DomainDetails{
+		ExpiresAt:       time.Unix(unix, 0).UTC(),
+		Status:          parsed.CurrentStatus,
+		RegistryOrderID: orderID,
+	}, nil
+}
+
+// resolveOrderID maps an FQDN to its ResellerClub order id via
+// domains/orderid.json, which returns a bare JSON number on success or an
+// error object ({"status":"ERROR",...}) on failure.
+func (r *ResellerClub) resolveOrderID(ctx context.Context, fqdn string) (string, error) {
+	q := url.Values{}
+	q.Set("auth-userid", r.AuthUserID)
+	q.Set("api-key", r.APIKey)
+	q.Set("domain-name", strings.ToLower(strings.TrimSpace(fqdn)))
+
+	endpoint := fmt.Sprintf("%s/api/domains/orderid.json?%s", strings.TrimRight(r.BaseURL, "/"), q.Encode())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return "", err
+	}
+	res, err := r.HTTPClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+	if res.StatusCode >= 400 {
+		return "", fmt.Errorf("resellerclub orderid: status %d: %s", res.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	// Success is a bare number; failure is a JSON object with an error.
+	trimmed := strings.TrimSpace(string(body))
+	if id, err := strconv.ParseInt(strings.Trim(trimmed, `"`), 10, 64); err == nil && id > 0 {
+		return strconv.FormatInt(id, 10), nil
+	}
+	var errResp struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+	}
+	_ = json.Unmarshal(body, &errResp)
+	msg := errResp.Message
+	if msg == "" {
+		msg = trimmed
+	}
+	return "", fmt.Errorf("resellerclub orderid: %s not found: %s", fqdn, msg)
+}
+
 func classifyRC(status string) models.Classification {
 	switch strings.ToLower(status) {
 	case "available":

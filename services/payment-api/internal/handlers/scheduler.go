@@ -77,10 +77,20 @@ func (s *Scheduler) runOnce() {
 	} else if n > 0 {
 		log.Printf("scheduler: marked %d invoice(s) overdue", n)
 	}
+	if n, err := s.dispatchRenewalReminders(ctx); err != nil {
+		log.Printf("scheduler dispatchRenewalReminders: %v", err)
+	} else if n > 0 {
+		log.Printf("scheduler: dispatched %d renewal reminder(s)", n)
+	}
 	if n, err := s.generateSubscriptionInvoices(ctx); err != nil {
 		log.Printf("scheduler generateSubscriptionInvoices: %v", err)
 	} else if n > 0 {
 		log.Printf("scheduler: generated %d subscription invoice(s)", n)
+	}
+	if n, err := s.dispatchDomainRenewals(ctx); err != nil {
+		log.Printf("scheduler dispatchDomainRenewals: %v", err)
+	} else if n > 0 {
+		log.Printf("scheduler: processed %d domain renewal(s)", n)
 	}
 	if n, err := s.dispatchDunning(ctx); err != nil {
 		log.Printf("scheduler dispatchDunning: %v", err)
@@ -274,6 +284,187 @@ func (s *Scheduler) suspendForInvoice(ctx context.Context,
 	return count, list, nil
 }
 
+// dispatchRenewalReminders sends WHMCS-style *advance* renewal heads-ups
+// for active subscriptions approaching next_billing_at, at the day-before
+// tiers in Cfg.RenewalReminderOffsets (default 30 & 14 days). This covers
+// the window before generateSubscriptionInvoices() issues the invoice at
+// LeadDays (7) out, so nothing overlaps the invoice_issued email.
+//
+// Idempotency + no-spam rules (renewal_reminders stamps, keyed by
+// entity + due_date + offset tier):
+//   - At most ONE customer email per subscription per tick: we pick the
+//     smallest OPEN unsent tier (offset >= days_until — the most relevant
+//     message right now) and stamp every larger open tier as superseded,
+//     so a subscription first observed deep inside the window doesn't get
+//     several tiers at once.
+//   - One internal billing-team heads-up per renewal cycle, stamped under
+//     the sentinel offset 0.
+func (s *Scheduler) dispatchRenewalReminders(ctx context.Context) (int, error) {
+	offsets := s.Cfg.RenewalReminderOffsets // descending, positive, de-duped
+	if len(offsets) == 0 {
+		return 0, nil // pass disabled
+	}
+	maxOffset := offsets[0]
+
+	// Lower bound excludes the invoice-generation lead window: once a
+	// subscription is within LeadDays of billing, generateSubscriptionInvoices
+	// issues the invoice + invoice_issued email, so an advance reminder there
+	// would double up. Reminders only fire strictly outside that window.
+	rows, err := s.DB.Query(ctx, `
+		SELECT sub.id, sub.customer_id, c.name, sub.title,
+		       sub.billing_cycle, sub.amount_cents, sub.currency,
+		       to_char(sub.next_billing_at, 'YYYY-MM-DD') AS renewal_date,
+		       (sub.next_billing_at - CURRENT_DATE)::int   AS days_until
+		  FROM subscriptions sub
+		  JOIN customers c ON c.id = sub.customer_id
+		 WHERE sub.status = 'active'
+		   AND sub.next_billing_at > CURRENT_DATE + ($2::int * INTERVAL '1 day')
+		   AND sub.next_billing_at <= CURRENT_DATE + ($1::int * INTERVAL '1 day')`,
+		maxOffset, s.LeadDays)
+	if err != nil {
+		return 0, err
+	}
+	type sub struct {
+		id, customerID, customer, title, cycle, currency, renewalDate string
+		amount                                                        int64
+		daysUntil                                                     int
+	}
+	var subs []sub
+	for rows.Next() {
+		var x sub
+		if err := rows.Scan(&x.id, &x.customerID, &x.customer, &x.title,
+			&x.cycle, &x.amount, &x.currency, &x.renewalDate, &x.daysUntil); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		subs = append(subs, x)
+	}
+	rows.Close()
+
+	sent := 0
+	for _, x := range subs {
+		// Which tiers (incl. sentinel 0) already fired for this cycle?
+		alreadySent, err := s.sentRenewalOffsets(ctx, "subscription", x.id, x.renewalDate)
+		if err != nil {
+			log.Printf("scheduler: renewal stamps %s: %v", x.id, err)
+			continue
+		}
+
+		// Pick the smallest OPEN unsent tier (offset >= days_until). Open
+		// tiers larger than it are stale → stamp them superseded so they
+		// never fire late.
+		chosen := -1
+		for i := len(offsets) - 1; i >= 0; i-- { // ascending
+			o := offsets[i]
+			if o < x.daysUntil {
+				continue // window not open yet
+			}
+			if !alreadySent[o] {
+				chosen = o
+				break
+			}
+		}
+		if chosen == -1 {
+			continue // nothing due this tick
+		}
+
+		amountStr := fmt.Sprintf("%.2f", float64(x.amount)/100.0)
+
+		// Internal billing-team heads-up — once per cycle (sentinel 0).
+		// Independent of the customer contact (goes to BillingNotifyTo).
+		if s.Cfg.BillingNotifyTo != "" && !alreadySent[0] {
+			adminLink := strings.TrimRight(s.Cfg.AdminBaseURL, "/") + "/admin/subscriptions"
+			s.Notify.Send(notify.Job{
+				Template:  "service_renewal_upcoming_internal",
+				ToAddress: s.Cfg.BillingNotifyTo,
+				Payload: map[string]any{
+					"customer_name": x.customer,
+					"service_name":  x.title,
+					"amount":        amountStr,
+					"currency":      x.currency,
+					"billing_cycle": x.cycle,
+					"renewal_date":  x.renewalDate,
+					"days_until":    x.daysUntil,
+					"admin_link":    adminLink,
+				},
+			})
+			s.stampRenewal(ctx, "subscription", x.id, x.renewalDate, 0, "service_renewal_upcoming_internal")
+			alreadySent[0] = true
+		}
+
+		// Customer heads-up. Only stamp the customer tiers when we actually
+		// have a recipient — otherwise the stamp would permanently suppress
+		// the notice for a customer whose contact email is added later.
+		to, locale := lookupBillingContact(ctx, s.DB, x.customerID)
+		if to == "" {
+			continue
+		}
+		portalLink := strings.TrimRight(s.Cfg.PortalBaseURL, "/") + "/portal/billing"
+		s.Notify.Send(notify.Job{
+			Template:  "service_renewal_upcoming",
+			ToAddress: to,
+			Locale:    locale,
+			Payload: map[string]any{
+				"customer_name": x.customer,
+				"service_name":  x.title,
+				"amount":        amountStr,
+				"currency":      x.currency,
+				"billing_cycle": x.cycle,
+				"renewal_date":  x.renewalDate,
+				"days_until":    x.daysUntil,
+				"portal_link":   portalLink,
+			},
+		})
+
+		// Stamp the tier we sent plus any larger open tiers (superseded).
+		for _, o := range offsets { // descending
+			if o < chosen || o < x.daysUntil || alreadySent[o] {
+				continue
+			}
+			s.stampRenewal(ctx, "subscription", x.id, x.renewalDate, o, "service_renewal_upcoming")
+			alreadySent[o] = true
+		}
+		sent++
+	}
+	return sent, nil
+}
+
+// sentRenewalOffsets returns the set of offset tiers already stamped for a
+// given entity + renewal date (0 = internal sentinel).
+func (s *Scheduler) sentRenewalOffsets(ctx context.Context,
+	entityType, entityID, dueDate string) (map[int]bool, error) {
+	out := map[int]bool{}
+	rows, err := s.DB.Query(ctx, `
+		SELECT offset_days FROM renewal_reminders
+		 WHERE entity_type=$1 AND entity_id=$2 AND due_date=$3::date`,
+		entityType, entityID, dueDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var o int
+		if err := rows.Scan(&o); err != nil {
+			return nil, err
+		}
+		out[o] = true
+	}
+	return out, rows.Err()
+}
+
+// stampRenewal records an idempotency stamp; conflicts are no-ops so
+// re-running the loop never double-sends.
+func (s *Scheduler) stampRenewal(ctx context.Context,
+	entityType, entityID, dueDate string, offset int, template string) {
+	if _, err := s.DB.Exec(ctx, `
+		INSERT INTO renewal_reminders (entity_type, entity_id, due_date, offset_days, template_used)
+		VALUES ($1, $2, $3::date, $4, $5)
+		ON CONFLICT (entity_type, entity_id, due_date, offset_days) DO NOTHING`,
+		entityType, entityID, dueDate, offset, template); err != nil {
+		log.Printf("renewal stamp: %v", err)
+	}
+}
+
 // dunningLevel encodes the cadence: each row says "an invoice that's
 // been overdue for at least DaysOverdue and hasn't yet received a
 // reminder at this Level → send this Template". Internal flag marks
@@ -446,7 +637,9 @@ func (s *Scheduler) generateSubscriptionInvoices(ctx context.Context) (int, erro
 		SELECT id, customer_id, title, product_type, product_ref,
 		       billing_cycle, amount_cents, currency,
 		       to_char(next_billing_at,'YYYY-MM-DD'),
-		       to_char(last_billed_on,'YYYY-MM-DD')
+		       to_char(last_billed_on,'YYYY-MM-DD'),
+		       coupon_code,
+		       (next_billing_at - CURRENT_DATE)::int
 		  FROM subscriptions
 		 WHERE status='active'
 		   AND next_billing_at <= CURRENT_DATE + ($1::int * INTERVAL '1 day')`,
@@ -460,13 +653,14 @@ func (s *Scheduler) generateSubscriptionInvoices(ctx context.Context) (int, erro
 		id, customerID, title, product, cycle, currency string
 		ref                                             *string
 		amount                                          int64
-		nextBilling, lastBilled                         *string
+		nextBilling, lastBilled, coupon                 *string
+		daysUntil                                       int
 	}
 	var subs []sub
 	for rows.Next() {
 		var x sub
 		if err := rows.Scan(&x.id, &x.customerID, &x.title, &x.product, &x.ref,
-			&x.cycle, &x.amount, &x.currency, &x.nextBilling, &x.lastBilled); err != nil {
+			&x.cycle, &x.amount, &x.currency, &x.nextBilling, &x.lastBilled, &x.coupon, &x.daysUntil); err != nil {
 			return 0, err
 		}
 		subs = append(subs, x)
@@ -478,8 +672,14 @@ func (s *Scheduler) generateSubscriptionInvoices(ctx context.Context) (int, erro
 		if x.lastBilled != nil && x.nextBilling != nil && *x.lastBilled == *x.nextBilling {
 			continue // already billed for this cycle
 		}
+		// Cycle-aware lead: never bill more than (cycle length − 1) days
+		// ahead. Without this a weekly sub (7-day cycle) sits inside the
+		// 7-day lead window even after advancing, so it re-bills every tick.
+		if effLead := effectiveLead(s.LeadDays, x.cycle); x.daysUntil > effLead {
+			continue
+		}
 		if err := s.issueSubscriptionInvoice(ctx, x.id, x.customerID, x.title,
-			x.product, x.ref, x.amount, x.currency, x.cycle, *x.nextBilling); err != nil {
+			x.product, x.ref, x.amount, x.currency, x.cycle, *x.nextBilling, x.coupon); err != nil {
 			log.Printf("scheduler: subscription %s: %v", x.id, err)
 			continue
 		}
@@ -488,15 +688,76 @@ func (s *Scheduler) generateSubscriptionInvoices(ctx context.Context) (int, erro
 	return count, nil
 }
 
+// cycleDays is an approximate length of a billing cycle in days, used only
+// to bound the invoice-generation lead so short cycles don't double-bill.
+func cycleDays(cycle string) int {
+	switch cycle {
+	case "weekly":
+		return 7
+	case "monthly":
+		return 30
+	case "quarterly":
+		return 91
+	case "semiannually":
+		return 182
+	case "annually":
+		return 365
+	case "biennially":
+		return 730
+	case "triennially":
+		return 1095
+	}
+	return 30
+}
+
+// effectiveLead caps the configured lead at cycle length − 1 day so a
+// just-advanced subscription can't immediately re-enter the billing window.
+func effectiveLead(lead int, cycle string) int {
+	if cap := cycleDays(cycle) - 1; cap < lead {
+		return cap
+	}
+	return lead
+}
+
 func (s *Scheduler) issueSubscriptionInvoice(ctx context.Context,
 	subID, customerID, title, productType string, productRef *string,
-	amount int64, currency, cycle, billingDate string) error {
+	amount int64, currency, cycle, billingDate string, couponCode *string) error {
 
 	tx, err := s.DB.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
+
+	// Apply a coupon (if the subscription carries one). Discount reduces
+	// the subtotal — invoice_items can't be negative — and is recorded in
+	// coupon_redemptions + the invoice notes for audit.
+	subtotal := amount
+	notes := "Auto-issued by subscription scheduler"
+	var couponID string
+	var discount int64
+	var couponContinuing bool
+	if couponCode != nil && *couponCode != "" {
+		// Has this subscription already redeemed this coupon in a prior
+		// cycle? If so it keeps the discount without re-consuming the cap.
+		if err := tx.QueryRow(ctx, `
+			SELECT EXISTS(
+			  SELECT 1 FROM coupon_redemptions cr
+			    JOIN coupons c ON c.id = cr.coupon_id
+			   WHERE c.code = $1 AND cr.subscription_id = $2)`,
+			*couponCode, subID).Scan(&couponContinuing); err != nil {
+			return err
+		}
+		couponID, discount, err = evaluateCoupon(ctx, tx, *couponCode, "subscription", currency, amount, couponContinuing)
+		if err != nil {
+			return err
+		}
+		if discount > 0 {
+			subtotal = amount - discount
+			notes = fmt.Sprintf("%s · coupon %s applied (-%.2f %s)",
+				notes, *couponCode, float64(discount)/100.0, currency)
+		}
+	}
 
 	var seq int64
 	if err := tx.QueryRow(ctx, `SELECT nextval('invoice_number_seq')`).Scan(&seq); err != nil {
@@ -505,8 +766,8 @@ func (s *Scheduler) issueSubscriptionInvoice(ctx context.Context,
 	invNumber := fmt.Sprintf("INV-%d-%06d", time.Now().Year(), seq)
 
 	const vatBP = 700
-	vat := amount * vatBP / 10000
-	total := amount + vat
+	vat := subtotal * vatBP / 10000
+	total := subtotal + vat
 
 	var invID string
 	if err := tx.QueryRow(ctx, `
@@ -515,11 +776,10 @@ func (s *Scheduler) issueSubscriptionInvoice(ctx context.Context,
 			subtotal_cents, vat_rate_bp, vat_cents, total_cents,
 			issue_date, due_date, notes
 		) VALUES ($1,$2,$3,'issued',$4,$5,$6,$7,$8,
-		          $9::date, $9::date + INTERVAL '7 days',
-		          'Auto-issued by subscription scheduler')
+		          $9::date, $9::date + INTERVAL '7 days', $10)
 		RETURNING id`,
 		invNumber, customerID, subID, currency,
-		amount, vatBP, vat, total, billingDate).Scan(&invID); err != nil {
+		subtotal, vatBP, vat, total, billingDate, notes).Scan(&invID); err != nil {
 		return err
 	}
 
@@ -528,8 +788,14 @@ func (s *Scheduler) issueSubscriptionInvoice(ctx context.Context,
 			invoice_id, product_type, product_ref, description_en, description_th,
 			quantity, unit_price_cents, total_cents, sort_order
 		) VALUES ($1, $2, $3, $4, $5, 1, $6, $6, 0)`,
-		invID, productType, productRef, title, title, amount); err != nil {
+		invID, productType, productRef, title, title, subtotal); err != nil {
 		return err
+	}
+
+	if discount > 0 {
+		if err := recordCouponRedemption(ctx, tx, couponID, invID, customerID, subID, discount, !couponContinuing); err != nil {
+			return err
+		}
 	}
 
 	// Advance the subscription. last_billed_on = billingDate;
@@ -563,17 +829,29 @@ func (s *Scheduler) issueSubscriptionInvoice(ctx context.Context,
 			},
 		})
 	}
+
+	// Opt-in card-on-file auto-charge (coexists with notify+invoice; a
+	// no-op unless the subscription opted in and the provider is wired).
+	s.attemptAutoCharge(ctx, subID, invID)
 	return nil
 }
 
 func cycleInterval(cycle string) string {
 	switch cycle {
+	case "weekly":
+		return "7 days"
 	case "monthly":
 		return "1 month"
 	case "quarterly":
 		return "3 months"
+	case "semiannually":
+		return "6 months"
 	case "annually":
 		return "1 year"
+	case "biennially":
+		return "2 years"
+	case "triennially":
+		return "3 years"
 	}
 	return "1 month"
 }

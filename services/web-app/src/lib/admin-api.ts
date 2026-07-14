@@ -532,6 +532,28 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify({ status }),
     }),
+  changeSubscriptionPlan: (id: string, input: { amount_cents: number; billing_cycle?: string }) =>
+    request<{ prorated_charge_cents: number; invoice_id: string }>(
+      `/payment/admin/subscriptions/${id}/plan`,
+      { method: "PATCH", body: JSON.stringify(input) },
+    ),
+
+  // ----- Renewals dashboard -----
+  renewalsDashboard: (days?: number) =>
+    request<RenewalsDashboard>(`/payment/admin/renewals${days ? `?days=${days}` : ""}`),
+
+  // ----- Coupons -----
+  listCoupons: () => request<AdminCoupon[]>("/payment/admin/coupons"),
+  createCoupon: (input: AdminCouponInput) =>
+    request<{ id: string }>("/payment/admin/coupons", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  setCouponActive: (id: string, is_active: boolean) =>
+    request<{ is_active: boolean }>(`/payment/admin/coupons/${id}/active`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active }),
+    }),
 
   // ----- Refunds -----
   listRefunds: (params?: { status?: string }) => {
@@ -854,6 +876,15 @@ export interface BillingProfile {
   notes?: string;
 }
 
+export type BillingCycle =
+  | "weekly"
+  | "monthly"
+  | "quarterly"
+  | "semiannually"
+  | "annually"
+  | "biennially"
+  | "triennially";
+
 export interface AdminSubscription {
   id: string;
   customer_id: string;
@@ -861,7 +892,7 @@ export interface AdminSubscription {
   title: string;
   product_type: "hosting" | "sla" | "msp" | "custom";
   product_ref: string | null;
-  billing_cycle: "monthly" | "quarterly" | "annually";
+  billing_cycle: BillingCycle;
   amount_cents: number;
   currency: "THB" | "USD";
   status: "active" | "paused" | "cancelled";
@@ -877,11 +908,71 @@ export interface AdminSubscriptionInput {
   title: string;
   product_type: "hosting" | "sla" | "msp" | "custom";
   product_ref?: string;
-  billing_cycle: "monthly" | "quarterly" | "annually";
+  billing_cycle: BillingCycle;
   amount_cents: number;
   currency: "THB" | "USD";
   starts_on: string;
   ends_on?: string;
+  trial_end_on?: string;
+  coupon_code?: string;
+}
+
+export interface RenewalsDashboard {
+  window_days: number;
+  upcoming_subscriptions: {
+    id: string;
+    customer_name: string;
+    title: string;
+    billing_cycle: BillingCycle;
+    amount_cents: number;
+    currency: "THB" | "USD";
+    next_billing_at: string;
+    days_until: number;
+  }[];
+  upcoming_domains: {
+    id: string;
+    customer_name: string;
+    domain: string;
+    registrar: string;
+    expires_at: string;
+    auto_renew: boolean;
+    days_until: number;
+  }[];
+  recent_reminders: {
+    entity_type: "subscription" | "domain";
+    label: string;
+    customer_name: string;
+    offset_days: number;
+    template_used: string;
+    sent_at: string;
+  }[];
+}
+
+export interface AdminCoupon {
+  id: string;
+  code: string;
+  description?: string;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  currency: "THB" | "USD";
+  applies_to: "all" | "subscription" | "domain";
+  max_redemptions?: number;
+  redemption_count: number;
+  valid_from?: string;
+  valid_until?: string;
+  is_active: boolean;
+}
+
+export interface AdminCouponInput {
+  code: string;
+  description?: string;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  currency?: "THB" | "USD";
+  applies_to?: "all" | "subscription" | "domain";
+  max_redemptions?: number;
+  valid_from?: string;
+  valid_until?: string;
 }
 
 export interface AdminRefund {

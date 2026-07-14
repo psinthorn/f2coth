@@ -18,8 +18,10 @@ import (
 	"github.com/f2cothai/f2-website/services/reseller-api/internal/config"
 	"github.com/f2cothai/f2-website/services/reseller-api/internal/handlers"
 	mw "github.com/f2cothai/f2-website/services/reseller-api/internal/middleware"
+	"github.com/f2cothai/f2-website/services/reseller-api/internal/notify"
 	"github.com/f2cothai/f2-website/services/reseller-api/internal/registry"
 	"github.com/f2cothai/f2-website/services/reseller-api/internal/store"
+	"github.com/f2cothai/f2-website/services/reseller-api/internal/syncer"
 )
 
 func main() {
@@ -38,6 +40,13 @@ func main() {
 
 	availability := &handlers.AvailabilityHandler{Router: router, Cache: cache}
 	orders := &handlers.OrdersHandler{DB: pool, Router: router}
+
+	// Background registrar-sync worker (no-op unless RESELLER_SYNC_MODE is
+	// notify/write). Reconciles customer_domains.expires_at with the
+	// registry so domain renewals no longer need manual expiry entry.
+	domainSync := syncer.New(pool, router, notify.NewClient(cfg.NotificationAPIURL), cfg)
+	domainSync.Start()
+	defer domainSync.Stop()
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)

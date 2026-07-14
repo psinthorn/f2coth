@@ -245,6 +245,7 @@ func (h *CMSHandler) ListDomainPricing(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.DB.Query(r.Context(), `
         SELECT id, tld, registry, register_price_thb, renew_price_thb, transfer_price_thb,
                privacy_included, is_thai_only,
+               grace_period_days, redemption_period_days, grace_fee_thb, redemption_fee_thb,
                COALESCE(notes->>$1, notes->>'en', '') AS notes,
                sort_order, is_active, created_at, updated_at
         FROM domain_pricing WHERE is_active = TRUE
@@ -259,8 +260,9 @@ func (h *CMSHandler) ListDomainPricing(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var d models.DomainPricing
 		if err := rows.Scan(&d.ID, &d.TLD, &d.Registry, &d.RegisterPriceTHB, &d.RenewPriceTHB,
-			&d.TransferPriceTHB, &d.PrivacyIncluded, &d.IsThaiOnly, &d.Notes,
-			&d.SortOrder, &d.IsActive, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			&d.TransferPriceTHB, &d.PrivacyIncluded, &d.IsThaiOnly,
+			&d.GracePeriodDays, &d.RedemptionPeriodDays, &d.GraceFeeTHB, &d.RedemptionFeeTHB,
+			&d.Notes, &d.SortOrder, &d.IsActive, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			writeErr(w, http.StatusInternalServerError, "scan error")
 			return
 		}

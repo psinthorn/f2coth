@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -32,6 +33,20 @@ type Config struct {
 
 	// Cache TTL for availability lookups.
 	CacheTTL time.Duration
+
+	// Registrar sync worker (Phase 3). SyncMode: "off" (default — inert),
+	// "notify" (alert on expiry drift, don't overwrite), "write" (update
+	// customer_domains.expires_at from the registry). SyncInterval is the
+	// tick + per-domain re-sync staleness; SyncBatch caps domains per tick
+	// to throttle registrar calls.
+	SyncMode     string
+	SyncInterval time.Duration
+	SyncBatch    int
+
+	// Support wiring for the sync worker's drift alerts.
+	NotificationAPIURL string
+	BillingNotifyTo    string
+	AdminBaseURL       string
 }
 
 func Load() Config {
@@ -52,7 +67,24 @@ func Load() Config {
 
 		OutboundTimeout: parseDuration("RESELLER_OUTBOUND_TIMEOUT", 8*time.Second),
 		CacheTTL:        parseDuration("RESELLER_CACHE_TTL", 15*time.Minute),
+
+		SyncMode:     strings.ToLower(getenv("RESELLER_SYNC_MODE", "off")),
+		SyncInterval: parseDuration("RESELLER_SYNC_INTERVAL", 24*time.Hour),
+		SyncBatch:    parseInt("RESELLER_SYNC_BATCH", 50),
+
+		NotificationAPIURL: getenv("NOTIFICATION_API_URL", "http://notification-api:8005"),
+		BillingNotifyTo:    getenv("BILLING_NOTIFY_TO", "billing@f2.co.th"),
+		AdminBaseURL:       getenv("ADMIN_BASE_URL", "http://localhost"),
 	}
+}
+
+func parseInt(k string, def int) int {
+	if v := os.Getenv(k); v != "" {
+		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+			return n
+		}
+	}
+	return def
 }
 
 func (c Config) RCConfigured() bool {

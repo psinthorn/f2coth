@@ -59,6 +59,12 @@ func (Mock) Register(_ context.Context, req PlaceRequest) (models.PlacementResul
 	}, nil
 }
 
+// GetDetails is unsupported for the dev Mock — there's no real registry to
+// query, so the sync worker treats mock/dev domains as skip.
+func (Mock) GetDetails(_ context.Context, _, _ string) (DomainDetails, error) {
+	return DomainDetails{}, ErrSyncUnsupported
+}
+
 func mockClassify(fqdn string) models.Classification {
 	sld := strings.SplitN(fqdn, ".", 2)[0]
 	if len(sld) <= 3 {

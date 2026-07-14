@@ -631,6 +631,7 @@
         "payments": "การชำระเงิน",
         "paymentMethods": "วิธีการชำระเงิน",
         "subscriptions": "การสมัครรับบริการ",
+        "renewals": "การต่ออายุ",
         "refunds": "การคืนเงิน",
         "bankImports": "กระทบยอดธนาคาร",
         "webhooks": "Webhook events",
@@ -1038,6 +1039,8 @@
         "renew": "ต่ออายุ / 1 ปี",
         "transfer": "ย้ายเข้า",
         "privacy": "Privacy",
+        "graceFee": "ค่าธรรมเนียมผ่อนผัน",
+        "redemptionFee": "ค่ากู้คืนโดเมน",
         "thaiOnly": "นิติบุคคลไทยเท่านั้น",
         "active": "เปิดใช้",
         "inactive": "ปิดใช้",
@@ -1415,6 +1418,44 @@
       "paypalRevealSecret": "แสดง secret",
       "paypalHideSecret": "ซ่อน secret",
       "paypalSecretPlaceholder": "วาง client secret จาก PayPal Developer Dashboard"
+    },
+    "renewals": {
+      "title": "การต่ออายุ",
+      "subtitle": "รายการที่ระบบต่ออายุกำลังจะออกใบแจ้งหนี้ และการแจ้งเตือนล่าสุด",
+      "window": "{days} วัน",
+      "refresh": "รีเฟรช",
+      "loading": "กำลังโหลดการต่ออายุ…",
+      "empty": "ไม่มีรายการในช่วงนี้",
+      "inDays": "อีก {days} วัน",
+      "expired": "หมดอายุเมื่อ {days} วันก่อน",
+      "subs": { "title": "การต่ออายุการสมัครที่ใกล้ถึง" },
+      "domains": { "title": "โดเมนที่ใกล้หมดอายุ" },
+      "log": { "title": "การแจ้งเตือนล่าสุด", "empty": "ยังไม่มีการแจ้งเตือน" },
+      "cols": {
+        "customer": "ลูกค้า",
+        "service": "บริการ",
+        "cycle": "รอบ",
+        "amount": "จำนวน",
+        "renews": "ต่ออายุ",
+        "domain": "โดเมน",
+        "registrar": "ผู้รับจดทะเบียน",
+        "autoRenew": "ต่ออายุอัตโนมัติ",
+        "expires": "หมดอายุ",
+        "sent": "ส่งเมื่อ",
+        "type": "ประเภท",
+        "item": "รายการ",
+        "notice": "การแจ้งเตือน"
+      },
+      "types": { "subscription": "การสมัคร", "domain": "โดเมน" },
+      "cycles": {
+        "weekly": "รายสัปดาห์",
+        "monthly": "รายเดือน",
+        "quarterly": "รายไตรมาส",
+        "semiannually": "รายครึ่งปี",
+        "annually": "รายปี",
+        "biennially": "ทุกสองปี",
+        "triennially": "ทุกสามปี"
+      }
     },
     "subscriptions": {
       "title": "การสมัครรับบริการ",
@@ -2072,6 +2113,7 @@
         "domains": "โดเมน",
         "sla": "SLA",
         "billing": "บิล",
+        "subscriptions": "การสมัครบริการ",
         "billingProfile": "ข้อมูลใบกำกับภาษี",
         "projects": "โปรเจกต์"
       },
@@ -2285,6 +2327,29 @@
       "billingEmail": "อีเมลการเรียกเก็บเงิน",
       "save": "บันทึก",
       "saved": "บันทึกแล้ว"
+    },
+    "subscriptions": {
+      "title": "การสมัครบริการของฉัน",
+      "subtitle": "บริการแบบต่ออายุของคุณ ยกเลิกได้ทุกเมื่อ — บริการจะใช้งานได้จนถึงวันที่ชำระครบรอบ",
+      "loading": "กำลังโหลดการสมัคร…",
+      "empty": "คุณยังไม่มีบริการแบบต่ออายุ",
+      "renewsOn": "ต่ออายุ {date}",
+      "paidThrough": "ใช้งานได้ถึง {date}",
+      "cancel": "ยกเลิกการต่ออายุ",
+      "confirm": "ยกเลิกการสมัครนี้?",
+      "confirmYes": "ใช่ ยกเลิก",
+      "keep": "เก็บไว้",
+      "cancelNote": "การยกเลิกจะหยุดการต่ออายุในอนาคต บริการจะใช้งานได้จนถึงสิ้นสุดรอบที่ชำระแล้ว",
+      "status": { "active": "ใช้งาน", "paused": "พัก", "cancelled": "ยกเลิกแล้ว" },
+      "cycles": {
+        "weekly": "รายสัปดาห์",
+        "monthly": "รายเดือน",
+        "quarterly": "รายไตรมาส",
+        "semiannually": "รายครึ่งปี",
+        "annually": "รายปี",
+        "biennially": "ทุกสองปี",
+        "triennially": "ทุกสามปี"
+      }
     },
     "billing": {
       "title": "บิลและใบแจ้งหนี้",

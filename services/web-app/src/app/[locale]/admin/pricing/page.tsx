@@ -84,6 +84,8 @@ function DomainsTable({ rows }: { rows: DomainPricingItem[] }) {
             <th className="px-4 py-3">{t("renew")}</th>
             <th className="px-4 py-3">{t("transfer")}</th>
             <th className="px-4 py-3">{t("privacy")}</th>
+            <th className="px-4 py-3">{t("graceFee")}</th>
+            <th className="px-4 py-3">{t("redemptionFee")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-navy-100">
@@ -100,6 +102,14 @@ function DomainsTable({ rows }: { rows: DomainPricingItem[] }) {
               <td className="px-4 py-3 text-navy-700">฿{r.renew_price_thb.toLocaleString()}</td>
               <td className="px-4 py-3 text-navy-700">฿{r.transfer_price_thb.toLocaleString()}</td>
               <td className="px-4 py-3 text-navy-700">{r.privacy_included ? "✓" : "—"}</td>
+              <td className="px-4 py-3 text-navy-700">
+                {r.grace_fee_thb > 0 ? `฿${r.grace_fee_thb.toLocaleString()}` : "—"}
+                <span className="ml-1 text-xs text-navy-400">/ {r.grace_period_days}d</span>
+              </td>
+              <td className="px-4 py-3 text-navy-700">
+                {r.redemption_fee_thb > 0 ? `฿${r.redemption_fee_thb.toLocaleString()}` : "—"}
+                <span className="ml-1 text-xs text-navy-400">/ {r.redemption_period_days}d</span>
+              </td>
             </tr>
           ))}
         </tbody>

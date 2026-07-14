@@ -218,6 +218,14 @@ export const portalApi = {
     return (await res.json()) as { results: AvailabilityResult[] };
   },
 
+  // ----- Recurring subscriptions (self-service) -----
+  listSubscriptions: () => request<PortalSubscription[]>("/payment/portal/subscriptions"),
+  cancelSubscription: (id: string) =>
+    request<{ status: string; paid_through: string }>(
+      `/payment/portal/subscriptions/${id}/cancel`,
+      { method: "POST" },
+    ),
+
   // ----- Billing & payments -----
   listInvoices: () => request<PortalInvoiceSummary[]>("/payment/portal/invoices"),
   getInvoice: (id: string) => request<PortalInvoiceFull>(`/payment/portal/invoices/${id}`),
@@ -402,6 +410,18 @@ import type {
 
 export type PortalInvoiceSummary = _Invoice;
 export type PortalInvoiceFull = _Invoice & { items: _InvoiceItem[]; payments: _Payment[] };
+export interface PortalSubscription {
+  id: string;
+  title: string;
+  product_type: "hosting" | "sla" | "msp" | "custom";
+  billing_cycle: string;
+  amount_cents: number;
+  currency: "THB" | "USD";
+  status: "active" | "paused" | "cancelled";
+  starts_on: string;
+  ends_on: string | null;
+  next_billing_at: string;
+}
 export type PortalPaymentMethod = PaymentMethod;
 export type PortalPaymentMethodConfig = PaymentMethodConfig;
 export type PortalInitPaymentResp = InitPaymentResp;

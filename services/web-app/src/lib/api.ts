@@ -93,6 +93,10 @@ export interface DomainPricingItem {
   transfer_price_thb: number;
   privacy_included: boolean;
   is_thai_only: boolean;
+  grace_period_days: number;
+  redemption_period_days: number;
+  grace_fee_thb: number;
+  redemption_fee_thb: number;
   notes: string;
   sort_order: number;
 }

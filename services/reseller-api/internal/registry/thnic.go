@@ -14,6 +14,14 @@ import (
 // the lead drops into the queue, and F2 staff places the order via the
 // THNIC partner portal. This keeps .th visible on /domains without lying
 // about whether a name is actually available.
+//
+// EPP INTEGRATION BOUNDARY (blocked): turning this stub into a live adapter
+// requires a THNIC/T.H.NIC registrar agreement + EPP credentials (mTLS
+// client cert/key, login, EPP host). The wiring points are marked below
+// (CheckAvailability → domain:check, Register → domain:create, GetDetails →
+// domain:info for expiry). See docs/thnic-epp-integration.md for the full
+// requirements and rollout. Nothing here can be completed without those
+// credentials, so it stays a stub by design.
 type THNICStub struct{}
 
 var thOwnedTLDs = map[string]struct{}{
@@ -33,6 +41,12 @@ func (THNICStub) Register(_ context.Context, _ PlaceRequest) (models.PlacementRe
 		Status: "approved",
 		Raw:    map[string]any{"thnic_stub": true, "note": "F2 to complete via THNIC partner portal"},
 	}, nil
+}
+
+// GetDetails is unsupported: THNIC EPP/mTLS isn't wired, so expiry for .th
+// domains stays manually maintained. The sync worker skips these.
+func (THNICStub) GetDetails(_ context.Context, _, _ string) (DomainDetails, error) {
+	return DomainDetails{}, ErrSyncUnsupported
 }
 
 func (THNICStub) CheckAvailability(_ context.Context, sld string, tlds []string) ([]models.AvailabilityResult, error) {
