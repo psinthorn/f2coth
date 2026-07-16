@@ -2215,6 +2215,17 @@
         "swName": "Software",
         "swVersion": "Version",
         "swVendor": "Vendor"
+      },
+      "install": {
+        "title": "Install client tools",
+        "desc": "Run these on the client's machines to push inventory. The enrollment token is filled in below.",
+        "tokenNote": "Create a token above to fill it into these commands.",
+        "linux": "Linux / macOS collector",
+        "windows": "Windows collector",
+        "probe": "Network probe",
+        "probeCompose": "Probe compose",
+        "copy": "Copy",
+        "copied": "Copied"
       }
     }
   },

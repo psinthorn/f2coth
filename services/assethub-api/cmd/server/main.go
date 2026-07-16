@@ -70,6 +70,14 @@ func main() {
 			r.Post("/enroll", h.EnrollDevice)
 		})
 
+		// ── Client-tool downloads (collect.sh / collect.ps1 / discover.sh /
+		//    probe compose). Public behind the module gate — no secrets in the
+		//    scripts; techs curl them onto client machines with no F2 login.
+		r.Group(func(r chi.Router) {
+			r.Use(mw.GateModule("api.assethub"))
+			r.Get("/collector/{name}", h.DownloadCollector)
+		})
+
 		// ── Staff admin console (aud=staff). Reads: any staff; writes:
 		//    editor+ (engineer); destructive: admin (superadmin).
 		r.Route("/admin", func(r chi.Router) {

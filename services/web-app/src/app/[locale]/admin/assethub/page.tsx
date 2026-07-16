@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
-import { Loader2, Plus, Search, Download, RefreshCw, Trash2, KeyRound, FileSpreadsheet } from "lucide-react";
+import { Loader2, Plus, Search, Download, RefreshCw, Trash2, KeyRound, FileSpreadsheet, Copy, Check, Terminal } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import {
   assethubApi,
@@ -357,6 +357,71 @@ function TokensTab({ customerId, t }: { customerId: string; t: any }) {
         ))}
         {!tokens.length && <li className="px-3 py-8 text-center text-navy-400">{t("tokens.empty")}</li>}
       </ul>
+
+      <InstallPanel token={secret || "<TOKEN>"} t={t} />
+    </div>
+  );
+}
+
+// ---------------- Install / onboarding ----------------
+
+function InstallPanel({ token, t }: { token: string; t: any }) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const base = `${origin}/api/assethub/collector`;
+  const linux = `curl -fsSL ${base}/collect.sh -o collect.sh && F2_SERVER_URL="${origin}" F2_TOKEN="${token}" bash collect.sh`;
+  const win = `irm ${base}/collect.ps1 -OutFile collect.ps1; .\\collect.ps1 -ServerUrl "${origin}" -Token "${token}"`;
+  const probe = `curl -fsSL ${base}/discover.sh -o discover.sh && F2_SERVER_URL="${origin}" F2_TOKEN="${token}" F2_CIDRS="192.168.1.0/24" bash discover.sh`;
+
+  const downloads = [
+    { name: "collect.sh", label: t("install.linux") },
+    { name: "collect.ps1", label: t("install.windows") },
+    { name: "discover.sh", label: t("install.probe") },
+    { name: "docker-compose.probe.yml", label: t("install.probeCompose") },
+  ];
+
+  return (
+    <div className="card mt-6 p-4">
+      <div className="mb-1 flex items-center gap-2">
+        <Terminal className="h-4 w-4 text-navy-500" />
+        <h3 className="font-display text-lg text-navy-900">{t("install.title")}</h3>
+      </div>
+      <p className="mb-3 text-sm text-navy-600">
+        {t("install.desc")}
+        {token !== "<TOKEN>" ? "" : ` ${t("install.tokenNote")}`}
+      </p>
+
+      <CmdBlock label={t("install.linux")} cmd={linux} t={t} />
+      <CmdBlock label={t("install.windows")} cmd={win} t={t} />
+      <CmdBlock label={t("install.probe")} cmd={probe} t={t} />
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {downloads.map((d) => (
+          <a key={d.name} href={`${base}/${d.name}`} className="btn-ghost text-xs">
+            <Download className="mr-1 inline h-3.5 w-3.5" />{d.name}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CmdBlock({ label, cmd, t }: { label: string; cmd: string; t: any }) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard?.writeText(cmd).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+  return (
+    <div className="mb-2">
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-xs font-medium uppercase tracking-wide text-navy-500">{label}</span>
+        <button onClick={copy} className="text-xs text-navy-500 hover:text-navy-800">
+          {copied ? <><Check className="mr-1 inline h-3.5 w-3.5 text-emerald-500" />{t("install.copied")}</> : <><Copy className="mr-1 inline h-3.5 w-3.5" />{t("install.copy")}</>}
+        </button>
+      </div>
+      <pre className="overflow-x-auto rounded-lg bg-navy-900 px-3 py-2 text-xs text-navy-50"><code>{cmd}</code></pre>
     </div>
   );
 }
