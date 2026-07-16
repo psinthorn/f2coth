@@ -288,6 +288,30 @@ services:
       - traefik.http.middlewares.contract-upload-ratelimit.ratelimit.burst=5
       - traefik.http.middlewares.contract-upload-ratelimit.ratelimit.period=1m
 
+  assethub-api:
+    <<: *app-defaults
+    image: ghcr.io/${GHCR_OWNER}/f2-assethub-api:${IMAGE_TAG:-latest}
+    mem_limit: 256m
+    volumes:
+      - assethub-reports:/data/reports
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.assethub.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/assethub`)
+      - traefik.http.routers.assethub.entrypoints=websecure
+      - traefik.http.routers.assethub.tls.certresolver=letsencrypt
+      - traefik.http.services.assethub.loadbalancer.server.port=8010
+      # Ingest firehose — cap so a misbehaving collector can't overwhelm the
+      # register. 120 req/min per IP, burst 30.
+      - traefik.http.routers.assethub-ingest.rule=Host(`${DOMAIN}`) && PathRegexp(`^/api/assethub/(ingest|discovery|enroll)$`)
+      - traefik.http.routers.assethub-ingest.entrypoints=websecure
+      - traefik.http.routers.assethub-ingest.tls.certresolver=letsencrypt
+      - traefik.http.routers.assethub-ingest.service=assethub
+      - traefik.http.routers.assethub-ingest.priority=150
+      - traefik.http.routers.assethub-ingest.middlewares=assethub-ingest-ratelimit
+      - traefik.http.middlewares.assethub-ingest-ratelimit.ratelimit.average=120
+      - traefik.http.middlewares.assethub-ingest-ratelimit.ratelimit.burst=30
+      - traefik.http.middlewares.assethub-ingest-ratelimit.ratelimit.period=1m
+
   # ----------------------------------------------------------------
   # Next.js frontend
   # ----------------------------------------------------------------
@@ -317,3 +341,4 @@ volumes:
   traefik-logs:
   checklist-uploads:
   contract-uploads:
+  assethub-reports:

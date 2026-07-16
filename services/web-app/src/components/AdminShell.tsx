@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import {
-  LayoutDashboard, Users, Inbox, LogOut, Menu, X, Loader2, Building2, Ticket, DollarSign, Globe, ShieldCheck, FileText, ListChecks, CreditCard, Wallet, Repeat, Undo2, Landmark, Webhook, AlertOctagon, BarChart3, PauseCircle, Home, Layers, Award, FileCode, ToggleRight, ClipboardCheck, Mail, Bot, Route, Coins, FileSignature, CalendarClock,
+  LayoutDashboard, Users, Inbox, LogOut, Menu, X, Loader2, Building2, Ticket, DollarSign, Globe, ShieldCheck, FileText, ListChecks, CreditCard, Wallet, Repeat, Undo2, Landmark, Webhook, AlertOctagon, BarChart3, PauseCircle, Home, Layers, Award, FileCode, ToggleRight, ClipboardCheck, Mail, Bot, Route, Coins, FileSignature, CalendarClock, MonitorSmartphone,
 } from "lucide-react";
 import { adminApi, clearAuth, redirectToLogin, type User } from "@/lib/admin-api";
 import SandboxBanner from "@/components/SandboxBanner";
@@ -43,12 +43,13 @@ type NavItem = {
     | "/admin/suspensions"
     | "/admin/projects"
     | "/admin/contracts"
+    | "/admin/assethub"
     | "/admin/settings/smtp"
     | "/admin/features"
     | "/admin/ai"
     | "/admin/ai/routing"
     | "/admin/ai/usage";
-  labelKey: "dashboard" | "leads" | "tickets" | "customers" | "dsr" | "blog" | "appMode" | "homeContent" | "pagesEditor" | "servicesEditor" | "caseStudiesEditor" | "users" | "pricing" | "orders" | "invoices" | "payments" | "paymentMethods" | "subscriptions" | "renewals" | "refunds" | "bankImports" | "webhooks" | "disputes" | "analytics" | "suspensions" | "projects" | "contracts" | "smtp" | "features" | "aiHome" | "aiRouting" | "aiUsage";
+  labelKey: "dashboard" | "leads" | "tickets" | "customers" | "dsr" | "blog" | "appMode" | "homeContent" | "pagesEditor" | "servicesEditor" | "caseStudiesEditor" | "users" | "pricing" | "orders" | "invoices" | "payments" | "paymentMethods" | "subscriptions" | "renewals" | "refunds" | "bankImports" | "webhooks" | "disputes" | "analytics" | "suspensions" | "projects" | "contracts" | "assethub" | "smtp" | "features" | "aiHome" | "aiRouting" | "aiUsage";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   adminOnly?: boolean;
@@ -95,6 +96,7 @@ const NAV: NavGroup[] = [
       { href: "/admin/suspensions",     labelKey: "suspensions",    icon: PauseCircle,  moduleKey: "admin.suspensions" },
       { href: "/admin/bank-imports",    labelKey: "bankImports",    icon: Landmark,     moduleKey: "admin.bank_imports" },
       { href: "/admin/analytics",       labelKey: "analytics",      icon: BarChart3,    moduleKey: "admin.invoices" },
+      { href: "/admin/assethub",        labelKey: "assethub",       icon: MonitorSmartphone, moduleKey: "admin.assethub" },
       { href: "/admin/webhooks",        labelKey: "webhooks",       icon: Webhook,      moduleKey: "api.payment" },
       { href: "/admin/payment-methods", labelKey: "paymentMethods", icon: Wallet,       moduleKey: "admin.payment_methods" },
     ],

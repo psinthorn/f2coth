@@ -1,0 +1,198 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/routing";
+import { Loader2, ArrowLeft, Save } from "lucide-react";
+import AdminShell from "@/components/AdminShell";
+import {
+  assethubApi, type AssetDevice, type AssetSite, type DeviceType, type DeviceStatus,
+} from "@/lib/assethub-api";
+
+type DetailTab = "hardware" | "network" | "software" | "history";
+const DEVICE_TYPES: DeviceType[] = [
+  "computer", "server", "nas", "router", "switch", "ap", "printer", "camera", "phone", "tablet", "iot", "unknown",
+];
+const STATUSES: DeviceStatus[] = ["active", "retired", "missing"];
+
+export default function AssetHubDeviceDetail() {
+  const t = useTranslations("admin.assethub");
+  const params = useParams();
+  const search = useSearchParams();
+  const id = String(params.id);
+  const customerId = search.get("c") ?? "";
+
+  const [device, setDevice] = useState<AssetDevice | null>(null);
+  const [sites, setSites] = useState<AssetSite[]>([]);
+  const [history, setHistory] = useState<{ id: string; source: string; received_at: string }[]>([]);
+  const [tab, setTab] = useState<DetailTab>("hardware");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  // editable fields
+  const [edit, setEdit] = useState({ device_type: "", asset_tag: "", assigned_user: "", status: "", site_id: "", notes: "" });
+
+  useEffect(() => {
+    if (!customerId) { setErr(t("detail.noOrg")); setLoading(false); return; }
+    Promise.all([
+      assethubApi.getDevice(customerId, id),
+      assethubApi.listSites(customerId),
+      assethubApi.deviceHistory(customerId, id),
+    ]).then(([d, s, h]) => {
+      setDevice(d);
+      setSites(s);
+      setHistory(h);
+      setEdit({
+        device_type: d.device_type, asset_tag: d.asset_tag ?? "", assigned_user: d.assigned_user ?? "",
+        status: d.status, site_id: d.site_id ?? "", notes: d.notes ?? "",
+      });
+    }).catch((e) => setErr(String(e))).finally(() => setLoading(false));
+  }, [customerId, id, t]);
+
+  async function save() {
+    setSaving(true);
+    try {
+      await assethubApi.patchDevice(id, {
+        device_type: edit.device_type as DeviceType,
+        asset_tag: edit.asset_tag,
+        assigned_user: edit.assigned_user,
+        status: edit.status as DeviceStatus,
+        site_id: edit.site_id || undefined,
+        notes: edit.notes,
+      });
+    } catch (e) { setErr(String(e)); } finally { setSaving(false); }
+  }
+
+  return (
+    <AdminShell>
+      <Link href={`/admin/assethub`} className="mb-4 inline-flex items-center text-sm text-navy-500 hover:text-navy-800">
+        <ArrowLeft className="mr-1 h-4 w-4" />{t("detail.back")}
+      </Link>
+      {err && <div className="mb-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{err}</div>}
+      {loading ? <Loader2 className="h-5 w-5 animate-spin text-navy-400" /> : device && (
+        <>
+          <header className="mb-4">
+            <h1 className="font-display text-2xl text-navy-900">{device.hostname || device.primary_ip || id.slice(0, 8)}</h1>
+            <p className="mt-1 text-sm text-navy-500">
+              {device.device_type} · {device.brand} {device.model} · {t("detail.source")}: {device.source}
+            </p>
+          </header>
+
+          {/* editable enrichment panel */}
+          <div className="card mb-6 grid gap-3 p-4 sm:grid-cols-3">
+            <Field label={t("detail.type")}>
+              <select value={edit.device_type} onChange={(e) => setEdit({ ...edit, device_type: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm">
+                {DEVICE_TYPES.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </Field>
+            <Field label={t("detail.status")}>
+              <select value={edit.status} onChange={(e) => setEdit({ ...edit, status: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm">
+                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Field>
+            <Field label={t("detail.site")}>
+              <select value={edit.site_id} onChange={(e) => setEdit({ ...edit, site_id: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm">
+                <option value="">—</option>
+                {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </Field>
+            <Field label={t("detail.assetTag")}>
+              <input value={edit.asset_tag} onChange={(e) => setEdit({ ...edit, asset_tag: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm" />
+            </Field>
+            <Field label={t("detail.assignedUser")}>
+              <input value={edit.assigned_user} onChange={(e) => setEdit({ ...edit, assigned_user: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm" />
+            </Field>
+            <Field label={t("detail.notes")}>
+              <input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm" />
+            </Field>
+            <div className="sm:col-span-3">
+              <button onClick={save} disabled={saving} className="btn-accent text-sm">
+                {saving ? <Loader2 className="mr-1 inline h-4 w-4 animate-spin" /> : <Save className="mr-1 inline h-4 w-4" />}
+                {t("detail.save")}
+              </button>
+            </div>
+          </div>
+
+          <nav className="mb-4 flex gap-1 rounded-lg bg-navy-50 p-1 text-sm">
+            {(["hardware", "network", "software", "history"] as DetailTab[]).map((k) => (
+              <button key={k} onClick={() => setTab(k)} className={`rounded-md px-3 py-1.5 ${tab === k ? "bg-white shadow font-medium" : "text-navy-600"}`}>
+                {t(`detail.tab.${k}`)}
+              </button>
+            ))}
+          </nav>
+
+          {tab === "hardware" && (
+            <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+              <Row label={t("detail.serial")} value={device.serial_number} />
+              <Row label={t("detail.cpu")} value={device.cpu} />
+              <Row label={t("detail.ram")} value={device.ram_mb ? `${device.ram_mb} MB` : ""} />
+              <Row label={t("detail.storage")} value={device.storage_summary} />
+              <Row label={t("detail.osCol")} value={[device.os_name, device.os_version].filter(Boolean).join(" ")} />
+              <Row label={t("detail.role")} value={`${device.network_role} ${device.domain_or_workgroup_name ?? ""}`} />
+            </dl>
+          )}
+
+          {tab === "network" && (
+            <table className="w-full text-sm">
+              <thead className="bg-navy-50 text-xs uppercase text-navy-500">
+                <tr><th className="px-3 py-2 text-left">{t("detail.iface")}</th><th className="px-3 py-2 text-left">MAC</th><th className="px-3 py-2 text-left">IPv4</th><th className="px-3 py-2 text-left">{t("detail.ifaceType")}</th></tr>
+              </thead>
+              <tbody className="divide-y divide-navy-100">
+                {(device.interfaces ?? []).map((i, k) => (
+                  <tr key={k}><td className="px-3 py-2">{i.name}</td><td className="px-3 py-2 font-mono text-xs">{i.mac}</td><td className="px-3 py-2">{i.ipv4?.join(", ")}</td><td className="px-3 py-2">{i.type} {i.ssid}</td></tr>
+                ))}
+                {!(device.interfaces ?? []).length && <tr><td colSpan={4} className="px-3 py-6 text-center text-navy-400">—</td></tr>}
+              </tbody>
+            </table>
+          )}
+
+          {tab === "software" && (
+            <table className="w-full text-sm">
+              <thead className="bg-navy-50 text-xs uppercase text-navy-500">
+                <tr><th className="px-3 py-2 text-left">{t("detail.swName")}</th><th className="px-3 py-2 text-left">{t("detail.swVersion")}</th><th className="px-3 py-2 text-left">{t("detail.swVendor")}</th></tr>
+              </thead>
+              <tbody className="divide-y divide-navy-100">
+                {(device.software ?? []).map((s, k) => (
+                  <tr key={k}><td className="px-3 py-2">{s.name}</td><td className="px-3 py-2 text-navy-500">{s.version}</td><td className="px-3 py-2 text-navy-500">{s.vendor}</td></tr>
+                ))}
+                {!(device.software ?? []).length && <tr><td colSpan={3} className="px-3 py-6 text-center text-navy-400">—</td></tr>}
+              </tbody>
+            </table>
+          )}
+
+          {tab === "history" && (
+            <ul className="divide-y divide-navy-100 text-sm">
+              {history.map((h) => (
+                <li key={h.id} className="flex justify-between px-1 py-2">
+                  <span className="text-navy-600">{h.source}</span>
+                  <span className="text-navy-400">{h.received_at.slice(0, 16).replace("T", " ")}</span>
+                </li>
+              ))}
+              {!history.length && <li className="py-6 text-center text-navy-400">—</li>}
+            </ul>
+          )}
+        </>
+      )}
+    </AdminShell>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs uppercase tracking-wide text-navy-500">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Row({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="flex justify-between border-b border-navy-50 py-1">
+      <dt className="text-navy-500">{label}</dt>
+      <dd className="text-navy-900">{value || "—"}</dd>
+    </div>
+  );
+}

@@ -49,6 +49,7 @@ jobs:
       matrix:
         service:
           - ai-chat-api
+          - assethub-api
           - auth-api
           - checklist-api
           - cms-api

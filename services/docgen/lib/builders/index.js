@@ -12,6 +12,7 @@
 const builders = {
   "service-agreement": require("./service-agreement"),
   "mutual-nda": require("./mutual-nda"),
+  "assethub_handover": require("./assethub-handover"),
 };
 
 function get(code) {

@@ -430,6 +430,48 @@ services:
     networks:
       - f2-net
 
+  # AssetHub — IT asset discovery & inventory (device register, discovery
+  # triage, handover reports). Ingest + enroll are enrollment-token authed;
+  # admin/portal use staff/customer JWTs. Runs its report worker in-process.
+  assethub-api:
+    build:
+      context: ./services/assethub-api
+      dockerfile: Dockerfile
+    container_name: f2-assethub-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SERVICE_NAME: assethub-api
+      SERVICE_PORT: "8010"
+      REPORTS_DIR: /data/reports
+      DOCGEN_URL: http://docgen:8080
+      NOTIFICATION_API_URL: http://notification-api:8005
+    volumes:
+      - assethub-reports:/data/reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      docgen:
+        condition: service_started
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.assethub.rule=PathPrefix(`/api/assethub`)
+      - traefik.http.routers.assethub.entrypoints=web
+      - traefik.http.services.assethub.loadbalancer.server.port=8010
+      # Ingest firehose (POST /api/assethub/ingest|discovery|enroll) — cap so a
+      # misbehaving collector can't overwhelm the register. 120 req/min per IP,
+      # burst 30. Higher priority so it wins over the main `assethub` router.
+      - traefik.http.routers.assethub-ingest.rule=PathRegexp(`^/api/assethub/(ingest|discovery|enroll)$`)
+      - traefik.http.routers.assethub-ingest.entrypoints=web
+      - traefik.http.routers.assethub-ingest.service=assethub
+      - traefik.http.routers.assethub-ingest.priority=150
+      - traefik.http.routers.assethub-ingest.middlewares=assethub-ingest-ratelimit
+      - traefik.http.middlewares.assethub-ingest-ratelimit.ratelimit.average=120
+      - traefik.http.middlewares.assethub-ingest-ratelimit.ratelimit.burst=30
+      - traefik.http.middlewares.assethub-ingest-ratelimit.ratelimit.period=1m
+    networks:
+      - f2-net
+
 networks:
   f2-net:
     driver: bridge
@@ -440,4 +482,6 @@ volumes:
   checklist-uploads:
     driver: local
   contract-uploads:
+    driver: local
+  assethub-reports:
     driver: local

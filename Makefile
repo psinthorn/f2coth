@@ -1,6 +1,6 @@
 .PHONY: help up down build rebuild logs ps clean db-shell migrate seed test test-integration fmt tidy prod-up prod-down prod-logs staging-up staging-down staging-logs
 
-SERVICES := cms-api lead-api ai-chat-api auth-api notification-api customer-api reseller-api payment-api checklist-api contract-api
+SERVICES := cms-api lead-api ai-chat-api auth-api notification-api customer-api reseller-api payment-api checklist-api contract-api assethub-api
 COMPOSE  := docker compose
 
 help: ## Show this help

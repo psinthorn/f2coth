@@ -48,6 +48,9 @@ memories/copilot-notes.md   → Working notes, common mistakes, quick-start
 | `notification-api` | 8005 | SMTP email worker |
 | `customer-api` | 8006 | Portal, tickets, SLA, assets |
 | `reseller-api` | 8007 | Domain availability + order registration |
+| `checklist-api` / `payment-api` / `contract-api` | 8008 | Audit checklists / payments / contracts (share internal port; Traefik routes by path) |
+| `ai-orchestrator-api` | 8009 | AI routing + usage |
+| `assethub-api` | 8010 | AssetHub — IT asset discovery, device register, handover reports |
 
 ---
 
@@ -72,7 +75,7 @@ memories/copilot-notes.md   → Working notes, common mistakes, quick-start
 | Existing middleware | `services/*/internal/middleware/*.go` (canonical `pkg/modulegate/`) |
 | Existing translation key | `services/web-app/messages/en.json` |
 | Live feature inventory | `/admin/features` page (live data from `modules` table) — check before building any new feature |
-| Next migration number | `database/migrations/` — currently at `019_modules_and_audit_log.sql` → next is `020_` |
+| Next migration number | `database/migrations/` — latest is `065_assethub.sql` → next is `066_` |
 
 ---
 
