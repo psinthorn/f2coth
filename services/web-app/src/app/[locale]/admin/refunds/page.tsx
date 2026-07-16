@@ -70,7 +70,7 @@ export default function AdminRefundsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={{ pathname: "/admin/invoices/[id]", params: { id: r.invoice_id } } as never}
+                    <Link href={`/admin/invoices/${r.invoice_id}`}
                       className="text-accent-700 hover:underline">
                       {r.invoice_number}
                     </Link>

@@ -378,6 +378,100 @@ services:
     networks:
       - f2-net
 
+  # Internal document generator (docx + PDF) for contract-api. NOT exposed via
+  # Traefik — reachable only on f2-net at http://docgen:8080.
+  docgen:
+    build:
+      context: ./services/docgen
+      dockerfile: Dockerfile
+    container_name: f2-docgen
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: docgen
+      SERVICE_PORT: "8080"
+    networks:
+      - f2-net
+
+  contract-api:
+    build:
+      context: ./services/contract-api
+      dockerfile: Dockerfile
+    container_name: f2-contract-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SERVICE_NAME: contract-api
+      SERVICE_PORT: "8008"
+      UPLOADS_DIR: /data/uploads
+      DOCGEN_URL: http://docgen:8080
+    volumes:
+      - contract-uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      docgen:
+        condition: service_started
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.contract.rule=PathPrefix(`/api/contracts`)
+      - traefik.http.routers.contract.entrypoints=web
+      - traefik.http.services.contract.loadbalancer.server.port=8008
+      # Signed-scan upload (POST /api/contracts/{id}/files) — tight limit so a
+      # misbehaving client can't fill the volume. 10 uploads/min per IP,
+      # burst 5. Higher priority so it wins over the main `contract` router.
+      - traefik.http.routers.contract-upload.rule=PathRegexp(`^/api/contracts/[^/]+/files$`)
+      - traefik.http.routers.contract-upload.entrypoints=web
+      - traefik.http.routers.contract-upload.service=contract
+      - traefik.http.routers.contract-upload.priority=150
+      - traefik.http.routers.contract-upload.middlewares=contract-upload-ratelimit
+      - traefik.http.middlewares.contract-upload-ratelimit.ratelimit.average=10
+      - traefik.http.middlewares.contract-upload-ratelimit.ratelimit.burst=5
+      - traefik.http.middlewares.contract-upload-ratelimit.ratelimit.period=1m
+    networks:
+      - f2-net
+
+  # AssetHub — IT asset discovery & inventory (device register, discovery
+  # triage, handover reports). Ingest + enroll are enrollment-token authed;
+  # admin/portal use staff/customer JWTs. Runs its report worker in-process.
+  assethub-api:
+    build:
+      context: ./services/assethub-api
+      dockerfile: Dockerfile
+    container_name: f2-assethub-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SERVICE_NAME: assethub-api
+      SERVICE_PORT: "8010"
+      REPORTS_DIR: /data/reports
+      DOCGEN_URL: http://docgen:8080
+      NOTIFICATION_API_URL: http://notification-api:8005
+    volumes:
+      - assethub-reports:/data/reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      docgen:
+        condition: service_started
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.assethub.rule=PathPrefix(`/api/assethub`)
+      - traefik.http.routers.assethub.entrypoints=web
+      - traefik.http.services.assethub.loadbalancer.server.port=8010
+      # Ingest firehose (POST /api/assethub/ingest|discovery|enroll) — cap so a
+      # misbehaving collector can't overwhelm the register. 120 req/min per IP,
+      # burst 30. Higher priority so it wins over the main `assethub` router.
+      - traefik.http.routers.assethub-ingest.rule=PathRegexp(`^/api/assethub/(ingest|discovery|enroll)$`)
+      - traefik.http.routers.assethub-ingest.entrypoints=web
+      - traefik.http.routers.assethub-ingest.service=assethub
+      - traefik.http.routers.assethub-ingest.priority=150
+      - traefik.http.routers.assethub-ingest.middlewares=assethub-ingest-ratelimit
+      - traefik.http.middlewares.assethub-ingest-ratelimit.ratelimit.average=120
+      - traefik.http.middlewares.assethub-ingest-ratelimit.ratelimit.burst=30
+      - traefik.http.middlewares.assethub-ingest-ratelimit.ratelimit.period=1m
+    networks:
+      - f2-net
+
 networks:
   f2-net:
     driver: bridge
@@ -386,4 +480,8 @@ volumes:
   pgdata:
     driver: local
   checklist-uploads:
+    driver: local
+  contract-uploads:
+    driver: local
+  assethub-reports:
     driver: local

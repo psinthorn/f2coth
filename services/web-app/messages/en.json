@@ -114,7 +114,8 @@
     "errorLoad": "Failed to load. Please refresh.",
     "all": "All",
     "saved": "Saved",
-    "saveAll": "Save all"
+    "saveAll": "Save all",
+    "next": "Next"
   },
   "header": {
     "nav": {
@@ -630,6 +631,7 @@
         "payments": "Payments",
         "paymentMethods": "Payment methods",
         "subscriptions": "Subscriptions",
+        "renewals": "Renewals",
         "refunds": "Refunds",
         "bankImports": "Bank reconciliation",
         "webhooks": "Webhook events",
@@ -648,7 +650,9 @@
         "smtp": "SMTP",
         "aiHome": "AI dashboard",
         "aiRouting": "AI routing",
-        "aiUsage": "AI usage"
+        "aiUsage": "AI usage",
+        "contracts": "Contracts",
+        "assethub": "Asset Register"
       },
       "signedInAs": "Signed in as",
       "signOut": "Sign out",
@@ -1036,6 +1040,8 @@
         "renew": "Renew / 1y",
         "transfer": "Transfer in",
         "privacy": "Privacy",
+        "graceFee": "Grace fee",
+        "redemptionFee": "Redemption fee",
         "thaiOnly": "Thai entities only",
         "active": "Active",
         "inactive": "Inactive",
@@ -1392,6 +1398,20 @@
       "paypalClientSecret": "Client secret",
       "paypalWebhookID": "Webhook ID",
       "paypalMerchantEmail": "Merchant email",
+      "bankNone": "No bank accounts yet. Add one below — every enabled account is shown to customers on the pay screen.",
+      "bankAdd": "Add bank",
+      "bankRemove": "Remove",
+      "bankSelect": "Bank",
+      "bankCustom": "— Custom / other bank —",
+      "bankName": "Bank name",
+      "bankAccountName": "Account name",
+      "bankAccountNumber": "Account number",
+      "bankBranch": "Branch",
+      "bankSwift": "SWIFT / BIC",
+      "bankBranchAddress": "Branch address",
+      "bankShown": "Shown to customers",
+      "bankHidden": "Hidden",
+      "bankUnnamed": "New bank account",
       "paypalSecretSet": "Set",
       "paypalSetSecret": "Click to set the client secret",
       "paypalChangeSecret": "Change",
@@ -1399,6 +1419,54 @@
       "paypalRevealSecret": "Reveal secret",
       "paypalHideSecret": "Hide secret",
       "paypalSecretPlaceholder": "Paste the client secret from PayPal Developer Dashboard"
+    },
+    "renewals": {
+      "title": "Renewals",
+      "subtitle": "What the renewal engine is about to bill, and what it recently notified.",
+      "window": "{days} days",
+      "refresh": "Refresh",
+      "loading": "Loading renewals…",
+      "empty": "Nothing in this window.",
+      "inDays": "in {days}d",
+      "expired": "expired {days}d ago",
+      "subs": {
+        "title": "Upcoming subscription renewals"
+      },
+      "domains": {
+        "title": "Upcoming domain expiries"
+      },
+      "log": {
+        "title": "Recent reminders & notices",
+        "empty": "No reminders sent yet."
+      },
+      "cols": {
+        "customer": "Customer",
+        "service": "Service",
+        "cycle": "Cycle",
+        "amount": "Amount",
+        "renews": "Renews",
+        "domain": "Domain",
+        "registrar": "Registrar",
+        "autoRenew": "Auto-renew",
+        "expires": "Expires",
+        "sent": "Sent",
+        "type": "Type",
+        "item": "Item",
+        "notice": "Notice"
+      },
+      "types": {
+        "subscription": "Subscription",
+        "domain": "Domain"
+      },
+      "cycles": {
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "quarterly": "Quarterly",
+        "semiannually": "Semi-annually",
+        "annually": "Annually",
+        "biennially": "Biennially",
+        "triennially": "Triennially"
+      }
     },
     "subscriptions": {
       "title": "Subscriptions",
@@ -1620,7 +1688,8 @@
     "sandbox": {
       "title": "Payment sandbox",
       "subtitle": "Seed test invoices, force-complete payments, and simulate PayPal webhooks without touching real money.",
-      "seedInvoice": "Seed test invoice",
+      "seedInvoice": "Seed test invoice (THB)",
+      "seedInvoiceUSD": "Seed USD invoice (PayPal)",
       "seeded": "Test invoice {number} created.",
       "purge": "Purge all sandbox data",
       "purgeConfirm": "Delete every sandbox invoice and payment? This cannot be undone.",
@@ -1934,6 +2003,212 @@
         "ok": "OK",
         "errored": "Error"
       }
+    },
+    "contracts": {
+      "title": "Contracts",
+      "subtitle": "Create, generate and track service agreements.",
+      "newContract": "New contract",
+      "noneYet": "No contracts yet.",
+      "backToList": "Back to contracts",
+      "notFound": "Contract not found.",
+      "daysLeft": "{days}d left",
+      "expiringCard": "{count} active contract(s) expiring within 30 days — review for renewal.",
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "signed": "Signed",
+        "active": "Active",
+        "expired": "Expired",
+        "terminated": "Terminated"
+      },
+      "col": {
+        "docNo": "Doc no.",
+        "customer": "Customer",
+        "status": "Status",
+        "effective": "Effective",
+        "end": "End date",
+        "fee": "Fee"
+      },
+      "filter": {
+        "allStatuses": "All statuses",
+        "customer": "Filter by customer"
+      },
+      "wizard": {
+        "title": "New contract",
+        "step1": "Template",
+        "step2": "Customer",
+        "step3": "Details",
+        "templateMeta": "{code} · v{version}",
+        "existingParty": "Existing customer",
+        "newParty": "New customer",
+        "searchParty": "Search customers…",
+        "noParties": "No customers found.",
+        "partyNameRequired": "Both legal names are required.",
+        "pickParty": "Pick or create a customer.",
+        "summary": "Summary",
+        "template": "Template",
+        "create": "Create contract",
+        "arrayHint": "Edit as JSON — one entry per schedule row."
+      },
+      "party": {
+        "legalNameEn": "Legal name (EN)",
+        "legalNameTh": "Legal name (TH)",
+        "brandName": "Brand name",
+        "taxId": "Tax ID",
+        "noticeEmail": "Notice email",
+        "phone": "Phone",
+        "address": "Address"
+      },
+      "actions": {
+        "title": "Actions",
+        "generateDraft": "Generate draft",
+        "generateSigning": "Generate signing version",
+        "terminate": "Terminate"
+      },
+      "upload": {
+        "title": "Upload signed copy",
+        "hint": "Drag a file here, or tap to photograph the signed pages",
+        "formats": "PDF, JPG or PNG · up to 20 MB"
+      },
+      "activate": {
+        "title": "Activate contract",
+        "hint": "Confirm the effective and end dates to put the contract in force.",
+        "confirm": "Confirm active"
+      },
+      "files": {
+        "title": "Files",
+        "none": "No files generated yet.",
+        "print": "Print PDF",
+        "view": "View",
+        "download": "Download",
+        "kind": {
+          "generated_docx": "Generated (Word)",
+          "generated_pdf": "Generated (PDF)",
+          "signed_scan": "Signed scan"
+        }
+      },
+      "meta": {
+        "title": "Details"
+      },
+      "timeline": {
+        "title": "Status timeline"
+      },
+      "mergeData": {
+        "title": "Contract data",
+        "lockedHint": "Editable only while the contract is a draft.",
+        "save": "Save changes"
+      },
+      "templates": {
+        "manage": "Templates",
+        "title": "Contract templates",
+        "subtitle": "Edit template defaults and toggle availability. Layouts are code-defined.",
+        "codeLocked": "code is bound to a document builder and cannot be changed",
+        "active": "Active",
+        "inactive": "Inactive",
+        "name": "Name",
+        "version": "Version",
+        "docPrefix": "Doc-no prefix",
+        "mergeSchema": "Merge schema (field definitions)",
+        "save": "Save template",
+        "saved": "Saved."
+      }
+    },
+    "assethub": {
+      "title": "Asset Register",
+      "subtitle": "IT asset discovery & inventory across your clients",
+      "org": "Organization",
+      "stat": {
+        "total": "Total assets",
+        "new30": "New (30d)",
+        "stale30": "Stale (30d)",
+        "untriaged": "Untriaged"
+      },
+      "tab": {
+        "devices": "Devices",
+        "discovery": "Discovery",
+        "sites": "Sites",
+        "tokens": "Tokens",
+        "reports": "Reports"
+      },
+      "devices": {
+        "search": "Search host, serial, IP…",
+        "all": "All",
+        "csv": "CSV",
+        "hostname": "Hostname",
+        "type": "Type",
+        "osCol": "OS",
+        "role": "Network role",
+        "ip": "IP",
+        "lastSeen": "Last seen",
+        "empty": "No devices yet"
+      },
+      "discovery": {
+        "ip": "IP",
+        "mac": "MAC",
+        "vendor": "Vendor",
+        "host": "Hostname",
+        "guess": "Guessed type",
+        "actions": "Actions",
+        "promote": "Promote",
+        "ignore": "Ignore",
+        "empty": "Triage queue is empty"
+      },
+      "sites": {
+        "name": "Site name",
+        "cidrs": "CIDRs (comma-separated)",
+        "add": "Add site",
+        "empty": "No sites yet"
+      },
+      "tokens": {
+        "label": "Token label",
+        "create": "Create token",
+        "secretOnce": "Copy this token now — it is shown only once.",
+        "revoked": "Revoked",
+        "revoke": "Revoke",
+        "empty": "No tokens yet"
+      },
+      "reports": {
+        "generate": "Generate",
+        "refresh": "Refresh",
+        "download": "Download",
+        "empty": "No reports yet",
+        "status": {
+          "queued": "Queued",
+          "processing": "Processing",
+          "done": "Done",
+          "failed": "Failed",
+          "dead": "Failed"
+        }
+      },
+      "detail": {
+        "noOrg": "Missing organization context",
+        "back": "Back to register",
+        "source": "Source",
+        "type": "Type",
+        "status": "Status",
+        "site": "Site",
+        "assetTag": "Asset tag",
+        "assignedUser": "Assigned user",
+        "notes": "Notes",
+        "save": "Save changes",
+        "tab": {
+          "hardware": "Hardware",
+          "network": "Network",
+          "software": "Software",
+          "history": "History"
+        },
+        "serial": "Serial",
+        "cpu": "CPU",
+        "ram": "RAM",
+        "storage": "Storage",
+        "osCol": "OS",
+        "role": "Network role",
+        "iface": "Interface",
+        "ifaceType": "Type",
+        "swName": "Software",
+        "swVersion": "Version",
+        "swVendor": "Vendor"
+      }
     }
   },
   "portal": {
@@ -1946,6 +2221,7 @@
         "domains": "Domains",
         "sla": "SLA",
         "billing": "Billing",
+        "subscriptions": "Subscriptions",
         "billingProfile": "Tax invoice info",
         "projects": "Projects"
       },
@@ -2160,6 +2436,33 @@
       "save": "Save",
       "saved": "Saved."
     },
+    "subscriptions": {
+      "title": "My subscriptions",
+      "subtitle": "Your recurring services. Cancel any time — it stays active until the paid-through date.",
+      "loading": "Loading subscriptions…",
+      "empty": "You have no recurring subscriptions.",
+      "renewsOn": "Renews {date}",
+      "paidThrough": "Active until {date}",
+      "cancel": "Cancel renewal",
+      "confirm": "Cancel this subscription?",
+      "confirmYes": "Yes, cancel",
+      "keep": "Keep it",
+      "cancelNote": "Cancelling stops future renewals. Your service stays active until the current paid period ends.",
+      "status": {
+        "active": "Active",
+        "paused": "Paused",
+        "cancelled": "Cancelled"
+      },
+      "cycles": {
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "quarterly": "Quarterly",
+        "semiannually": "Semi-annually",
+        "annually": "Annually",
+        "biennially": "Biennially",
+        "triennially": "Triennially"
+      }
+    },
     "billing": {
       "title": "Billing & invoices",
       "subtitle": "Your invoices and payment history.",
@@ -2182,6 +2485,8 @@
       "noMethods": "No payment methods are enabled. Please contact F2.",
       "continueToPay": "Continue",
       "continueToPayPal": "Continue to PayPal",
+      "noBanks": "No bank accounts are available right now. Please pick another payment method or contact us.",
+      "bankChooseAny": "Transfer to any one of the accounts below.",
       "uploadSlip": "Upload your transfer slip",
       "uploadSlipHint": "Paste a publicly accessible URL of your slip image. We'll verify within 1 business day.",
       "uploadSlipHintV2": "Drop a screenshot or PDF of your slip below (max 5 MB). We'll verify within 1 business day.",
@@ -2274,6 +2579,7 @@
         "account_name": "Account name",
         "account_number": "Account number",
         "branch": "Branch",
+        "branch_address": "Branch address",
         "swift": "SWIFT",
         "merchant_name": "Merchant",
         "promptpay_id": "PromptPay ID",
@@ -2295,6 +2601,27 @@
         "paused": "Paused",
         "closed": "Closed"
       }
+    },
+    "assethub": {
+      "title": "Asset Register",
+      "subtitle": "Your IT devices on record with F2",
+      "locked": "This feature is not enabled for your account.",
+      "stat": {
+        "total": "Total assets",
+        "computers": "Computers",
+        "network": "Network gear",
+        "new30": "New (30d)"
+      },
+      "search": "Search…",
+      "csv": "CSV",
+      "col": {
+        "host": "Host",
+        "type": "Type",
+        "model": "Model",
+        "os": "OS",
+        "ip": "IP"
+      },
+      "empty": "No devices on record yet"
     }
   },
   "payments": {
@@ -2515,5 +2842,19 @@
     "download": "Download",
     "loading": "Loading attachments…",
     "noAttachments": "No attachments yet"
+  },
+  "enroll": {
+    "title": "Register a device",
+    "noToken": "This enrollment link is missing its token.",
+    "badToken": "Invalid or revoked enrollment token.",
+    "done": "Device registered. Thank you!",
+    "another": "Register another",
+    "type": "Device type",
+    "name": "Device name",
+    "brand": "Brand",
+    "model": "Model",
+    "serial": "Serial number",
+    "user": "Assigned to",
+    "submit": "Register device"
   }
 }

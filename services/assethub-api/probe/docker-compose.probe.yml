@@ -1,0 +1,33 @@
+# =============================================================================
+# F2 AssetHub — SITE PROBE (deploy one per client site, e.g. hotel NAS/mini-PC)
+# Needs host networking + NET_RAW for ARP/MAC discovery on the local LAN.
+# Only OUTBOUND HTTPS to the cloud server — no inbound ports.
+#
+#   docker compose -f docker-compose.probe.yml up -d
+# Audit-visit one-shot from a laptop:
+#   F2_ONESHOT=1 docker compose -f docker-compose.probe.yml run --rm probe
+# =============================================================================
+name: f2-probe
+
+services:
+  probe:
+    image: alpine:3.20
+    restart: unless-stopped
+    network_mode: host          # required to see LAN MACs (Linux hosts)
+    cap_add: [NET_RAW, NET_ADMIN]
+    environment:
+      F2_SERVER_URL: ${F2_SERVER_URL:?e.g. https://assethub.f2.co.th}
+      F2_TOKEN: ${F2_TOKEN:?org/site enrollment token}
+      F2_CIDRS: ${F2_CIDRS:?e.g. 192.168.1.0/24,192.168.10.0/24}
+      F2_SNMP_COMMUNITY: ${F2_SNMP_COMMUNITY:-}
+      F2_INTERVAL_MIN: ${F2_INTERVAL_MIN:-360}
+      F2_ONESHOT: ${F2_ONESHOT:-0}
+    volumes:
+      - ./discover.sh:/discover.sh:ro
+      - probe_spool:/spool
+    command: >
+      sh -c "apk add --no-cache bash nmap curl jq net-snmp-tools >/dev/null &&
+             bash /discover.sh"
+
+volumes:
+  probe_spool:

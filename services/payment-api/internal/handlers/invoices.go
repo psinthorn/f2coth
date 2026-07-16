@@ -518,6 +518,11 @@ type rowScanner interface {
 
 func scanInvoiceRow(rs rowScanner) (models.Invoice, error) {
 	var i models.Invoice
+	// Non-nil empty slices so JSON always emits `[]` (never null/omitted).
+	// The full-invoice endpoints overwrite these via load(); list endpoints
+	// leave them empty, which is the honest "not loaded here" shape.
+	i.Items = []models.InvoiceItem{}
+	i.Payments = []models.Payment{}
 	err := rs.Scan(
 		&i.ID, &i.InvoiceNumber, &i.CustomerID, &i.ContactID, &i.Status, &i.Currency,
 		&i.SubtotalCents, &i.VATRateBP, &i.VATCents, &i.TotalCents, &i.AmountPaidCents,

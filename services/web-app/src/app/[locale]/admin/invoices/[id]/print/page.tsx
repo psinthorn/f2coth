@@ -32,7 +32,7 @@ export default function AdminInvoicePrintPage() {
       <div className="bg-white border-b border-navy-100 px-4 py-3 print:hidden">
         <div className="container-page flex items-center justify-between">
           <Link
-            href={{ pathname: "/admin/invoices/[id]", params: { id } } as never}
+            href={`/admin/invoices/${id}`}
             className="text-sm text-navy-600 hover:text-navy-900 inline-flex items-center gap-1"
           >
             <ArrowLeft className="h-4 w-4" /> {t("back")}

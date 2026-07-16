@@ -540,7 +540,7 @@ func createDomainOrderInvoice(ctx context.Context, tx pgx.Tx, customerID string,
 	if err := tx.QueryRow(ctx, `
 		SELECT register_price_thb
 		  FROM domain_pricing
-		 WHERE tld=$1 AND active=true`, o.TLD).Scan(&registerTHB); err != nil {
+		 WHERE tld=$1 AND is_active=true`, o.TLD).Scan(&registerTHB); err != nil {
 		return "", nil
 	}
 	if registerTHB <= 0 {

@@ -49,10 +49,13 @@ jobs:
       matrix:
         service:
           - ai-chat-api
+          - assethub-api
           - auth-api
           - checklist-api
           - cms-api
+          - contract-api
           - customer-api
+          - docgen
           - lead-api
           - notification-api
           - payment-api

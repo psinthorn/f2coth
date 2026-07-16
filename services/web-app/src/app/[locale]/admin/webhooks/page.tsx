@@ -117,7 +117,7 @@ export default function AdminWebhooksPage() {
                   <td className="px-4 py-3 text-xs">
                     {e.payment_number ? (
                       <Link
-                        href={{ pathname: "/admin/invoices/[id]", params: { id: e.invoice_id ?? "" } } as never}
+                        href={`/admin/invoices/${e.invoice_id ?? ""}`}
                         onClick={(ev) => ev.stopPropagation()}
                         className="text-accent-700 hover:underline"
                       >

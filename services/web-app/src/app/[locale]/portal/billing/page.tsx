@@ -86,7 +86,7 @@ function InvoiceRow({ inv, highlight }: { inv: PortalInvoiceSummary; highlight?:
   const due = inv.total_cents - inv.amount_paid_cents;
   return (
     <Link
-      href={{ pathname: "/portal/billing/[id]", params: { id: inv.id } } as never}
+      href={`/portal/billing/${inv.id}`}
       className={`card flex items-center justify-between gap-4 hover:border-accent-300 transition ${highlight ? "border-accent-200" : ""}`}
     >
       <div className="flex items-start gap-3">

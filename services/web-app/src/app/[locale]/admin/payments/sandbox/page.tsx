@@ -39,11 +39,11 @@ export default function AdminSandboxPage() {
   }
   useEffect(() => { void reload(); }, []);
 
-  async function seed() {
-    setBusy("seed");
+  async function seed(currency: "THB" | "USD") {
+    setBusy(`seed-${currency}`);
     setMsg(null);
     try {
-      const r = await adminApi.sandboxSeed();
+      const r = await adminApi.sandboxSeed(currency);
       setMsg({ kind: "ok", text: t("seeded", { number: r.invoice_number }) });
       await reload();
     } catch (e: unknown) {
@@ -123,9 +123,13 @@ export default function AdminSandboxPage() {
           <p className="mt-1 text-sm text-navy-600">{t("subtitle")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn-accent" disabled={busy === "seed"} onClick={seed}>
-            {busy === "seed" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          <button type="button" className="btn-secondary" disabled={busy === "seed-THB"} onClick={() => seed("THB")}>
+            {busy === "seed-THB" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {t("seedInvoice")}
+          </button>
+          <button type="button" className="btn-accent" disabled={busy === "seed-USD"} onClick={() => seed("USD")}>
+            {busy === "seed-USD" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {t("seedInvoiceUSD")}
           </button>
           <button
             type="button"
@@ -176,7 +180,7 @@ export default function AdminSandboxPage() {
                     <td className="px-4 py-3 font-mono text-xs text-navy-700">{p.payment_number}</td>
                     <td className="px-4 py-3">
                       <Link
-                        href={{ pathname: "/admin/invoices/[id]", params: { id: p.invoice_id } } as never}
+                        href={`/admin/invoices/${p.invoice_id}`}
                         className="text-accent-700 hover:underline"
                       >
                         {p.invoice_number}
@@ -254,7 +258,7 @@ export default function AdminSandboxPage() {
                     </td>
                     <td className="px-4 py-3">
                       <Link
-                        href={{ pathname: "/admin/invoices/[id]", params: { id: inv.id } } as never}
+                        href={`/admin/invoices/${inv.id}`}
                         className="text-accent-700 hover:underline inline-flex items-center gap-1 text-xs"
                       >
                         {tc("open")} <ExternalLink className="h-3 w-3" />

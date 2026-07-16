@@ -121,7 +121,7 @@ export default function AdminInvoiceDetailPage() {
             </button>
           )}
           <Link
-            href={{ pathname: "/admin/invoices/[id]/print", params: { id } } as never}
+            href={`/admin/invoices/${id}/print`}
             target="_blank"
             className="btn-secondary"
           >

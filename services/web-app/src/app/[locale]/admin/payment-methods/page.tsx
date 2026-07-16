@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2, Save, CheckCircle2, FlaskConical, Zap, AlertTriangle, KeyRound, Eye, EyeOff } from "lucide-react";
+import { Loader2, Save, CheckCircle2, FlaskConical, Zap, AlertTriangle, KeyRound, Eye, EyeOff, Plus, Trash2, Landmark } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import {
   adminApi,
   type AdminPaymentMethodConfig,
 } from "@/lib/admin-api";
+import { type BankAccount, THAI_BANKS } from "@/lib/payment-types";
 
 export default function AdminPaymentMethodsPage() {
   const t = useTranslations("admin.paymentMethods");
@@ -71,6 +72,15 @@ export default function AdminPaymentMethodsPage() {
     setEdits((e) => ({
       ...e,
       [method]: { ...e[method], config: { ...e[method].config, [key]: value } },
+    }));
+  }
+
+  // Bank transfer keeps a list of accounts under config.banks — this
+  // replaces the whole array (add / edit / remove / toggle).
+  function patchBanks(method: string, banks: BankAccount[]) {
+    setEdits((e) => ({
+      ...e,
+      [method]: { ...e[method], config: { ...e[method].config, banks } },
     }));
   }
 
@@ -228,6 +238,12 @@ export default function AdminPaymentMethodsPage() {
                   config={(v.config as PayPalConfigShape) ?? { sandbox: {}, live: {} }}
                   activeMode={v.mode}
                   patchCfg={(env, key, value) => patchPayPalCfg(m.method, env, key, value)}
+                  t={t}
+                />
+              ) : m.method === "bank_transfer" ? (
+                <BankAccountsPanel
+                  banks={((v.config as { banks?: BankAccount[] })?.banks) ?? []}
+                  setBanks={(banks) => patchBanks(m.method, banks)}
                   t={t}
                 />
               ) : (
@@ -436,6 +452,130 @@ function PayPalEnvCard({
             className="rounded-md border border-navy-200 px-3 py-2 text-sm"
           />
         </label>
+      </div>
+    </div>
+  );
+}
+
+// BankAccountsPanel manages the config.banks[] list for bank_transfer:
+// pick a bank from the preset list (auto-fills name + SWIFT), edit the
+// account details, enable/disable, add and remove. Every enabled account
+// is shown to customers on the portal pay screen.
+function BankAccountsPanel({
+  banks, setBanks, t,
+}: {
+  banks: BankAccount[];
+  setBanks: (b: BankAccount[]) => void;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  function update(i: number, patchValue: Partial<BankAccount>) {
+    setBanks(banks.map((b, idx) => (idx === i ? { ...b, ...patchValue } : b)));
+  }
+  function remove(i: number) {
+    setBanks(banks.filter((_, idx) => idx !== i));
+  }
+  function add() {
+    setBanks([
+      ...banks,
+      {
+        id: crypto.randomUUID(),
+        bank_code: "", bank_name: "", account_name: "",
+        account_number: "", branch: "", branch_address: "", swift: "", enabled: true,
+      },
+    ]);
+  }
+  function pickBank(i: number, code: string) {
+    const preset = THAI_BANKS.find((x) => x.code === code);
+    if (!preset) { update(i, { bank_code: "" }); return; }
+    update(i, { bank_code: preset.code, bank_name: preset.name, swift: preset.swift });
+  }
+
+  return (
+    <div className="grid gap-3">
+      {banks.length === 0 && (
+        <p className="rounded-md border border-dashed border-navy-200 px-3 py-4 text-center text-xs text-navy-500">
+          {t("bankNone")}
+        </p>
+      )}
+      {banks.map((b, i) => (
+        <div
+          key={b.id}
+          className={`rounded-lg border p-4 ${b.enabled ? "border-emerald-200 bg-emerald-50/30" : "border-navy-100 bg-navy-50/50"}`}
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-2 text-sm font-medium text-navy-800">
+              <Landmark className="h-4 w-4 text-navy-400" />
+              {b.bank_name || t("bankUnnamed")}
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center gap-1.5 text-xs">
+                <input type="checkbox" checked={b.enabled} onChange={(e) => update(i, { enabled: e.target.checked })} />
+                <span>{b.enabled ? t("bankShown") : t("bankHidden")}</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> {t("bankRemove")}
+              </button>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1 text-xs text-navy-600">
+              {t("bankSelect")}
+              <select
+                value={b.bank_code || ""}
+                onChange={(e) => pickBank(i, e.target.value)}
+                className="rounded-md border border-navy-200 px-3 py-2 text-sm"
+              >
+                <option value="">{t("bankCustom")}</option>
+                {THAI_BANKS.map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1 text-xs text-navy-600">
+              {t("bankName")}
+              <input type="text" value={b.bank_name}
+                onChange={(e) => update(i, { bank_name: e.target.value })}
+                className="rounded-md border border-navy-200 px-3 py-2 text-sm" />
+            </label>
+            <label className="grid gap-1 text-xs text-navy-600">
+              {t("bankAccountName")}
+              <input type="text" value={b.account_name}
+                onChange={(e) => update(i, { account_name: e.target.value })}
+                className="rounded-md border border-navy-200 px-3 py-2 text-sm" />
+            </label>
+            <label className="grid gap-1 text-xs text-navy-600">
+              {t("bankAccountNumber")}
+              <input type="text" value={b.account_number}
+                onChange={(e) => update(i, { account_number: e.target.value })}
+                className="rounded-md border border-navy-200 px-3 py-2 text-sm font-mono" />
+            </label>
+            <label className="grid gap-1 text-xs text-navy-600">
+              {t("bankBranch")}
+              <input type="text" value={b.branch ?? ""}
+                onChange={(e) => update(i, { branch: e.target.value })}
+                className="rounded-md border border-navy-200 px-3 py-2 text-sm" />
+            </label>
+            <label className="grid gap-1 text-xs text-navy-600">
+              {t("bankSwift")}
+              <input type="text" value={b.swift ?? ""}
+                onChange={(e) => update(i, { swift: e.target.value })}
+                className="rounded-md border border-navy-200 px-3 py-2 text-sm font-mono" />
+            </label>
+            <label className="grid gap-1 text-xs text-navy-600 sm:col-span-2">
+              {t("bankBranchAddress")}
+              <textarea rows={2} value={b.branch_address ?? ""}
+                onChange={(e) => update(i, { branch_address: e.target.value })}
+                className="rounded-md border border-navy-200 px-3 py-2 text-sm" />
+            </label>
+          </div>
+        </div>
+      ))}
+      <div>
+        <button type="button" onClick={add} className="btn-secondary text-sm">
+          <Plus className="h-4 w-4" /> {t("bankAdd")}
+        </button>
       </div>
     </div>
   );

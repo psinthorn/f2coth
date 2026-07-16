@@ -41,11 +41,21 @@ type refundResp struct {
 	Status       string `json:"status"`
 }
 
-// AdminCreate issues a refund. For PayPal it calls the Refunds API
-// inside the same transaction that records the refund row, so a 5xx
-// from PayPal rolls everything back. For manual methods it records the
-// refund as `completed` immediately — staff fills in BankRef + ProofURL
-// as proof.
+// AdminCreate issues a refund in two crash-safe phases:
+//
+//	Phase 1 (transactional, no external calls): validate the payment,
+//	  check the amount against the *remaining* refundable balance (payment
+//	  amount minus refunds already completed/in-flight), then INSERT the
+//	  refund row as `pending` and COMMIT. The intent is now durable.
+//	Phase 2 (side effects): for PayPal, call the Refunds API keyed on the
+//	  refund id (PayPal-Request-Id) so a retry can never move money twice;
+//	  then finalize the row to `completed` and apply it to the payment in
+//	  a fresh transaction. On PayPal failure the row is marked `failed`.
+//
+// Splitting the phases means an executed PayPal refund is never lost to a
+// DB rollback, and the idempotency key makes recovering a stuck `pending`
+// refund safe. Manual methods (bank_transfer/thai_qr/promptpay) have no
+// external side effect and finalize immediately.
 func (h *RefundHandler) AdminCreate(w http.ResponseWriter, r *http.Request) {
 	var req refundReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -65,6 +75,7 @@ func (h *RefundHandler) AdminCreate(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := makeCtx()
 	defer cancel()
 
+	// ---- Phase 1: validate + persist a PENDING refund (no external calls) ----
 	tx, err := h.DB.Begin(ctx)
 	if err != nil {
 		writeErr(w, 500, err.Error())
@@ -88,12 +99,48 @@ func (h *RefundHandler) AdminCreate(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 409, "can only refund completed payments")
 		return
 	}
+
+	// Refundable balance = payment amount minus refunds already completed
+	// or in-flight. The FOR UPDATE lock above serialises concurrent refund
+	// requests against the same payment, so this sum can't race. This is
+	// what stops two partial refunds each ≤ the full amount from together
+	// over-refunding the payment.
+	var alreadyRefunded int64
+	if err := tx.QueryRow(ctx, `
+		SELECT COALESCE(SUM(amount_cents),0) FROM refunds
+		 WHERE payment_id=$1 AND status IN ('completed','pending')`,
+		req.PaymentID).Scan(&alreadyRefunded); err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	refundable := amountCents - alreadyRefunded
 	amount := req.AmountCents
 	if amount <= 0 {
-		amount = amountCents
+		amount = refundable
 	}
-	if amount > amountCents {
-		writeErr(w, 400, "refund amount exceeds payment amount")
+	if refundable <= 0 || amount <= 0 {
+		writeErr(w, 409, "payment already fully refunded")
+		return
+	}
+	if amount > refundable {
+		writeErr(w, 400, "refund amount exceeds refundable balance")
+		return
+	}
+
+	// Method-specific pre-checks — reject before we persist anything.
+	switch method {
+	case "paypal":
+		if captureID == nil || *captureID == "" {
+			writeErr(w, 409, "paypal payment has no capture id to refund")
+			return
+		}
+	case "bank_transfer", "thai_qr", "promptpay":
+		if req.BankRef == "" && req.ProofURL == "" {
+			writeErr(w, 400, "manual refunds require bank_ref or proof_url")
+			return
+		}
+	default:
+		writeErr(w, 409, "unsupported method for refund: "+method)
 		return
 	}
 
@@ -104,69 +151,83 @@ func (h *RefundHandler) AdminCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	refundNumber := fmt.Sprintf("REF-%d-%06d", time.Now().Year(), seq)
 
-	// Default to pending; flip to completed below depending on method.
-	refundStatus := "pending"
-	var providerRefundID *string
-
-	if method == "paypal" {
-		if captureID == nil || *captureID == "" {
-			writeErr(w, 409, "paypal payment has no capture id to refund")
-			return
-		}
-		id, perr := h.refundPayPal(ctx, *captureID, amount, currency, req.Reason)
-		if perr != nil {
-			writeErr(w, 502, "paypal refund: "+perr.Error())
-			return
-		}
-		providerRefundID = &id
-		refundStatus = "completed"
-	} else if method == "bank_transfer" || method == "thai_qr" || method == "promptpay" {
-		// Manual — staff must supply at least one of bank_ref/proof_url.
-		if req.BankRef == "" && req.ProofURL == "" {
-			writeErr(w, 400, "manual refunds require bank_ref or proof_url")
-			return
-		}
-		refundStatus = "completed"
-	} else {
-		writeErr(w, 409, "unsupported method for refund: "+method)
-		return
-	}
-
 	var refundID string
 	if err := tx.QueryRow(ctx, `
 		INSERT INTO refunds (
 			refund_number, payment_id, invoice_id, method,
 			amount_cents, currency, reason,
-			provider_refund_id, bank_ref, proof_url,
-			status, issued_by_user_id, completed_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NULLIF($9,''),NULLIF($10,''),$11,$12,
-		          CASE WHEN $11='completed' THEN NOW() ELSE NULL END)
+			bank_ref, proof_url, status, issued_by_user_id
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,NULLIF($8,''),NULLIF($9,''),'pending',$10)
 		RETURNING id`,
 		refundNumber, req.PaymentID, invoiceID, method,
 		amount, currency, req.Reason,
-		providerRefundID, req.BankRef, req.ProofURL,
-		refundStatus, issuer).Scan(&refundID); err != nil {
+		req.BankRef, req.ProofURL, issuer).Scan(&refundID); err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	if err := tx.Commit(ctx); err != nil {
 		writeErr(w, 500, err.Error())
 		return
 	}
 
-	if refundStatus == "completed" {
-		if err := applyRefundToPayment(ctx, tx, req.PaymentID, amount, amountCents); err != nil {
-			writeErr(w, 500, err.Error())
+	// ---- Phase 2: execute side effects (refund row is now durable) ----
+	var providerRefundID *string
+	if method == "paypal" {
+		// Idempotency key = refund id, so retrying this exact refund row
+		// never issues a second PayPal refund.
+		id, perr := h.refundPayPal(ctx, *captureID, amount, currency, req.Reason, refundID)
+		if perr != nil {
+			_, _ = h.DB.Exec(ctx,
+				`UPDATE refunds SET status='failed', failure_reason=$1 WHERE id=$2 AND status='pending'`,
+				perr.Error(), refundID)
+			writeErr(w, 502, "paypal refund: "+perr.Error())
 			return
 		}
+		providerRefundID = &id
 	}
 
-	if err := tx.Commit(ctx); err != nil {
-		writeErr(w, 500, err.Error())
+	if err := h.finalizeRefund(ctx, refundID, req.PaymentID, amount, amountCents, providerRefundID); err != nil {
+		// The refund succeeded at the provider but bookkeeping failed; the
+		// row stays `pending` and can be reconciled. Surface a 500 so the
+		// caller knows not to treat it as clean.
+		writeErr(w, 500, "refund executed but finalize failed: "+err.Error())
 		return
 	}
 
 	writeJSON(w, 201, refundResp{
 		ID:           refundID,
 		RefundNumber: refundNumber,
-		Status:       refundStatus,
+		Status:       "completed",
 	})
+}
+
+// finalizeRefund flips a pending refund to completed and applies it to the
+// parent payment/invoice, in a single transaction. Idempotent: if the row
+// is no longer `pending` (already finalized by a prior attempt) it returns
+// without double-applying.
+func (h *RefundHandler) finalizeRefund(ctx context.Context, refundID, paymentID string, amount, originalCents int64, providerRefundID *string) error {
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	tag, err := tx.Exec(ctx, `
+		UPDATE refunds
+		   SET status='completed', completed_at=NOW(),
+		       provider_refund_id=COALESCE($1, provider_refund_id)
+		 WHERE id=$2 AND status='pending'`, providerRefundID, refundID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		// Already finalized — don't apply the amount to the payment twice.
+		return nil
+	}
+	if err := applyRefundToPayment(ctx, tx, paymentID, amount, originalCents); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 // applyRefundToPayment flips the parent payment to 'refunded' when the
@@ -174,7 +235,18 @@ func (h *RefundHandler) AdminCreate(w http.ResponseWriter, r *http.Request) {
 // Partial refunds keep the payment 'completed' and just deduct from
 // amount_paid_cents.
 func applyRefundToPayment(ctx context.Context, tx pgx.Tx, paymentID string, refundedCents, originalCents int64) error {
-	if refundedCents >= originalCents {
+	// Flip the payment to 'refunded' once CUMULATIVE completed refunds cover
+	// the full amount — not just when a single refund does. The caller marks
+	// this refund 'completed' before calling us, so the sum already includes
+	// it. Without this, several partial refunds that together equal the
+	// payment would leave it stuck 'completed'.
+	var totalRefunded int64
+	if err := tx.QueryRow(ctx,
+		`SELECT COALESCE(SUM(amount_cents),0) FROM refunds
+		  WHERE payment_id=$1 AND status='completed'`, paymentID).Scan(&totalRefunded); err != nil {
+		return err
+	}
+	if totalRefunded >= originalCents {
 		if _, err := tx.Exec(ctx,
 			`UPDATE payments SET status='refunded' WHERE id=$1`, paymentID); err != nil {
 			return err
@@ -265,13 +337,15 @@ func (h *RefundHandler) AdminList(w http.ResponseWriter, r *http.Request) {
 }
 
 // refundPayPal issues a refund against a capture id using the PayPal
-// Refunds v2 API. Returns the provider refund id on success.
-func (h *RefundHandler) refundPayPal(ctx context.Context, captureID string, amountCents int64, currency, reason string) (string, error) {
+// Refunds v2 API. requestID is passed as PayPal-Request-Id for
+// idempotency. Returns the provider refund id on success.
+func (h *RefundHandler) refundPayPal(ctx context.Context, captureID string, amountCents int64, currency, reason, requestID string) (string, error) {
 	id, err := h.PayPal.RefundCapture(ctx, paypal.RefundInput{
 		CaptureID:   captureID,
 		Amount:      paypal.Money{CurrencyCode: currency, Value: fmt.Sprintf("%.2f", float64(amountCents)/100.0)},
 		NoteToPayer: reason,
 		InvoiceID:   "",
+		RequestID:   requestID,
 	})
 	return id, err
 }

@@ -28,8 +28,12 @@ type Invoice struct {
 	BillingSnapshot json.RawMessage `json:"billing_snapshot,omitempty"`
 	CreatedAt       time.Time       `json:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at"`
-	Items           []InvoiceItem   `json:"items,omitempty"`
-	Payments        []Payment       `json:"payments,omitempty"`
+	// Always serialized (no omitempty) so the frontend can rely on these
+	// being arrays. scanInvoiceRow initializes them to empty slices; an
+	// invoice with no payments must return `[]`, not a missing key — the
+	// admin + portal detail pages call `.length`/`.map` on them directly.
+	Items           []InvoiceItem   `json:"items"`
+	Payments        []Payment       `json:"payments"`
 	CustomerName    string          `json:"customer_name,omitempty"`
 }
 
