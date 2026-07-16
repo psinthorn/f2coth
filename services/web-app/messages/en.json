@@ -2140,7 +2140,14 @@
         "role": "Network role",
         "ip": "IP",
         "lastSeen": "Last seen",
-        "empty": "No devices yet"
+        "empty": "No devices yet",
+        "cat": {
+          "all": "All",
+          "network": "Network & Wi-Fi",
+          "computers": "Computers",
+          "cctv": "CCTV",
+          "printers": "Printers & Other"
+        }
       },
       "discovery": {
         "ip": "IP",

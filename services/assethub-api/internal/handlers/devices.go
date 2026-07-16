@@ -43,6 +43,11 @@ func (h *Handler) queryDevices(ctx context.Context, customerID string, q map[str
 	if v := get("type"); v != "" {
 		add("d.device_type = $%d", v)
 	}
+	if cat := get("category"); cat != "" {
+		if types := categoryTypes(cat); len(types) > 0 {
+			add("d.device_type = ANY($%d)", types)
+		}
+	}
 	if v := get("site_id"); v != "" {
 		add("d.site_id = $%d", v)
 	}
@@ -87,6 +92,25 @@ func (h *Handler) queryDevices(ctx context.Context, customerID string, q map[str
 		out = append(out, d)
 	}
 	return out, rows.Err()
+}
+
+// categoryTypes maps a UI section to the device_types it covers. Sections are
+// views over the one device table (keyed by device_type), not separate
+// modules/tables — this is the single source of truth for that grouping, so
+// the admin/portal chips and any future per-section routes stay consistent.
+func categoryTypes(cat string) []string {
+	switch cat {
+	case "network":
+		return []string{"router", "switch", "ap", "nas"}
+	case "computers":
+		return []string{"computer", "server", "phone", "tablet"}
+	case "cctv":
+		return []string{"camera"}
+	case "printers":
+		return []string{"printer", "iot", "unknown"}
+	default:
+		return nil
+	}
 }
 
 // GetDevice returns one device with interfaces/disks/software.

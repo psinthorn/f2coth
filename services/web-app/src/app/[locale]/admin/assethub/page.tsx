@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Loader2, Plus, Search, Download, RefreshCw, Trash2, KeyRound, FileSpreadsheet } from "lucide-react";
@@ -112,23 +112,23 @@ function StatTile({ label, value, tone }: { label: string; value: number; tone?:
 
 // ---------------- Devices ----------------
 
+// Section chips over the single device table (keyed by device_type). The
+// backend maps each key to a device_type group (see categoryTypes in
+// devices.go) so Network/Computers/CCTV stay one dataset, not separate modules.
+const CATEGORIES = ["", "network", "computers", "cctv", "printers"] as const;
+
 function DevicesTab({ customerId, t, tc }: { customerId: string; t: any; tc: any }) {
   const [devices, setDevices] = useState<AssetDevice[]>([]);
-  const [typeFilter, setTypeFilter] = useState("");
+  const [category, setCategory] = useState("");
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
 
   function load() {
     setLoading(true);
-    assethubApi.listDevices(customerId, { type: typeFilter || undefined, q: q || undefined })
+    assethubApi.listDevices(customerId, { category: category || undefined, q: q || undefined })
       .then(setDevices).finally(() => setLoading(false));
   }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [customerId, typeFilter]);
-
-  const types = useMemo(() => {
-    const s = new Set(devices.map((d) => d.device_type));
-    return Array.from(s);
-  }, [devices]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [customerId, category]);
 
   return (
     <div>
@@ -143,11 +143,12 @@ function DevicesTab({ customerId, t, tc }: { customerId: string; t: any; tc: any
             className="rounded-lg border border-navy-200 py-2 pl-8 pr-3 text-sm"
           />
         </div>
-        <button onClick={() => setTypeFilter("")} className={chip(typeFilter === "")}>{t("devices.all")}</button>
-        {types.map((ty) => (
-          <button key={ty} onClick={() => setTypeFilter(ty)} className={chip(typeFilter === ty)}>{ty}</button>
+        {CATEGORIES.map((c) => (
+          <button key={c || "all"} onClick={() => setCategory(c)} className={chip(category === c)}>
+            {t(`devices.cat.${c || "all"}`)}
+          </button>
         ))}
-        <button onClick={() => assethubApi.exportCSV(customerId, { type: typeFilter || undefined, q: q || undefined })} className="btn-ghost ml-auto text-sm">
+        <button onClick={() => assethubApi.exportCSV(customerId, { category: category || undefined, q: q || undefined })} className="btn-ghost ml-auto text-sm">
           <Download className="mr-1 inline h-4 w-4" />{t("devices.csv")}
         </button>
       </div>

@@ -208,6 +208,7 @@ export interface AssetReport {
 
 export interface DeviceFilters {
   type?: string;
+  category?: string; // network | computers | cctv | printers (maps to device_type group)
   site_id?: string;
   os?: string;
   network_role?: string;
