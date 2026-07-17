@@ -150,7 +150,7 @@ jobs:
           set -e
           url="https://${{ needs.plan.outputs.domain }}"
           echo "Smoke-testing $url"
-          for path in / /api/cms/health /api/auth/health /api/checklists/healthz; do
+          for path in / /api/cms/health /api/auth/health /api/checklists/healthz /api/assethub/collector/collect.sh; do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url$path" || echo "000")
             echo "  $path → $code"
             case "$path$code" in
@@ -179,8 +179,11 @@ jobs:
             env="staging"
           fi
           echo "environment=$env" >> "$GITHUB_OUTPUT"
+          # Domains are configurable via repo variables so the same pipeline can
+          # target a DigitalOcean droplet (or any host) without editing this file.
+          # Falls back to the f2.co.th defaults when the variables are unset.
           if [ "$env" = "production" ]; then
-            echo "domain=f2.co.th" >> "$GITHUB_OUTPUT"
+            echo "domain=${{ vars.PROD_DOMAIN || 'f2.co.th' }}" >> "$GITHUB_OUTPUT"
           else
-            echo "domain=staging.f2.co.th" >> "$GITHUB_OUTPUT"
+            echo "domain=${{ vars.STAGING_DOMAIN || 'staging.f2.co.th' }}" >> "$GITHUB_OUTPUT"
           fi

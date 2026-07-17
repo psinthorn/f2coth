@@ -366,7 +366,9 @@ function TokensTab({ customerId, t }: { customerId: string; t: any }) {
 // ---------------- Install / onboarding ----------------
 
 function InstallPanel({ token, t }: { token: string; t: any }) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const [serverUrl, setServerUrl] = useState(typeof window !== "undefined" ? window.location.origin : "");
+  const origin = serverUrl.replace(/\/+$/, "");
+  const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|$)/.test(origin);
   const base = `${origin}/api/assethub/collector`;
   const linux = `curl -fsSL ${base}/collect.sh -o collect.sh && F2_SERVER_URL="${origin}" F2_TOKEN="${token}" bash collect.sh`;
   const win = `irm ${base}/collect.ps1 -OutFile collect.ps1; .\\collect.ps1 -ServerUrl "${origin}" -Token "${token}"`;
@@ -389,6 +391,16 @@ function InstallPanel({ token, t }: { token: string; t: any }) {
         {t("install.desc")}
         {token !== "<TOKEN>" ? "" : ` ${t("install.tokenNote")}`}
       </p>
+
+      <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-navy-500">{t("install.serverUrl")}</label>
+      <input
+        value={serverUrl}
+        onChange={(e) => setServerUrl(e.target.value)}
+        placeholder="https://assets.example.com"
+        className="mb-1 w-full rounded-lg border border-navy-200 px-3 py-2 font-mono text-sm"
+      />
+      {isLocal && <p className="mb-3 text-xs text-amber-600">{t("install.localHint")}</p>}
+      {!isLocal && <div className="mb-3" />}
 
       <CmdBlock label={t("install.linux")} cmd={linux} t={t} />
       <CmdBlock label={t("install.windows")} cmd={win} t={t} />

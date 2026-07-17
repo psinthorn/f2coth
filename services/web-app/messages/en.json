@@ -2225,7 +2225,9 @@
         "probe": "Network probe",
         "probeCompose": "Probe compose",
         "copy": "Copy",
-        "copied": "Copied"
+        "copied": "Copied",
+        "serverUrl": "Server URL (must be reachable from the client machine)",
+        "localHint": "“localhost” only works on this Mac. For other machines on the LAN use this Mac’s IP (e.g. http://192.168.1.50); in production use your domain."
       }
     }
   },
