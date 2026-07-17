@@ -226,8 +226,10 @@ func (h *Handler) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeviceHistory(w http.ResponseWriter, r *http.Request) {
 	customerID := h.scopeCustomer(r)
 	id := chi.URLParam(r, "id")
+	// Cast timestamps to text so they scan into Go strings (pgx won't scan a
+	// timestamptz straight into *string).
 	rows, err := h.DB.Query(r.Context(), `
-		SELECT id, source, collected_at, received_at
+		SELECT id, source, collected_at::text, received_at::text
 		FROM assethub_submissions
 		WHERE device_id=$1 AND customer_id=$2
 		ORDER BY received_at DESC LIMIT 100`, id, customerID)
