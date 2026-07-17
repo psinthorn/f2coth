@@ -1,0 +1,50 @@
+# =============================================================================
+# Local-exposure overlay — make the Mac dev stack reachable from other machines
+# (client PCs, the probe box) so AssetHub collectors can push to it.
+#
+# Two containerised options, each behind a compose PROFILE so nothing starts
+# unless you ask for it. Apply on top of the dev compose:
+#
+#   Cloudflare Tunnel (stable https hostname, recommended):
+#     make tunnel-cloudflare        # needs CLOUDFLARE_TUNNEL_TOKEN in .env
+#
+#   ngrok (quick, random URL):
+#     make tunnel-ngrok             # needs NGROK_AUTHTOKEN in .env
+#                                   # URL shown at http://localhost:4040
+#
+#   Stop either:
+#     make tunnel-down
+#
+# Tailscale and plain LAN/mDNS run natively on the Mac — see docs/expose-local.md.
+# Both tunnels forward to Traefik (:80), which routes /api/assethub etc. as usual.
+# =============================================================================
+
+services:
+  # --- Cloudflare Tunnel: public https://<your-hostname> → local Traefik -------
+  # Create a remotely-managed tunnel in the Cloudflare Zero Trust dashboard,
+  # copy its token into CLOUDFLARE_TUNNEL_TOKEN, and set the tunnel's Public
+  # Hostname to service `http://traefik:80`. No port-forwarding, TLS included.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: f2-cloudflared
+    restart: unless-stopped
+    profiles: ["cloudflare"]
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on: [traefik]
+    networks: [f2-net]
+
+  # --- ngrok: quick random public URL → local Traefik --------------------------
+  # Grab a free authtoken at dashboard.ngrok.com, put it in NGROK_AUTHTOKEN.
+  # The generated URL appears at http://localhost:4040 (ngrok inspector).
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: f2-ngrok
+    restart: unless-stopped
+    profiles: ["ngrok"]
+    command: http traefik:80
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    ports:
+      - "4040:4040" # ngrok web inspector — shows the public URL
+    depends_on: [traefik]
+    networks: [f2-net]

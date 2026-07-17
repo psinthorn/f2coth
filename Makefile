@@ -1,4 +1,4 @@
-.PHONY: help up down build rebuild logs ps clean db-shell migrate seed test test-integration fmt tidy prod-up prod-down prod-logs staging-up staging-down staging-logs
+.PHONY: help up down build rebuild logs ps clean db-shell migrate seed test test-integration fmt tidy prod-up prod-down prod-logs staging-up staging-down staging-logs tunnel-cloudflare tunnel-ngrok tunnel-down lan-url
 
 SERVICES := cms-api lead-api ai-chat-api auth-api notification-api customer-api reseller-api payment-api checklist-api contract-api assethub-api
 COMPOSE  := docker compose
@@ -146,3 +146,25 @@ staging-down: ## Stop the staging stack
 
 staging-logs: ## Tail staging logs
 	$(COMPOSE) -f docker-compose.yml -f docker-compose.staging.yml logs -f --tail=200
+
+# ---- Local exposure (make the Mac dev stack reachable by client machines) ----
+TUNNEL := $(COMPOSE) -f docker-compose.yml -f docker-compose.tunnel.yml
+
+tunnel-cloudflare: ## Expose local stack via Cloudflare Tunnel (needs CLOUDFLARE_TUNNEL_TOKEN in .env)
+	@grep -qE '^CLOUDFLARE_TUNNEL_TOKEN=.+' .env || { echo "Set CLOUDFLARE_TUNNEL_TOKEN in .env first (see docs/expose-local.md)"; exit 1; }
+	$(TUNNEL) --profile cloudflare up -d cloudflared
+	@echo "✓ Cloudflare Tunnel up. Public hostname is whatever you set in the Zero Trust dashboard (→ service http://traefik:80)."
+
+tunnel-ngrok: ## Expose local stack via ngrok (needs NGROK_AUTHTOKEN in .env). URL at http://localhost:4040
+	@grep -qE '^NGROK_AUTHTOKEN=.+' .env || { echo "Set NGROK_AUTHTOKEN in .env first (dashboard.ngrok.com)"; exit 1; }
+	$(TUNNEL) --profile ngrok up -d ngrok
+	@sleep 3; echo "→ Public URL:"; curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"https:[^"]*"' | head -1 || echo "  open http://localhost:4040"
+
+tunnel-down: ## Stop the Cloudflare/ngrok tunnel containers
+	$(TUNNEL) --profile cloudflare --profile ngrok down
+
+lan-url: ## Print this Mac's LAN URL for same-network client machines
+	@ip=$$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null); \
+	  echo "LAN URL:  http://$$ip"; \
+	  echo "mDNS URL: http://$$(scutil --get LocalHostName 2>/dev/null).local"; \
+	  echo "Paste one into the AssetHub → Tokens → Install panel's Server URL field."
