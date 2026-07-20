@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
-import { Loader2, Plus, Search, Download, RefreshCw, Trash2, KeyRound, FileSpreadsheet, Copy, Check, Terminal } from "lucide-react";
+import { Loader2, Plus, Search, Download, RefreshCw, Trash2, KeyRound, FileSpreadsheet, Copy, Check, Terminal, Pencil, X, RotateCcw } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import {
   assethubApi,
@@ -42,6 +42,14 @@ export default function AssetHubAdminPage() {
     if (!customerId) return;
     assethubApi.overview(customerId).then(setOverview).catch(() => setOverview(null));
   }, [customerId]);
+
+  // Refresh the stat tiles + org device/untriaged counts after any mutation in a
+  // tab (promote, manual create, delete) so the headline numbers don't go stale.
+  function refreshCounts() {
+    if (!customerId) return;
+    assethubApi.overview(customerId).then(setOverview).catch(() => {});
+    assethubApi.listOrgs().then(setOrgs).catch(() => {});
+  }
 
   const selectedOrg = orgs.find((o) => o.id === customerId);
 
@@ -91,8 +99,8 @@ export default function AssetHubAdminPage() {
         ))}
       </nav>
 
-      {customerId && tab === "devices" && <DevicesTab customerId={customerId} t={t} tc={tc} />}
-      {customerId && tab === "discovery" && <DiscoveryTab customerId={customerId} t={t} />}
+      {customerId && tab === "devices" && <DevicesTab customerId={customerId} t={t} tc={tc} onChanged={refreshCounts} />}
+      {customerId && tab === "discovery" && <DiscoveryTab customerId={customerId} t={t} onChanged={refreshCounts} />}
       {customerId && tab === "sites" && <SitesTab customerId={customerId} t={t} />}
       {customerId && tab === "tokens" && <TokensTab customerId={customerId} t={t} />}
       {customerId && tab === "reports" && <ReportsTab customerId={customerId} t={t} />}
@@ -117,11 +125,12 @@ function StatTile({ label, value, tone }: { label: string; value: number; tone?:
 // devices.go) so Network/Computers/CCTV stay one dataset, not separate modules.
 const CATEGORIES = ["", "network", "computers", "cctv", "printers"] as const;
 
-function DevicesTab({ customerId, t, tc }: { customerId: string; t: any; tc: any }) {
+function DevicesTab({ customerId, t, tc, onChanged }: { customerId: string; t: any; tc: any; onChanged: () => void }) {
   const [devices, setDevices] = useState<AssetDevice[]>([]);
   const [category, setCategory] = useState("");
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
 
   function load() {
     setLoading(true);
@@ -129,6 +138,12 @@ function DevicesTab({ customerId, t, tc }: { customerId: string; t: any; tc: any
       .then(setDevices).finally(() => setLoading(false));
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [customerId, category]);
+
+  async function remove(d: AssetDevice) {
+    if (!confirm(t("devices.confirmDelete", { name: d.hostname || d.primary_ip || d.id.slice(0, 8) }))) return;
+    await assethubApi.deleteDevice(d.id);
+    load(); onChanged();
+  }
 
   return (
     <div>
@@ -148,10 +163,17 @@ function DevicesTab({ customerId, t, tc }: { customerId: string; t: any; tc: any
             {t(`devices.cat.${c || "all"}`)}
           </button>
         ))}
-        <button onClick={() => assethubApi.exportCSV(customerId, { category: category || undefined, q: q || undefined })} className="btn-ghost ml-auto text-sm">
+        <button onClick={() => setShowAdd((v) => !v)} className="btn-accent ml-auto text-sm">
+          <Plus className="mr-1 inline h-4 w-4" />{t("devices.add")}
+        </button>
+        <button onClick={() => assethubApi.exportCSV(customerId, { category: category || undefined, q: q || undefined })} className="btn-ghost text-sm">
           <Download className="mr-1 inline h-4 w-4" />{t("devices.csv")}
         </button>
       </div>
+
+      {showAdd && (
+        <AddDeviceForm customerId={customerId} t={t} onDone={() => { setShowAdd(false); load(); onChanged(); }} onCancel={() => setShowAdd(false)} />
+      )}
 
       {loading ? <Loader2 className="h-5 w-5 animate-spin text-navy-400" /> : (
         <div className="overflow-x-auto rounded-lg border border-navy-100">
@@ -159,11 +181,12 @@ function DevicesTab({ customerId, t, tc }: { customerId: string; t: any; tc: any
             <thead className="bg-navy-50 text-xs uppercase text-navy-500">
               <tr>
                 <th className="px-3 py-2 text-left">{t("devices.hostname")}</th>
+                <th className="px-3 py-2 text-left">{t("devices.serial")}</th>
                 <th className="px-3 py-2 text-left">{t("devices.type")}</th>
                 <th className="px-3 py-2 text-left">{t("devices.osCol")}</th>
-                <th className="px-3 py-2 text-left">{t("devices.role")}</th>
                 <th className="px-3 py-2 text-left">{t("devices.ip")}</th>
                 <th className="px-3 py-2 text-left">{t("devices.lastSeen")}</th>
+                <th className="px-3 py-2 text-right">{t("devices.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-navy-100">
@@ -174,15 +197,20 @@ function DevicesTab({ customerId, t, tc }: { customerId: string; t: any; tc: any
                       {d.hostname || d.primary_ip || d.id.slice(0, 8)}
                     </Link>
                   </td>
+                  <td className="px-3 py-2 font-mono text-xs text-navy-600">{d.serial_number}</td>
                   <td className="px-3 py-2">{d.device_type}</td>
                   <td className="px-3 py-2 text-navy-600">{[d.os_name, d.os_version].filter(Boolean).join(" ")}</td>
-                  <td className="px-3 py-2">{d.network_role}</td>
                   <td className="px-3 py-2 text-navy-600">{d.primary_ip}</td>
                   <td className="px-3 py-2 text-navy-500">{d.last_seen?.slice(0, 10)}</td>
+                  <td className="px-3 py-2 text-right">
+                    <button onClick={() => remove(d)} className="btn-ghost px-2 py-1 text-xs text-red-600" title={t("devices.delete")}>
+                      <Trash2 className="inline h-3.5 w-3.5" />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {!devices.length && (
-                <tr><td colSpan={6} className="px-3 py-8 text-center text-navy-400">{t("devices.empty")}</td></tr>
+                <tr><td colSpan={7} className="px-3 py-8 text-center text-navy-400">{t("devices.empty")}</td></tr>
               )}
             </tbody>
           </table>
@@ -192,55 +220,118 @@ function DevicesTab({ customerId, t, tc }: { customerId: string; t: any; tc: any
   );
 }
 
-// ---------------- Discovery triage ----------------
+// Manual device entry (source=manual) for gear the collector/probe can't reach.
+function AddDeviceForm({ customerId, t, onDone, onCancel }: { customerId: string; t: any; onDone: () => void; onCancel: () => void }) {
+  const [f, setF] = useState({
+    hostname: "", serial_number: "", device_type: "computer", brand: "", model: "",
+    os_name: "", os_version: "", primary_ip: "", assigned_user: "", notes: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }));
 
-function DiscoveryTab({ customerId, t }: { customerId: string; t: any }) {
-  const [findings, setFindings] = useState<AssetFinding[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  function load() {
-    setLoading(true);
-    assethubApi.listFindings(customerId, "untriaged").then(setFindings).finally(() => setLoading(false));
+  async function save() {
+    if (!f.hostname.trim() && !f.serial_number.trim()) { setError(t("devices.needIdent")); return; }
+    setSaving(true); setError("");
+    try {
+      await assethubApi.createDevice({ customer_id: customerId, ...f });
+      onDone();
+    } catch (e: any) {
+      setError(String(e?.message || e));
+    } finally { setSaving(false); }
   }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [customerId]);
 
-  async function promote(f: AssetFinding, type: string) {
-    await assethubApi.promoteFinding(f.id, { device_type: type });
-    load();
-  }
-  async function ignore(f: AssetFinding) {
-    await assethubApi.ignoreFinding(f.id);
-    load();
-  }
-
-  if (loading) return <Loader2 className="h-5 w-5 animate-spin text-navy-400" />;
   return (
-    <div className="overflow-x-auto rounded-lg border border-navy-100">
-      <table className="w-full text-sm">
-        <thead className="bg-navy-50 text-xs uppercase text-navy-500">
-          <tr>
-            <th className="px-3 py-2 text-left">{t("discovery.ip")}</th>
-            <th className="px-3 py-2 text-left">{t("discovery.mac")}</th>
-            <th className="px-3 py-2 text-left">{t("discovery.vendor")}</th>
-            <th className="px-3 py-2 text-left">{t("discovery.host")}</th>
-            <th className="px-3 py-2 text-left">{t("discovery.guess")}</th>
-            <th className="px-3 py-2 text-right">{t("discovery.actions")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-navy-100">
-          {findings.map((f) => (
-            <PromoteRow key={f.id} f={f} onPromote={promote} onIgnore={ignore} t={t} />
-          ))}
-          {!findings.length && (
-            <tr><td colSpan={6} className="px-3 py-8 text-center text-navy-400">{t("discovery.empty")}</td></tr>
-          )}
-        </tbody>
-      </table>
+    <div className="mb-3 rounded-lg border border-accent-200 bg-accent-50/40 p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-sm font-medium text-navy-800">{t("devices.addTitle")}</span>
+        <button onClick={onCancel} className="text-navy-400 hover:text-navy-700"><X className="h-4 w-4" /></button>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <input value={f.hostname} onChange={set("hostname")} placeholder={t("devices.hostname")} className={inp} />
+        <input value={f.serial_number} onChange={set("serial_number")} placeholder={t("devices.serial")} className={inp} />
+        <select value={f.device_type} onChange={set("device_type")} className={inp}>
+          {DEVICE_TYPES.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+        <input value={f.brand} onChange={set("brand")} placeholder={t("devices.brand")} className={inp} />
+        <input value={f.model} onChange={set("model")} placeholder={t("devices.model")} className={inp} />
+        <input value={f.os_name} onChange={set("os_name")} placeholder={t("devices.osName")} className={inp} />
+        <input value={f.os_version} onChange={set("os_version")} placeholder={t("devices.osVersion")} className={inp} />
+        <input value={f.primary_ip} onChange={set("primary_ip")} placeholder={t("devices.ip")} className={inp} />
+        <input value={f.assigned_user} onChange={set("assigned_user")} placeholder={t("devices.assignedUser")} className={inp} />
+      </div>
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      <div className="mt-2 flex gap-2">
+        <button onClick={save} disabled={saving} className="btn-accent text-sm">
+          {saving ? <Loader2 className="mr-1 inline h-4 w-4 animate-spin" /> : <Plus className="mr-1 inline h-4 w-4" />}{t("devices.save")}
+        </button>
+        <button onClick={onCancel} className="btn-ghost text-sm">{t("devices.cancel")}</button>
+      </div>
     </div>
   );
 }
 
-function PromoteRow({ f, onPromote, onIgnore, t }: { f: AssetFinding; onPromote: (f: AssetFinding, ty: string) => void; onIgnore: (f: AssetFinding) => void; t: any }) {
+// ---------------- Discovery triage ----------------
+
+const FINDING_STATUSES = ["untriaged", "promoted", "ignored"] as const;
+
+function DiscoveryTab({ customerId, t, onChanged }: { customerId: string; t: any; onChanged: () => void }) {
+  const [findings, setFindings] = useState<AssetFinding[]>([]);
+  const [status, setStatus] = useState<string>("untriaged");
+  const [loading, setLoading] = useState(true);
+
+  function load() {
+    setLoading(true);
+    assethubApi.listFindings(customerId, status).then(setFindings).finally(() => setLoading(false));
+  }
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [customerId, status]);
+
+  async function promote(f: AssetFinding, type: string) {
+    await assethubApi.promoteFinding(f.id, { device_type: type });
+    load(); onChanged();
+  }
+  async function ignore(f: AssetFinding) {
+    await assethubApi.ignoreFinding(f.id);
+    load(); onChanged();
+  }
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {FINDING_STATUSES.map((s) => (
+          <button key={s} onClick={() => setStatus(s)} className={chip(status === s)}>{t(`discovery.f.${s}`)}</button>
+        ))}
+        <p className="ml-2 text-xs text-navy-400">{t("discovery.probeNote")}</p>
+      </div>
+      {loading ? <Loader2 className="h-5 w-5 animate-spin text-navy-400" /> : (
+        <div className="overflow-x-auto rounded-lg border border-navy-100">
+          <table className="w-full text-sm">
+            <thead className="bg-navy-50 text-xs uppercase text-navy-500">
+              <tr>
+                <th className="px-3 py-2 text-left">{t("discovery.ip")}</th>
+                <th className="px-3 py-2 text-left">{t("discovery.mac")}</th>
+                <th className="px-3 py-2 text-left">{t("discovery.vendor")}</th>
+                <th className="px-3 py-2 text-left">{t("discovery.host")}</th>
+                <th className="px-3 py-2 text-left">{t("discovery.guess")}</th>
+                <th className="px-3 py-2 text-right">{t("discovery.actions")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-navy-100">
+              {findings.map((f) => (
+                <PromoteRow key={f.id} f={f} status={status} onPromote={promote} onIgnore={ignore} t={t} />
+              ))}
+              {!findings.length && (
+                <tr><td colSpan={6} className="px-3 py-8 text-center text-navy-400">{t("discovery.empty")}</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PromoteRow({ f, status, onPromote, onIgnore, t }: { f: AssetFinding; status: string; onPromote: (f: AssetFinding, ty: string) => void; onIgnore: (f: AssetFinding) => void; t: any }) {
   const [ty, setTy] = useState(f.suggested_type && f.suggested_type !== "unknown" ? f.suggested_type : "computer");
   return (
     <tr className="hover:bg-navy-50/50">
@@ -250,13 +341,17 @@ function PromoteRow({ f, onPromote, onIgnore, t }: { f: AssetFinding; onPromote:
       <td className="px-3 py-2">{f.hostname}</td>
       <td className="px-3 py-2 text-navy-500">{f.suggested_type}</td>
       <td className="px-3 py-2">
-        <div className="flex items-center justify-end gap-2">
-          <select value={ty} onChange={(e) => setTy(e.target.value)} className="rounded border border-navy-200 px-2 py-1 text-xs">
-            {DEVICE_TYPES.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
-          <button onClick={() => onPromote(f, ty)} className="btn-accent px-2 py-1 text-xs">{t("discovery.promote")}</button>
-          <button onClick={() => onIgnore(f)} className="btn-ghost px-2 py-1 text-xs">{t("discovery.ignore")}</button>
-        </div>
+        {status === "untriaged" ? (
+          <div className="flex items-center justify-end gap-2">
+            <select value={ty} onChange={(e) => setTy(e.target.value)} className="rounded border border-navy-200 px-2 py-1 text-xs">
+              {DEVICE_TYPES.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <button onClick={() => onPromote(f, ty)} className="btn-accent px-2 py-1 text-xs">{t("discovery.promote")}</button>
+            <button onClick={() => onIgnore(f)} className="btn-ghost px-2 py-1 text-xs">{t("discovery.ignore")}</button>
+          </div>
+        ) : (
+          <span className="block text-right text-xs text-navy-400">{t(`discovery.f.${status}`)}</span>
+        )}
       </td>
     </tr>
   );
@@ -282,20 +377,22 @@ function SitesTab({ customerId, t }: { customerId: string; t: any }) {
     setName(""); setCidrs(""); load();
   }
 
+  async function remove(s: AssetSite) {
+    if (!confirm(t("sites.confirmDelete", { name: s.name }))) return;
+    await assethubApi.deleteSite(s.id); load();
+  }
+
   if (loading) return <Loader2 className="h-5 w-5 animate-spin text-navy-400" />;
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-end gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("sites.name")} className="rounded-lg border border-navy-200 px-3 py-2 text-sm" />
-        <input value={cidrs} onChange={(e) => setCidrs(e.target.value)} placeholder={t("sites.cidrs")} className="rounded-lg border border-navy-200 px-3 py-2 text-sm" />
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("sites.name")} className={inp} />
+        <input value={cidrs} onChange={(e) => setCidrs(e.target.value)} placeholder={t("sites.cidrs")} className={inp} />
         <button onClick={add} className="btn-accent text-sm"><Plus className="mr-1 inline h-4 w-4" />{t("sites.add")}</button>
       </div>
       <ul className="divide-y divide-navy-100 rounded-lg border border-navy-100">
         {sites.map((s) => (
-          <li key={s.id} className="flex items-center justify-between px-3 py-2 text-sm">
-            <span className="font-medium text-navy-900">{s.name}</span>
-            <span className="font-mono text-xs text-navy-500">{s.cidrs.join(", ")}</span>
-          </li>
+          <SiteRow key={s.id} s={s} t={t} onSaved={load} onDelete={() => remove(s)} />
         ))}
         {!sites.length && <li className="px-3 py-8 text-center text-navy-400">{t("sites.empty")}</li>}
       </ul>
@@ -303,35 +400,79 @@ function SitesTab({ customerId, t }: { customerId: string; t: any }) {
   );
 }
 
+function SiteRow({ s, t, onSaved, onDelete }: { s: AssetSite; t: any; onSaved: () => void; onDelete: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(s.name);
+  const [cidrs, setCidrs] = useState(s.cidrs.join(", "));
+
+  async function save() {
+    if (!name.trim()) return;
+    await assethubApi.updateSite(s.id, { name, cidrs: cidrs.split(",").map((c) => c.trim()).filter(Boolean) });
+    setEditing(false); onSaved();
+  }
+
+  if (editing) {
+    return (
+      <li className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+        <input value={name} onChange={(e) => setName(e.target.value)} className={inp} />
+        <input value={cidrs} onChange={(e) => setCidrs(e.target.value)} placeholder={t("sites.cidrs")} className={`${inp} flex-1 font-mono text-xs`} />
+        <button onClick={save} className="btn-accent px-2 py-1 text-xs">{t("sites.saveEdit")}</button>
+        <button onClick={() => { setEditing(false); setName(s.name); setCidrs(s.cidrs.join(", ")); }} className="btn-ghost px-2 py-1 text-xs">{t("devices.cancel")}</button>
+      </li>
+    );
+  }
+  return (
+    <li className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+      <span className="font-medium text-navy-900">{s.name}</span>
+      <span className="ml-auto font-mono text-xs text-navy-500">{s.cidrs.join(", ")}</span>
+      <button onClick={() => setEditing(true)} className="btn-ghost px-2 py-1 text-xs" title={t("sites.edit")}><Pencil className="inline h-3.5 w-3.5" /></button>
+      <button onClick={onDelete} className="btn-ghost px-2 py-1 text-xs text-red-600" title={t("sites.delete")}><Trash2 className="inline h-3.5 w-3.5" /></button>
+    </li>
+  );
+}
+
 // ---------------- Tokens ----------------
 
 function TokensTab({ customerId, t }: { customerId: string; t: any }) {
   const [tokens, setTokens] = useState<AssetToken[]>([]);
+  const [sites, setSites] = useState<AssetSite[]>([]);
   const [label, setLabel] = useState("");
+  const [siteId, setSiteId] = useState("");
   const [secret, setSecret] = useState("");
   const [loading, setLoading] = useState(true);
 
   function load() {
     setLoading(true);
-    assethubApi.listTokens(customerId).then(setTokens).finally(() => setLoading(false));
+    Promise.all([
+      assethubApi.listTokens(customerId).then(setTokens),
+      assethubApi.listSites(customerId).then(setSites).catch(() => setSites([])),
+    ]).finally(() => setLoading(false));
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [customerId]);
 
   async function create() {
     if (!label.trim()) return;
-    const tok = await assethubApi.createToken({ customer_id: customerId, label });
+    const tok = await assethubApi.createToken({ customer_id: customerId, label, site_id: siteId || null });
     setSecret(tok.secret ?? "");
-    setLabel(""); load();
+    setLabel(""); setSiteId(""); load();
   }
-  async function revoke(id: string) {
-    await assethubApi.revokeToken(id); load();
+  async function revoke(id: string) { await assethubApi.revokeToken(id); load(); }
+  async function del(tk: AssetToken) {
+    if (!confirm(t("tokens.confirmDelete", { name: tk.label }))) return;
+    await assethubApi.deleteToken(tk.id); load();
   }
+
+  const siteName = (id?: string | null) => sites.find((s) => s.id === id)?.name;
 
   if (loading) return <Loader2 className="h-5 w-5 animate-spin text-navy-400" />;
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-end gap-2">
-        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t("tokens.label")} className="rounded-lg border border-navy-200 px-3 py-2 text-sm" />
+        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t("tokens.label")} className={inp} />
+        <select value={siteId} onChange={(e) => setSiteId(e.target.value)} className={inp} title={t("tokens.site")}>
+          <option value="">{t("tokens.allSites")}</option>
+          {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
         <button onClick={create} className="btn-accent text-sm"><KeyRound className="mr-1 inline h-4 w-4" />{t("tokens.create")}</button>
       </div>
       {secret && (
@@ -342,24 +483,51 @@ function TokensTab({ customerId, t }: { customerId: string; t: any }) {
       )}
       <ul className="divide-y divide-navy-100 rounded-lg border border-navy-100">
         {tokens.map((tk) => (
-          <li key={tk.id} className="flex items-center justify-between px-3 py-2 text-sm">
-            <span>
-              <span className="font-medium text-navy-900">{tk.label}</span>
-              <span className="ml-2 font-mono text-xs text-navy-400">{tk.token_prefix}…</span>
-              {tk.revoked_at && <span className="ml-2 rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">{t("tokens.revoked")}</span>}
-            </span>
-            {!tk.revoked_at && (
-              <button onClick={() => revoke(tk.id)} className="btn-ghost px-2 py-1 text-xs text-red-600">
-                <Trash2 className="mr-1 inline h-3.5 w-3.5" />{t("tokens.revoke")}
-              </button>
-            )}
-          </li>
+          <TokenRow key={tk.id} tk={tk} sites={sites} siteName={siteName(tk.site_id)} t={t} onSaved={load} onRevoke={() => revoke(tk.id)} onDelete={() => del(tk)} />
         ))}
         {!tokens.length && <li className="px-3 py-8 text-center text-navy-400">{t("tokens.empty")}</li>}
       </ul>
 
       <InstallPanel token={secret || "<TOKEN>"} t={t} />
     </div>
+  );
+}
+
+function TokenRow({ tk, sites, siteName, t, onSaved, onRevoke, onDelete }: { tk: AssetToken; sites: AssetSite[]; siteName?: string; t: any; onSaved: () => void; onRevoke: () => void; onDelete: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [label, setLabel] = useState(tk.label);
+  const [siteId, setSiteId] = useState(tk.site_id ?? "");
+
+  async function save() {
+    await assethubApi.updateToken(tk.id, { label, site_id: siteId || null });
+    setEditing(false); onSaved();
+  }
+
+  if (editing) {
+    return (
+      <li className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+        <input value={label} onChange={(e) => setLabel(e.target.value)} className={inp} />
+        <select value={siteId} onChange={(e) => setSiteId(e.target.value)} className={inp}>
+          <option value="">{t("tokens.allSites")}</option>
+          {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        <button onClick={save} className="btn-accent px-2 py-1 text-xs">{t("sites.saveEdit")}</button>
+        <button onClick={() => { setEditing(false); setLabel(tk.label); setSiteId(tk.site_id ?? ""); }} className="btn-ghost px-2 py-1 text-xs">{t("devices.cancel")}</button>
+      </li>
+    );
+  }
+  return (
+    <li className="flex items-center gap-2 px-3 py-2 text-sm">
+      <span className="font-medium text-navy-900">{tk.label}</span>
+      <span className="font-mono text-xs text-navy-400">{tk.token_prefix}…</span>
+      {siteName && <span className="rounded-full bg-navy-100 px-2 py-0.5 text-xs text-navy-600">{siteName}</span>}
+      {tk.revoked_at && <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">{t("tokens.revoked")}</span>}
+      <div className="ml-auto flex items-center gap-1">
+        {!tk.revoked_at && <button onClick={() => setEditing(true)} className="btn-ghost px-2 py-1 text-xs" title={t("tokens.edit")}><Pencil className="inline h-3.5 w-3.5" /></button>}
+        {!tk.revoked_at && <button onClick={onRevoke} className="btn-ghost px-2 py-1 text-xs text-amber-600" title={t("tokens.revoke")}>{t("tokens.revoke")}</button>}
+        <button onClick={onDelete} className="btn-ghost px-2 py-1 text-xs text-red-600" title={t("tokens.delete")}><Trash2 className="inline h-3.5 w-3.5" /></button>
+      </div>
+    </li>
   );
 }
 
@@ -483,6 +651,11 @@ function ReportsTab({ customerId, t }: { customerId: string; t: any }) {
     await assethubApi.createReport({ customer_id: customerId, format });
     load();
   }
+  async function retry(id: string) { await assethubApi.retryReport(id); load(); }
+  async function remove(id: string) {
+    if (!confirm(t("reports.confirmDelete"))) return;
+    await assethubApi.deleteReport(id); load();
+  }
 
   return (
     <div>
@@ -505,11 +678,21 @@ function ReportsTab({ customerId, t }: { customerId: string; t: any }) {
                 <span className={`ml-2 rounded-full px-2 py-0.5 text-xs ${statusTone(r.status)}`}>{t(`reports.status.${r.status}`)}</span>
                 {r.error && <span className="ml-2 text-xs text-red-500">{r.error}</span>}
               </span>
-              {r.status === "done" && (
-                <button onClick={() => assethubApi.downloadReport(r.id, r.format)} className="btn-ghost px-2 py-1 text-xs">
-                  <Download className="mr-1 inline h-3.5 w-3.5" />{t("reports.download")}
+              <div className="flex items-center gap-1">
+                {r.status === "done" && (
+                  <button onClick={() => assethubApi.downloadReport(r.id, r.format)} className="btn-ghost px-2 py-1 text-xs">
+                    <Download className="mr-1 inline h-3.5 w-3.5" />{t("reports.download")}
+                  </button>
+                )}
+                {(r.status === "failed" || r.status === "dead") && (
+                  <button onClick={() => retry(r.id)} className="btn-ghost px-2 py-1 text-xs text-blue-600" title={t("reports.retry")}>
+                    <RotateCcw className="mr-1 inline h-3.5 w-3.5" />{t("reports.retry")}
+                  </button>
+                )}
+                <button onClick={() => remove(r.id)} className="btn-ghost px-2 py-1 text-xs text-red-600" title={t("reports.delete")}>
+                  <Trash2 className="inline h-3.5 w-3.5" />
                 </button>
-              )}
+              </div>
             </li>
           ))}
           {!reports.length && <li className="px-3 py-8 text-center text-navy-400">{t("reports.empty")}</li>}
@@ -520,6 +703,8 @@ function ReportsTab({ customerId, t }: { customerId: string; t: any }) {
 }
 
 // ---------------- helpers ----------------
+
+const inp = "rounded-lg border border-navy-200 px-3 py-2 text-sm";
 
 function chip(active: boolean): string {
   return `rounded-full border px-3 py-1 text-xs ${active ? "border-accent-400 bg-accent-50 text-accent-700" : "border-navy-200 text-navy-600"}`;

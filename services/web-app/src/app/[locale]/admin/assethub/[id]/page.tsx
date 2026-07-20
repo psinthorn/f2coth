@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/routing";
-import { Loader2, ArrowLeft, Save } from "lucide-react";
+import { Link, useRouter } from "@/i18n/routing";
+import { Loader2, ArrowLeft, Save, Trash2 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import {
   assethubApi, type AssetDevice, type AssetSite, type DeviceType, type DeviceStatus,
@@ -18,6 +18,7 @@ const STATUSES: DeviceStatus[] = ["active", "retired", "missing"];
 
 export default function AssetHubDeviceDetail() {
   const t = useTranslations("admin.assethub");
+  const router = useRouter();
   const params = useParams();
   const search = useSearchParams();
   const id = String(params.id);
@@ -65,6 +66,15 @@ export default function AssetHubDeviceDetail() {
     } catch (e) { setErr(String(e)); } finally { setSaving(false); }
   }
 
+  async function remove() {
+    if (!device) return;
+    if (!confirm(t("detail.confirmDelete", { name: device.hostname || device.primary_ip || id.slice(0, 8) }))) return;
+    try {
+      await assethubApi.deleteDevice(id);
+      router.push("/admin/assethub");
+    } catch (e) { setErr(String(e)); }
+  }
+
   return (
     <AdminShell>
       <Link href={`/admin/assethub`} className="mb-4 inline-flex items-center text-sm text-navy-500 hover:text-navy-800">
@@ -107,10 +117,13 @@ export default function AssetHubDeviceDetail() {
             <Field label={t("detail.notes")}>
               <input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm" />
             </Field>
-            <div className="sm:col-span-3">
+            <div className="flex items-center gap-2 sm:col-span-3">
               <button onClick={save} disabled={saving} className="btn-accent text-sm">
                 {saving ? <Loader2 className="mr-1 inline h-4 w-4 animate-spin" /> : <Save className="mr-1 inline h-4 w-4" />}
                 {t("detail.save")}
+              </button>
+              <button onClick={remove} className="btn-ghost ml-auto text-sm text-red-600">
+                <Trash2 className="mr-1 inline h-4 w-4" />{t("detail.delete")}
               </button>
             </div>
           </div>

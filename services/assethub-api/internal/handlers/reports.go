@@ -119,6 +119,73 @@ func (h *Handler) DownloadReport(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, filepath.Base(clean), zeroTime(), f)
 }
 
+// RetryReport (staff) re-queues a failed/dead job so the worker runs it again.
+func (h *Handler) RetryReport(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	ctx := r.Context()
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer tx.Rollback(ctx)
+	tag, err := tx.Exec(ctx, `
+		UPDATE assethub_report_jobs
+		SET status='queued', error=NULL, scheduled_at=NOW()
+		WHERE id=$1 AND status IN ('failed','dead')`, id)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "retry failed")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeErr(w, http.StatusConflict, "report not found or not in a failed state")
+		return
+	}
+	_ = writeAudit(ctx, tx, "assethub_report", id, mw.UserID(ctx), "retry", map[string]any{})
+	if err := tx.Commit(ctx); err != nil {
+		writeErr(w, http.StatusInternalServerError, "commit failed")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"id": id, "status": "queued"})
+}
+
+// DeleteReport (admin) removes a report job and its rendered file (if any).
+func (h *Handler) DeleteReport(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	ctx := r.Context()
+	// Best-effort file cleanup before the row goes; only touch files inside
+	// the reports dir (same guard as download).
+	var filePath *string
+	_ = h.DB.QueryRow(ctx, `SELECT file_path FROM assethub_report_jobs WHERE id=$1`, id).Scan(&filePath)
+
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer tx.Rollback(ctx)
+	tag, err := tx.Exec(ctx, `DELETE FROM assethub_report_jobs WHERE id=$1`, id)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "delete failed")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeErr(w, http.StatusNotFound, "report not found")
+		return
+	}
+	_ = writeAudit(ctx, tx, "assethub_report", id, mw.UserID(ctx), "delete", map[string]any{})
+	if err := tx.Commit(ctx); err != nil {
+		writeErr(w, http.StatusInternalServerError, "commit failed")
+		return
+	}
+	if filePath != nil {
+		if clean := filepath.Clean(*filePath); isInside(h.ReportsDir, clean) {
+			_ = os.Remove(clean)
+		}
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func contentType(format string) string {
 	switch format {
 	case "xlsx":
