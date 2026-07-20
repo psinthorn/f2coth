@@ -258,6 +258,8 @@ export const assethubApi = {
   patchDevice: (id: string, body: Partial<Pick<AssetDevice, "device_type" | "asset_tag" | "assigned_user" | "site_id" | "status" | "notes">>) =>
     request<{ id: string }>(`/devices/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteDevice: (id: string) => request<void>(`/devices/${id}`, { method: "DELETE" }),
+  moveDevice: (id: string, customerId: string) =>
+    request<{ id: string; customer_id: string }>(`/devices/${id}/move`, { method: "POST", body: JSON.stringify({ customer_id: customerId }) }),
   deviceHistory: (customerId: string, id: string) =>
     request<{ id: string; source: string; collected_at: string | null; received_at: string }[]>(`/devices/${id}/history?customer_id=${customerId}`),
   exportCSV: (customerId: string, f?: DeviceFilters) =>

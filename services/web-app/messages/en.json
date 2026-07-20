@@ -2288,6 +2288,10 @@
         "save": "Save changes",
         "delete": "Delete device",
         "confirmDelete": "Delete {name}? This cannot be undone.",
+        "move": "Move",
+        "moveTo": "Move to organization…",
+        "moveHint": "Reassign this device (and its history) to another organization.",
+        "moveConfirm": "Move {name} to {org}? Its site will be cleared and its history moves with it.",
         "tab": {
           "hardware": "Hardware",
           "network": "Network",
