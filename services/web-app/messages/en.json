@@ -2128,7 +2128,56 @@
         "discovery": "Discovery",
         "sites": "Sites",
         "tokens": "Tokens",
-        "reports": "Reports"
+        "reports": "Reports",
+        "guide": "Guide"
+      },
+      "guide": {
+        "intro": "Reference for the category, device-type, OS and network-role tags used across this register, with live counts for the selected organization.",
+        "catTitle": "Categories & their device tags",
+        "catIntro": "The chips on the Devices tab. Each groups several device-type tags; the number is how many devices fall under it now.",
+        "cat": {
+          "network": "Core network gear that moves and secures traffic.",
+          "computers": "Endpoints people use — PCs, servers and mobiles.",
+          "cctv": "Surveillance cameras and recorders.",
+          "printers": "Printers plus other / not-yet-classified devices."
+        },
+        "typeTitle": "Device-type tags",
+        "type": {
+          "computer": "Desktop or laptop workstation.",
+          "server": "Always-on server (physical or virtual).",
+          "nas": "Network-attached storage / file server.",
+          "router": "Gateway / firewall routing between networks.",
+          "switch": "Managed or unmanaged network switch.",
+          "ap": "Wi-Fi access point.",
+          "printer": "Printer, copier or multifunction device.",
+          "camera": "IP camera or NVR (CCTV).",
+          "phone": "Smartphone or VoIP handset.",
+          "tablet": "Tablet device.",
+          "iot": "Smart / IoT device (sensor, controller, TV, etc.).",
+          "unknown": "Discovered but not yet classified — triage it or run the collector."
+        },
+        "osTitle": "Operating systems in this org",
+        "osIntro": "Live breakdown from collected devices. “Unknown” usually means a probe-only device — run the collector on it to fill in OS and serial.",
+        "os": {
+          "macos": "Apple Mac computers.",
+          "windows": "Microsoft Windows PCs & servers.",
+          "linux": "Linux servers & workstations.",
+          "ios": "Apple iPhone / iPad.",
+          "android": "Android phones & tablets.",
+          "unknown": "Not yet inventoried — likely probe-only. Run the collector for full specs.",
+          "other": "Another operating system."
+        },
+        "roleTitle": "Network roles",
+        "role": {
+          "domain": "Joined to an Active Directory / LDAP domain.",
+          "workgroup": "In a workgroup — no central directory.",
+          "standalone": "Not joined to a domain or workgroup.",
+          "na": "Not applicable (network gear, IoT, etc.)."
+        },
+        "colTag": "Tag",
+        "colMeaning": "Meaning",
+        "colCount": "Count",
+        "noData": "No devices collected yet."
       },
       "devices": {
         "search": "Search host, serial, IP…",
