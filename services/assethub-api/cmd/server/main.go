@@ -68,6 +68,9 @@ func main() {
 			r.Post("/ingest", h.Ingest)
 			r.Post("/discovery", h.Discovery)
 			r.Post("/enroll", h.EnrollDevice)
+			// Daemon coordination (run.sh --daemon): "should I scan now?" + ack.
+			r.Get("/agent/poll", h.AgentPoll)
+			r.Post("/agent/ack", h.AgentAck)
 		})
 
 		// ── Client-tool downloads (collect.sh / collect.ps1 / discover.sh /
@@ -105,6 +108,7 @@ func main() {
 				r.Post("/tokens", h.CreateToken)
 				r.Patch("/tokens/{id}", h.UpdateToken)
 				r.Post("/tokens/{id}/revoke", h.RevokeToken)
+				r.Post("/tokens/{id}/scan", h.ScanNow)
 				r.Post("/devices", h.CreateDevice)
 				r.Patch("/devices/{id}", h.PatchDevice)
 				r.Post("/discovery/findings/{id}/promote", h.PromoteFinding)

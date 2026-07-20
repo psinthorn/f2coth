@@ -497,10 +497,22 @@ function TokenRow({ tk, sites, siteName, t, onSaved, onRevoke, onDelete }: { tk:
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(tk.label);
   const [siteId, setSiteId] = useState(tk.site_id ?? "");
+  const [poll, setPoll] = useState(String(tk.poll_interval_min ?? 5));
+  const [rescan, setRescan] = useState(String(tk.rescan_interval_min ?? 360));
+  const [scanState, setScanState] = useState<"" | "requested">("");
 
   async function save() {
-    await assethubApi.updateToken(tk.id, { label, site_id: siteId || null });
+    await assethubApi.updateToken(tk.id, {
+      label, site_id: siteId || null,
+      poll_interval_min: Number(poll) || undefined,
+      rescan_interval_min: Number(rescan) || undefined,
+    });
     setEditing(false); onSaved();
+  }
+  async function scan() {
+    await assethubApi.scanNow(tk.id);
+    setScanState("requested");
+    setTimeout(() => setScanState(""), 4000);
   }
 
   if (editing) {
@@ -511,18 +523,30 @@ function TokenRow({ tk, sites, siteName, t, onSaved, onRevoke, onDelete }: { tk:
           <option value="">{t("tokens.allSites")}</option>
           {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
+        <label className="flex items-center gap-1 text-xs text-navy-500">{t("tokens.pollMin")}
+          <input type="number" min={1} value={poll} onChange={(e) => setPoll(e.target.value)} className={`${inp} w-16`} />
+        </label>
+        <label className="flex items-center gap-1 text-xs text-navy-500">{t("tokens.rescanMin")}
+          <input type="number" min={1} value={rescan} onChange={(e) => setRescan(e.target.value)} className={`${inp} w-20`} />
+        </label>
         <button onClick={save} className="btn-accent px-2 py-1 text-xs">{t("sites.saveEdit")}</button>
         <button onClick={() => { setEditing(false); setLabel(tk.label); setSiteId(tk.site_id ?? ""); }} className="btn-ghost px-2 py-1 text-xs">{t("devices.cancel")}</button>
       </li>
     );
   }
   return (
-    <li className="flex items-center gap-2 px-3 py-2 text-sm">
+    <li className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
       <span className="font-medium text-navy-900">{tk.label}</span>
       <span className="font-mono text-xs text-navy-400">{tk.token_prefix}…</span>
       {siteName && <span className="rounded-full bg-navy-100 px-2 py-0.5 text-xs text-navy-600">{siteName}</span>}
+      <span className="text-xs text-navy-400">{tk.last_scan_at ? `${t("tokens.lastScan")}: ${tk.last_scan_at.slice(0, 16).replace("T", " ")}` : t("tokens.neverScanned")}</span>
       {tk.revoked_at && <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">{t("tokens.revoked")}</span>}
       <div className="ml-auto flex items-center gap-1">
+        {!tk.revoked_at && (
+          <button onClick={scan} className="btn-ghost px-2 py-1 text-xs text-emerald-600" title={t("tokens.scanNowHint")}>
+            <RefreshCw className="mr-1 inline h-3.5 w-3.5" />{scanState === "requested" ? t("tokens.scanRequested") : t("tokens.scanNow")}
+          </button>
+        )}
         {!tk.revoked_at && <button onClick={() => setEditing(true)} className="btn-ghost px-2 py-1 text-xs" title={t("tokens.edit")}><Pencil className="inline h-3.5 w-3.5" /></button>}
         {!tk.revoked_at && <button onClick={onRevoke} className="btn-ghost px-2 py-1 text-xs text-amber-600" title={t("tokens.revoke")}>{t("tokens.revoke")}</button>}
         <button onClick={onDelete} className="btn-ghost px-2 py-1 text-xs text-red-600" title={t("tokens.delete")}><Trash2 className="inline h-3.5 w-3.5" /></button>
@@ -541,6 +565,9 @@ function InstallPanel({ token, t }: { token: string; t: any }) {
   // Auto-detect installers: one paste picks the OS + tool and installs deps.
   const autoUnix = `curl -fsSL ${base}/install.sh | F2_SERVER_URL="${origin}" F2_TOKEN="${token}" sh`;
   const autoWin = `$env:F2_SERVER_URL="${origin}"; $env:F2_TOKEN="${token}"; irm ${base}/install.ps1 | iex`;
+  // All-in-one runner: preflight → collect (this box) + probe (if F2_CIDRS) → send.
+  const runUnix = `curl -fsSL ${base}/run.sh | F2_SERVER_URL="${origin}" F2_TOKEN="${token}" F2_CIDRS="192.168.1.0/24" sh`;
+  const runDaemon = `curl -fsSL ${base}/run.sh | F2_SERVER_URL="${origin}" F2_TOKEN="${token}" F2_CIDRS="192.168.1.0/24" F2_DAEMON=1 sh`;
   const linux = `curl -fsSL ${base}/collect.sh -o collect.sh && F2_SERVER_URL="${origin}" F2_TOKEN="${token}" bash collect.sh`;
   const win = `irm ${base}/collect.ps1 -OutFile collect.ps1; .\\collect.ps1 -ServerUrl "${origin}" -Token "${token}"`;
   const probe = `curl -fsSL ${base}/discover.sh -o discover.sh && F2_SERVER_URL="${origin}" F2_TOKEN="${token}" F2_CIDRS="192.168.1.0/24" bash discover.sh`;
@@ -551,6 +578,8 @@ function InstallPanel({ token, t }: { token: string; t: any }) {
   const downloads = [
     { name: "install.sh", label: t("install.autoUnix") },
     { name: "install.ps1", label: t("install.autoWin") },
+    { name: "run.sh", label: t("install.runUnix") },
+    { name: "run.ps1", label: t("install.runWin") },
     { name: "uninstall.sh", label: t("install.uninstallTitle") },
     { name: "uninstall.ps1", label: t("install.uninstallTitle") },
     { name: "collect.sh", label: t("install.linux") },
@@ -586,6 +615,11 @@ function InstallPanel({ token, t }: { token: string; t: any }) {
       </div>
       <CmdBlock label={t("install.autoUnix")} cmd={autoUnix} t={t} />
       <CmdBlock label={t("install.autoWin")} cmd={autoWin} t={t} />
+
+      <p className="mb-1 mt-4 text-xs font-medium uppercase tracking-wide text-navy-400">{t("install.runTitle")}</p>
+      <p className="mb-2 text-xs text-navy-500">{t("install.runDesc")}</p>
+      <CmdBlock label={t("install.runUnix")} cmd={runUnix} t={t} />
+      <CmdBlock label={t("install.runDaemon")} cmd={runDaemon} t={t} />
 
       <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-navy-400">{t("install.manualTitle")}</p>
       <CmdBlock label={t("install.linux")} cmd={linux} t={t} />

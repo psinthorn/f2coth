@@ -22,6 +22,8 @@ type collectorFile struct {
 var collectors = map[string]collectorFile{
 	"install.sh":               {"agents/install.sh", "text/x-shellscript; charset=utf-8"},
 	"install.ps1":              {"agents/install.ps1", "text/plain; charset=utf-8"},
+	"run.sh":                   {"agents/run.sh", "text/x-shellscript; charset=utf-8"},
+	"run.ps1":                  {"agents/run.ps1", "text/plain; charset=utf-8"},
 	"uninstall.sh":             {"agents/uninstall.sh", "text/x-shellscript; charset=utf-8"},
 	"uninstall.ps1":            {"agents/uninstall.ps1", "text/plain; charset=utf-8"},
 	"collect.sh":               {"agents/collect.sh", "text/x-shellscript; charset=utf-8"},
