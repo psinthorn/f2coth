@@ -2225,6 +2225,8 @@
         "autoUnix": "Auto install — Linux / macOS",
         "autoWin": "Auto install — Windows (PowerShell)",
         "manualTitle": "Manual / advanced",
+        "uninstallTitle": "Uninstall / cleanup",
+        "uninstallDesc": "Removes only what the tools installed (recorded at install time) plus their spool/state files — pre-existing tools are left alone.",
         "linux": "Linux / macOS collector",
         "windows": "Windows collector",
         "probe": "Network probe",

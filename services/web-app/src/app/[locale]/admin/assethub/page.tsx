@@ -376,10 +376,15 @@ function InstallPanel({ token, t }: { token: string; t: any }) {
   const linux = `curl -fsSL ${base}/collect.sh -o collect.sh && F2_SERVER_URL="${origin}" F2_TOKEN="${token}" bash collect.sh`;
   const win = `irm ${base}/collect.ps1 -OutFile collect.ps1; .\\collect.ps1 -ServerUrl "${origin}" -Token "${token}"`;
   const probe = `curl -fsSL ${base}/discover.sh -o discover.sh && F2_SERVER_URL="${origin}" F2_TOKEN="${token}" F2_CIDRS="192.168.1.0/24" bash discover.sh`;
+  // Cleanup: removes only what the tools installed (recorded manifest) — no token needed.
+  const uninstallUnix = `curl -fsSL ${base}/uninstall.sh | sh`;
+  const uninstallWin = `irm ${base}/uninstall.ps1 | iex`;
 
   const downloads = [
     { name: "install.sh", label: t("install.autoUnix") },
     { name: "install.ps1", label: t("install.autoWin") },
+    { name: "uninstall.sh", label: t("install.uninstallTitle") },
+    { name: "uninstall.ps1", label: t("install.uninstallTitle") },
     { name: "collect.sh", label: t("install.linux") },
     { name: "collect.ps1", label: t("install.windows") },
     { name: "discover.sh", label: t("install.probe") },
@@ -418,6 +423,11 @@ function InstallPanel({ token, t }: { token: string; t: any }) {
       <CmdBlock label={t("install.linux")} cmd={linux} t={t} />
       <CmdBlock label={t("install.windows")} cmd={win} t={t} />
       <CmdBlock label={t("install.probe")} cmd={probe} t={t} />
+
+      <p className="mb-1 mt-4 text-xs font-medium uppercase tracking-wide text-navy-400">{t("install.uninstallTitle")}</p>
+      <p className="mb-2 text-xs text-navy-500">{t("install.uninstallDesc")}</p>
+      <CmdBlock label={t("install.autoUnix")} cmd={uninstallUnix} t={t} />
+      <CmdBlock label={t("install.autoWin")} cmd={uninstallWin} t={t} />
 
       <div className="mt-3 flex flex-wrap gap-2">
         {downloads.map((d) => (

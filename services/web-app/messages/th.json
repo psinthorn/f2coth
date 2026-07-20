@@ -2225,6 +2225,8 @@
         "autoUnix": "ติดตั้งอัตโนมัติ — Linux / macOS",
         "autoWin": "ติดตั้งอัตโนมัติ — Windows (PowerShell)",
         "manualTitle": "แบบแมนนวล / ขั้นสูง",
+        "uninstallTitle": "ถอนการติดตั้ง / ลบข้อมูล",
+        "uninstallDesc": "ลบเฉพาะสิ่งที่เครื่องมือติดตั้งไว้ (บันทึกไว้ตอนติดตั้ง) พร้อมไฟล์ spool/state — เครื่องมือที่มีอยู่เดิมจะไม่ถูกแตะต้อง",
         "linux": "ตัวเก็บข้อมูล Linux / macOS",
         "windows": "ตัวเก็บข้อมูล Windows",
         "probe": "โพรบเครือข่าย",

@@ -33,32 +33,52 @@ missing_bins() { local m=""; for b in "$@"; do command -v "$b" >/dev/null 2>&1 |
 SUDO=""
 if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then SUDO="sudo"; fi
 
-install_pkgs() { # $@ = package names (nmap/curl/jq happen to match binary names)
-  if   command -v apt-get >/dev/null 2>&1; then $SUDO apt-get update -y && $SUDO apt-get install -y "$@"
-  elif command -v apk     >/dev/null 2>&1; then $SUDO apk add --no-cache "$@"
-  elif command -v dnf     >/dev/null 2>&1; then $SUDO dnf install -y "$@"
-  elif command -v yum     >/dev/null 2>&1; then $SUDO yum install -y "$@"
-  elif command -v pacman  >/dev/null 2>&1; then $SUDO pacman -Sy --noconfirm "$@"
-  elif command -v zypper  >/dev/null 2>&1; then $SUDO zypper --non-interactive install "$@"
-  elif command -v brew    >/dev/null 2>&1; then brew install "$@"   # macOS; brew refuses root
-  else return 1; fi
+pkg_mgr() { # echo the first supported package manager found
+  for m in apt-get apk dnf yum pacman zypper brew; do
+    command -v "$m" >/dev/null 2>&1 && { echo "$m"; return 0; }
+  done
+  return 1
 }
+install_pkgs() { # $1=mgr, rest=packages (nmap/curl/jq match their binary names)
+  mgr="$1"; shift
+  case "$mgr" in
+    apt-get) $SUDO apt-get update -y && $SUDO apt-get install -y "$@" ;;
+    apk)     $SUDO apk add --no-cache "$@" ;;
+    dnf)     $SUDO dnf install -y "$@" ;;
+    yum)     $SUDO yum install -y "$@" ;;
+    pacman)  $SUDO pacman -Sy --noconfirm "$@" ;;
+    zypper)  $SUDO zypper --non-interactive install "$@" ;;
+    brew)    brew install "$@" ;;   # macOS; brew refuses root
+    *) return 1 ;;
+  esac
+}
+
+# State dir: records what WE installed so uninstall.sh removes exactly those
+# (and nothing the machine already had).
+STATE_DIR="${F2_STATE_DIR:-${HOME}/.f2-assethub}"
+mkdir -p "$STATE_DIR" 2>/dev/null || { STATE_DIR="/tmp/f2-assethub"; mkdir -p "$STATE_DIR"; }
 
 MISSING="$(missing_bins nmap curl jq)"
 if [ -n "$MISSING" ]; then
   if [ "${F2_NO_AUTOINSTALL:-0}" = "1" ]; then
     echo "[probe] ERROR: missing required tool(s):$MISSING (auto-install disabled)" >&2; exit 3
   fi
-  echo "[probe] installing missing tool(s):$MISSING ..." >&2
-  if ! install_pkgs $MISSING; then
-    echo "[probe] ERROR: could not auto-install:$MISSING (no supported package manager, or install failed)" >&2
+  MGR="$(pkg_mgr || true)"
+  if [ -z "$MGR" ]; then
+    echo "[probe] ERROR: no supported package manager to install:$MISSING" >&2
     echo "[probe]   install manually — macOS: brew install nmap jq · Debian/Ubuntu: apt-get install -y nmap jq curl" >&2
     echo "[probe]   or run via docker-compose.probe.yml (image bundles everything)." >&2
     exit 3
   fi
+  echo "[probe] installing missing tool(s):$MISSING via $MGR ..." >&2
+  if ! install_pkgs "$MGR" $MISSING; then
+    echo "[probe] ERROR: could not auto-install:$MISSING (install failed)" >&2; exit 3
+  fi
   STILL="$(missing_bins nmap curl jq)"
   [ -z "$STILL" ] || { echo "[probe] ERROR: still missing after install:$STILL" >&2; exit 3; }
-  echo "[probe] dependencies ready." >&2
+  # Manifest for uninstall.sh: which manager + exactly which packages we added.
+  { echo "mgr=$MGR"; echo "pkgs=$(echo $MISSING)"; } > "$STATE_DIR/installed-deps"
+  echo "[probe] dependencies ready (recorded to $STATE_DIR/installed-deps)." >&2
 fi
 
 # Spool dir: /spool is a mounted volume inside the probe image; on a bare host it
