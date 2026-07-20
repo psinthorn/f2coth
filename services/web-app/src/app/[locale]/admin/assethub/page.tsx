@@ -11,7 +11,7 @@ import {
   type AssetToken, type AssetFinding, type AssetReport, type DeviceType,
 } from "@/lib/assethub-api";
 
-type Tab = "devices" | "discovery" | "sites" | "tokens" | "reports";
+type Tab = "devices" | "discovery" | "sites" | "tokens" | "reports" | "guide";
 
 const DEVICE_TYPES: DeviceType[] = [
   "computer", "server", "nas", "router", "switch", "ap", "printer", "camera", "phone", "tablet", "iot", "unknown",
@@ -87,7 +87,7 @@ export default function AssetHubAdminPage() {
       )}
 
       <nav className="mb-4 flex flex-wrap gap-1 rounded-lg bg-navy-50 p-1 text-sm">
-        {(["devices", "discovery", "sites", "tokens", "reports"] as Tab[]).map((k) => (
+        {(["devices", "discovery", "sites", "tokens", "reports", "guide"] as Tab[]).map((k) => (
           <button
             key={k}
             onClick={() => setTab(k)}
@@ -104,6 +104,7 @@ export default function AssetHubAdminPage() {
       {customerId && tab === "sites" && <SitesTab customerId={customerId} t={t} />}
       {customerId && tab === "tokens" && <TokensTab customerId={customerId} t={t} />}
       {customerId && tab === "reports" && <ReportsTab customerId={customerId} t={t} />}
+      {customerId && tab === "guide" && <GuideTab overview={overview} t={t} />}
     </AdminShell>
   );
 }
@@ -732,6 +733,127 @@ function ReportsTab({ customerId, t }: { customerId: string; t: any }) {
           {!reports.length && <li className="px-3 py-8 text-center text-navy-400">{t("reports.empty")}</li>}
         </ul>
       )}
+    </div>
+  );
+}
+
+// ---------------- Guide / legend ----------------
+
+// Which device_type tags roll up into each Devices-tab category chip. Mirrors
+// categoryTypes() in devices.go — kept here as the UI-side reference.
+const CATEGORY_TYPES: Record<string, string[]> = {
+  network: ["router", "switch", "ap", "nas"],
+  computers: ["computer", "server", "phone", "tablet"],
+  cctv: ["camera"],
+  printers: ["printer", "iot", "unknown"],
+};
+const ROLES = ["domain", "workgroup", "standalone", "n/a"] as const;
+
+// Normalise a raw os_name label to a known meaning key.
+function osKey(label: string): string {
+  const l = label.toLowerCase();
+  if (l.includes("mac")) return "macos";
+  if (l.includes("win")) return "windows";
+  if (/(linux|ubuntu|debian|centos|fedora|rhel|alma|rocky)/.test(l)) return "linux";
+  if (l.includes("ios")) return "ios";
+  if (l.includes("android")) return "android";
+  if (l === "unknown" || l === "") return "unknown";
+  return "other";
+}
+
+function GuideTab({ overview, t }: { overview: AssetOverview | null; t: any }) {
+  const typeCount = (label: string) => overview?.by_type.find((b) => b.label === label)?.count ?? 0;
+  const roleCount = (label: string) => overview?.by_network_role.find((b) => b.label === label)?.count ?? 0;
+  const catCount = (types: string[]) => types.reduce((s, ty) => s + typeCount(ty), 0);
+
+  return (
+    <div className="space-y-8">
+      <p className="text-sm text-navy-600">{t("guide.intro")}</p>
+
+      {/* Categories */}
+      <section>
+        <h3 className="mb-1 font-display text-lg text-navy-900">{t("guide.catTitle")}</h3>
+        <p className="mb-3 text-xs text-navy-500">{t("guide.catIntro")}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {Object.entries(CATEGORY_TYPES).map(([cat, types]) => (
+            <div key={cat} className="card p-4">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-navy-900">{t(`devices.cat.${cat}`)}</span>
+                <Pill n={catCount(types)} />
+              </div>
+              <p className="mt-1 text-xs text-navy-500">{t(`guide.cat.${cat}`)}</p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {types.map((ty) => (
+                  <span key={ty} className="rounded bg-navy-100 px-1.5 py-0.5 text-[11px] text-navy-600">
+                    {ty} · {typeCount(ty)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Device type tags */}
+      <section>
+        <h3 className="mb-1 font-display text-lg text-navy-900">{t("guide.typeTitle")}</h3>
+        <LegendTable
+          t={t}
+          rows={DEVICE_TYPES.map((ty) => ({ tag: ty, meaning: t(`guide.type.${ty}`), count: typeCount(ty) }))}
+        />
+      </section>
+
+      {/* OS overview */}
+      <section>
+        <h3 className="mb-1 font-display text-lg text-navy-900">{t("guide.osTitle")}</h3>
+        <p className="mb-3 text-xs text-navy-500">{t("guide.osIntro")}</p>
+        {overview && overview.by_os.length ? (
+          <LegendTable
+            t={t}
+            rows={overview.by_os.map((b) => ({ tag: b.label || "Unknown", meaning: t(`guide.os.${osKey(b.label)}`), count: b.count }))}
+          />
+        ) : (
+          <p className="text-sm text-navy-400">{t("guide.noData")}</p>
+        )}
+      </section>
+
+      {/* Network roles */}
+      <section>
+        <h3 className="mb-1 font-display text-lg text-navy-900">{t("guide.roleTitle")}</h3>
+        <LegendTable
+          t={t}
+          rows={ROLES.map((r) => ({ tag: r, meaning: t(`guide.role.${r === "n/a" ? "na" : r}`), count: roleCount(r) }))}
+        />
+      </section>
+    </div>
+  );
+}
+
+function Pill({ n }: { n: number }) {
+  return <span className={`rounded-full px-2 py-0.5 text-xs ${n ? "bg-accent-50 text-accent-700" : "bg-navy-100 text-navy-500"}`}>{n}</span>;
+}
+
+function LegendTable({ rows, t }: { rows: { tag: string; meaning: string; count: number }[]; t: any }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-navy-100">
+      <table className="w-full text-sm">
+        <thead className="bg-navy-50 text-xs uppercase text-navy-500">
+          <tr>
+            <th className="px-3 py-2 text-left">{t("guide.colTag")}</th>
+            <th className="px-3 py-2 text-left">{t("guide.colMeaning")}</th>
+            <th className="px-3 py-2 text-right">{t("guide.colCount")}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-navy-100">
+          {rows.map((r) => (
+            <tr key={r.tag} className="hover:bg-navy-50/50">
+              <td className="px-3 py-2 font-mono text-xs text-navy-800">{r.tag}</td>
+              <td className="px-3 py-2 text-navy-600">{r.meaning}</td>
+              <td className="px-3 py-2 text-right"><Pill n={r.count} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
