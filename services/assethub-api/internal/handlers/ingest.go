@@ -95,6 +95,13 @@ func (h *Handler) Ingest(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "merge failed: "+err.Error())
 		return
 	}
+	// New collector devices get a default asset tag (existing ones keep theirs).
+	if action == "created" {
+		if err := h.assignAssetTagIfEmpty(ctx, tx, deviceID, scope.CustomerID, env.Device.DeviceType, env.Device.Model, env.Device.OS.Name); err != nil {
+			writeErr(w, http.StatusInternalServerError, "asset tag failed: "+err.Error())
+			return
+		}
+	}
 
 	// Store the full raw submission (audit trail + "changes since last visit").
 	if _, err := tx.Exec(ctx, `

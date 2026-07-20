@@ -95,6 +95,10 @@ func (h *Handler) PromoteFinding(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "create device failed")
 		return
 	}
+	if err := h.assignAssetTagIfEmpty(ctx, tx, deviceID, customerID, suggestType(req.DeviceType), "", ""); err != nil {
+		writeErr(w, http.StatusInternalServerError, "asset tag failed")
+		return
+	}
 	if _, err := tx.Exec(ctx, `UPDATE assethub_discovery_findings SET status='promoted', device_id=$2 WHERE id=$1`, id, deviceID); err != nil {
 		writeErr(w, http.StatusInternalServerError, "update finding failed")
 		return

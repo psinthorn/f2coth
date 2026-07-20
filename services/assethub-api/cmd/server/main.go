@@ -111,6 +111,7 @@ func main() {
 				r.Post("/tokens/{id}/scan", h.ScanNow)
 				r.Post("/devices", h.CreateDevice)
 				r.Patch("/devices/{id}", h.PatchDevice)
+				r.Post("/devices/{id}/generate-tag", h.GenerateTag)
 				r.Post("/discovery/findings/{id}/promote", h.PromoteFinding)
 				r.Post("/discovery/findings/{id}/ignore", h.IgnoreFinding)
 				r.Post("/reports", h.CreateReport)

@@ -65,6 +65,10 @@ func (h *Handler) EnrollDevice(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusInternalServerError, "create failed: "+err.Error())
 			return
 		}
+		if err := h.assignAssetTagIfEmpty(ctx, tx, deviceID, scope.CustomerID, normDeviceTypeManual(req.DeviceType), req.Model, ""); err != nil {
+			writeErr(w, http.StatusInternalServerError, "asset tag failed")
+			return
+		}
 	} else {
 		if _, err := tx.Exec(ctx, `
 			UPDATE assethub_devices SET
