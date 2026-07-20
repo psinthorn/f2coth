@@ -276,6 +276,77 @@ func (h *Handler) CreateDevice(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, map[string]string{"id": id})
 }
 
+type deviceMoveInput struct {
+	CustomerID string `json:"customer_id"`
+}
+
+// MoveDevice (admin) reassigns a device to another organization. It carries the
+// device's submissions and any promoted discovery findings, clears its site
+// (sites belong to the old org), and refuses when the target org already has a
+// device with the same serial or primary MAC (unique per org). Child rows
+// (interfaces/disks/software) are keyed by device_id, so they follow for free.
+func (h *Handler) MoveDevice(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var in deviceMoveInput
+	if err := decode(w, r, &in); err != nil {
+		return
+	}
+	if in.CustomerID == "" {
+		writeErr(w, http.StatusBadRequest, "customer_id (target org) required")
+		return
+	}
+	ctx := r.Context()
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	var cur string
+	var serial, mac *string
+	if err := tx.QueryRow(ctx, `SELECT customer_id, serial_number, primary_mac FROM assethub_devices WHERE id=$1`, id).
+		Scan(&cur, &serial, &mac); err != nil {
+		writeErr(w, http.StatusNotFound, "device not found")
+		return
+	}
+	if cur == in.CustomerID {
+		writeErr(w, http.StatusConflict, "device is already in that organization")
+		return
+	}
+	// Guard against colliding with an existing device in the target org.
+	var clash string
+	if serial != nil && strings.TrimSpace(*serial) != "" {
+		_ = tx.QueryRow(ctx, `SELECT id FROM assethub_devices WHERE customer_id=$1 AND serial_number=$2`, in.CustomerID, *serial).Scan(&clash)
+	}
+	if clash == "" && mac != nil && strings.TrimSpace(*mac) != "" {
+		_ = tx.QueryRow(ctx, `SELECT id FROM assethub_devices WHERE customer_id=$1 AND primary_mac=$2`, in.CustomerID, *mac).Scan(&clash)
+	}
+	if clash != "" {
+		writeErr(w, http.StatusConflict, "target org already has a device with this serial/MAC ("+clash+") — merge or delete it there first")
+		return
+	}
+
+	if _, err := tx.Exec(ctx, `UPDATE assethub_devices SET customer_id=$2, site_id=NULL WHERE id=$1`, id, in.CustomerID); err != nil {
+		writeErr(w, http.StatusInternalServerError, "move failed: "+err.Error())
+		return
+	}
+	if _, err := tx.Exec(ctx, `UPDATE assethub_submissions SET customer_id=$2, site_id=NULL WHERE device_id=$1`, id, in.CustomerID); err != nil {
+		writeErr(w, http.StatusInternalServerError, "move submissions failed")
+		return
+	}
+	if _, err := tx.Exec(ctx, `UPDATE assethub_discovery_findings SET customer_id=$2, site_id=NULL WHERE device_id=$1`, id, in.CustomerID); err != nil {
+		writeErr(w, http.StatusInternalServerError, "move findings failed")
+		return
+	}
+	_ = writeAudit(ctx, tx, "assethub_device", id, mw.UserID(ctx), "move", map[string]any{"from": cur, "to": in.CustomerID})
+	if err := tx.Commit(ctx); err != nil {
+		writeErr(w, http.StatusInternalServerError, "commit failed")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"id": id, "customer_id": in.CustomerID})
+}
+
 // DeleteDevice (admin only).
 func (h *Handler) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")

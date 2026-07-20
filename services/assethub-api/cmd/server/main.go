@@ -121,6 +121,7 @@ func main() {
 				r.Use(mw.RequireAdmin(cfg.JWTSecret))
 				r.Delete("/sites/{id}", h.DeleteSite)
 				r.Delete("/devices/{id}", h.DeleteDevice)
+				r.Post("/devices/{id}/move", h.MoveDevice)
 				r.Delete("/tokens/{id}", h.DeleteToken)
 				r.Delete("/reports/{id}", h.DeleteReport)
 			})

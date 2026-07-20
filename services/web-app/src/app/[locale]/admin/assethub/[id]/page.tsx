@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
-import { Loader2, ArrowLeft, Save, Trash2 } from "lucide-react";
+import { Loader2, ArrowLeft, Save, Trash2, ArrowRightLeft } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import {
-  assethubApi, type AssetDevice, type AssetSite, type DeviceType, type DeviceStatus,
+  assethubApi, type AssetDevice, type AssetSite, type AssetOrg, type DeviceType, type DeviceStatus,
 } from "@/lib/assethub-api";
 
 type DetailTab = "hardware" | "network" | "software" | "history";
@@ -26,10 +26,13 @@ export default function AssetHubDeviceDetail() {
 
   const [device, setDevice] = useState<AssetDevice | null>(null);
   const [sites, setSites] = useState<AssetSite[]>([]);
+  const [orgs, setOrgs] = useState<AssetOrg[]>([]);
   const [history, setHistory] = useState<{ id: string; source: string; received_at: string }[]>([]);
   const [tab, setTab] = useState<DetailTab>("hardware");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [moveTo, setMoveTo] = useState("");
+  const [moving, setMoving] = useState(false);
   const [err, setErr] = useState("");
 
   // editable fields
@@ -41,10 +44,12 @@ export default function AssetHubDeviceDetail() {
       assethubApi.getDevice(customerId, id),
       assethubApi.listSites(customerId),
       assethubApi.deviceHistory(customerId, id),
-    ]).then(([d, s, h]) => {
+      assethubApi.listOrgs().catch(() => [] as AssetOrg[]),
+    ]).then(([d, s, h, o]) => {
       setDevice(d);
       setSites(s);
       setHistory(h);
+      setOrgs(o);
       setEdit({
         device_type: d.device_type, asset_tag: d.asset_tag ?? "", assigned_user: d.assigned_user ?? "",
         status: d.status, site_id: d.site_id ?? "", notes: d.notes ?? "",
@@ -73,6 +78,17 @@ export default function AssetHubDeviceDetail() {
       await assethubApi.deleteDevice(id);
       router.push("/admin/assethub");
     } catch (e) { setErr(String(e)); }
+  }
+
+  async function move() {
+    if (!moveTo || !device) return;
+    const target = orgs.find((o) => o.id === moveTo);
+    if (!confirm(t("detail.moveConfirm", { name: device.hostname || device.primary_ip || id.slice(0, 8), org: target?.name ?? "" }))) return;
+    setMoving(true);
+    try {
+      await assethubApi.moveDevice(id, moveTo);
+      router.push("/admin/assethub");
+    } catch (e) { setErr(String(e)); } finally { setMoving(false); }
   }
 
   return (
@@ -117,14 +133,23 @@ export default function AssetHubDeviceDetail() {
             <Field label={t("detail.notes")}>
               <input value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm" />
             </Field>
-            <div className="flex items-center gap-2 sm:col-span-3">
+            <div className="flex flex-wrap items-center gap-2 sm:col-span-3">
               <button onClick={save} disabled={saving} className="btn-accent text-sm">
                 {saving ? <Loader2 className="mr-1 inline h-4 w-4 animate-spin" /> : <Save className="mr-1 inline h-4 w-4" />}
                 {t("detail.save")}
               </button>
-              <button onClick={remove} className="btn-ghost ml-auto text-sm text-red-600">
-                <Trash2 className="mr-1 inline h-4 w-4" />{t("detail.delete")}
-              </button>
+              <div className="ml-auto flex items-center gap-2">
+                <select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} className="rounded border border-navy-200 px-2 py-1.5 text-sm" title={t("detail.moveHint")}>
+                  <option value="">{t("detail.moveTo")}</option>
+                  {orgs.filter((o) => o.id !== customerId).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
+                <button onClick={move} disabled={!moveTo || moving} className="btn-ghost text-sm disabled:opacity-40">
+                  {moving ? <Loader2 className="mr-1 inline h-4 w-4 animate-spin" /> : <ArrowRightLeft className="mr-1 inline h-4 w-4" />}{t("detail.move")}
+                </button>
+                <button onClick={remove} className="btn-ghost text-sm text-red-600">
+                  <Trash2 className="mr-1 inline h-4 w-4" />{t("detail.delete")}
+                </button>
+              </div>
             </div>
           </div>
 
