@@ -111,6 +111,10 @@ export interface AssetToken {
   last_used_at: string | null;
   revoked_at: string | null;
   created_at: string;
+  poll_interval_min?: number;
+  rescan_interval_min?: number;
+  last_scan_at?: string | null;
+  scan_requested_at?: string | null;
   secret?: string; // present only in the create response
 }
 
@@ -238,9 +242,18 @@ export const assethubApi = {
   listTokens: (customerId: string) => request<AssetToken[]>(`/tokens?customer_id=${customerId}`),
   createToken: (body: { customer_id: string; site_id?: string | null; label: string }) =>
     request<AssetToken>("/tokens", { method: "POST", body: JSON.stringify(body) }),
+  updateToken: (id: string, body: { label?: string; site_id?: string | null; poll_interval_min?: number; rescan_interval_min?: number }) =>
+    request<{ id: string }>(`/tokens/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   revokeToken: (id: string) => request<void>(`/tokens/${id}/revoke`, { method: "POST" }),
+  deleteToken: (id: string) => request<void>(`/tokens/${id}`, { method: "DELETE" }),
+  scanNow: (id: string) => request<{ id: string; status: string }>(`/tokens/${id}/scan`, { method: "POST" }),
 
   listDevices: (customerId: string, f?: DeviceFilters) => request<AssetDevice[]>(`/devices?${qs(customerId, f)}`),
+  createDevice: (body: {
+    customer_id: string; device_type?: string; hostname?: string; brand?: string; model?: string;
+    serial_number?: string; asset_tag?: string; os_name?: string; os_version?: string; primary_ip?: string;
+    primary_mac?: string; site_id?: string; assigned_user?: string; network_role?: string; notes?: string;
+  }) => request<{ id: string }>("/devices", { method: "POST", body: JSON.stringify(body) }),
   getDevice: (customerId: string, id: string) => request<AssetDevice>(`/devices/${id}?customer_id=${customerId}`),
   patchDevice: (id: string, body: Partial<Pick<AssetDevice, "device_type" | "asset_tag" | "assigned_user" | "site_id" | "status" | "notes">>) =>
     request<{ id: string }>(`/devices/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
@@ -259,6 +272,8 @@ export const assethubApi = {
   listReports: (customerId: string) => request<AssetReport[]>(`/reports?customer_id=${customerId}`),
   createReport: (body: { customer_id: string; site_id?: string | null; format: string }) =>
     request<{ id: string; status: string }>("/reports", { method: "POST", body: JSON.stringify(body) }),
+  retryReport: (id: string) => request<{ id: string; status: string }>(`/reports/${id}/retry`, { method: "POST" }),
+  deleteReport: (id: string) => request<void>(`/reports/${id}`, { method: "DELETE" }),
   downloadReport: (id: string, format: string) => downloadBlob(`/reports/${id}/download`, `handover.${format}`),
 };
 

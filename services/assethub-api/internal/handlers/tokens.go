@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -20,7 +21,8 @@ func (h *Handler) ListTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rows, err := h.DB.Query(r.Context(), `
-		SELECT id, customer_id, site_id, label, token_prefix, last_used_at, revoked_at, created_at
+		SELECT id, customer_id, site_id, label, token_prefix, last_used_at, revoked_at, created_at,
+		       poll_interval_min, rescan_interval_min, last_scan_at, scan_requested_at
 		FROM assethub_enrollment_tokens WHERE customer_id=$1 ORDER BY created_at DESC`, customerID)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "query failed")
@@ -31,7 +33,8 @@ func (h *Handler) ListTokens(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var t models.Token
 		if err := rows.Scan(&t.ID, &t.CustomerID, &t.SiteID, &t.Label, &t.TokenPrefix,
-			&t.LastUsedAt, &t.RevokedAt, &t.CreatedAt); err != nil {
+			&t.LastUsedAt, &t.RevokedAt, &t.CreatedAt,
+			&t.PollIntervalMin, &t.RescanIntervalMin, &t.LastScanAt, &t.ScanRequestedAt); err != nil {
 			writeErr(w, http.StatusInternalServerError, "scan failed")
 			return
 		}
@@ -116,6 +119,121 @@ func (h *Handler) RevokeToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type tokenUpdate struct {
+	Label             *string `json:"label"`
+	SiteID            *string `json:"site_id"`
+	PollIntervalMin   *int    `json:"poll_interval_min"`
+	RescanIntervalMin *int    `json:"rescan_interval_min"`
+}
+
+// UpdateToken (staff) relabels a token, reassigns its site, and/or sets the
+// daemon poll + auto-rescan cadence. The secret and hash are never touched.
+func (h *Handler) UpdateToken(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var req tokenUpdate
+	if err := decode(w, r, &req); err != nil {
+		return
+	}
+	ctx := r.Context()
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer tx.Rollback(ctx)
+	// COALESCE the absent fields (leave as-is); site_id is set directly so it
+	// can be cleared to NULL by sending "".
+	tag, err := tx.Exec(ctx, `
+		UPDATE assethub_enrollment_tokens
+		SET label               = COALESCE($2, label),
+		    site_id             = $3,
+		    poll_interval_min   = COALESCE($4, poll_interval_min),
+		    rescan_interval_min = COALESCE($5, rescan_interval_min)
+		WHERE id=$1`, id, req.Label, normSiteID(req.SiteID), req.PollIntervalMin, req.RescanIntervalMin)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "update failed")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeErr(w, http.StatusNotFound, "token not found")
+		return
+	}
+	_ = writeAudit(ctx, tx, "assethub_token", id, mw.UserID(ctx), "update", map[string]any{})
+	if err := tx.Commit(ctx); err != nil {
+		writeErr(w, http.StatusInternalServerError, "commit failed")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"id": id})
+}
+
+// ScanNow (staff) flags the token's agent to run a scan on its next poll.
+func (h *Handler) ScanNow(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	ctx := r.Context()
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer tx.Rollback(ctx)
+	tag, err := tx.Exec(ctx, `
+		UPDATE assethub_enrollment_tokens SET scan_requested_at = NOW()
+		WHERE id=$1 AND revoked_at IS NULL`, id)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "scan request failed")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeErr(w, http.StatusNotFound, "token not found or revoked")
+		return
+	}
+	_ = writeAudit(ctx, tx, "assethub_token", id, mw.UserID(ctx), "scan_now", map[string]any{})
+	if err := tx.Commit(ctx); err != nil {
+		writeErr(w, http.StatusInternalServerError, "commit failed")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"id": id, "status": "requested"})
+}
+
+// DeleteToken (admin) permanently removes a token. Prefer RevokeToken for an
+// audit-preserving soft-delete; this is for cleaning up mistakes.
+func (h *Handler) DeleteToken(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	ctx := r.Context()
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer tx.Rollback(ctx)
+	tag, err := tx.Exec(ctx, `DELETE FROM assethub_enrollment_tokens WHERE id=$1`, id)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "delete failed")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeErr(w, http.StatusNotFound, "token not found")
+		return
+	}
+	_ = writeAudit(ctx, tx, "assethub_token", id, mw.UserID(ctx), "delete", map[string]any{})
+	if err := tx.Commit(ctx); err != nil {
+		writeErr(w, http.StatusInternalServerError, "commit failed")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// normSiteID treats an empty/whitespace site_id as NULL (unassign).
+func normSiteID(s *string) *string {
+	if s == nil {
+		return nil
+	}
+	if strings.TrimSpace(*s) == "" {
+		return nil
+	}
+	return s
 }
 
 // randToken returns a URL-safe 32-byte random secret (~43 chars).

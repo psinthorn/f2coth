@@ -68,6 +68,9 @@ func main() {
 			r.Post("/ingest", h.Ingest)
 			r.Post("/discovery", h.Discovery)
 			r.Post("/enroll", h.EnrollDevice)
+			// Daemon coordination (run.sh --daemon): "should I scan now?" + ack.
+			r.Get("/agent/poll", h.AgentPoll)
+			r.Post("/agent/ack", h.AgentAck)
 		})
 
 		// ── Client-tool downloads (collect.sh / collect.ps1 / discover.sh /
@@ -103,17 +106,23 @@ func main() {
 				r.Post("/sites", h.CreateSite)
 				r.Patch("/sites/{id}", h.UpdateSite)
 				r.Post("/tokens", h.CreateToken)
+				r.Patch("/tokens/{id}", h.UpdateToken)
 				r.Post("/tokens/{id}/revoke", h.RevokeToken)
+				r.Post("/tokens/{id}/scan", h.ScanNow)
+				r.Post("/devices", h.CreateDevice)
 				r.Patch("/devices/{id}", h.PatchDevice)
 				r.Post("/discovery/findings/{id}/promote", h.PromoteFinding)
 				r.Post("/discovery/findings/{id}/ignore", h.IgnoreFinding)
 				r.Post("/reports", h.CreateReport)
+				r.Post("/reports/{id}/retry", h.RetryReport)
 			})
 
 			r.Group(func(r chi.Router) {
 				r.Use(mw.RequireAdmin(cfg.JWTSecret))
 				r.Delete("/sites/{id}", h.DeleteSite)
 				r.Delete("/devices/{id}", h.DeleteDevice)
+				r.Delete("/tokens/{id}", h.DeleteToken)
+				r.Delete("/reports/{id}", h.DeleteReport)
 			})
 		})
 

@@ -16,13 +16,75 @@
 #    F2_SNMP_COMMUNITY  optional, e.g. "public" (enables SNMP enrichment)
 #    F2_INTERVAL_MIN    rescan interval when looping (default 360 = 6h)
 #    F2_ONESHOT=1       run once and exit (audit-visit mode)
-#  Requires: nmap, curl, jq; snmpget (net-snmp) optional. All in probe image.
+#  Requires: nmap, curl, jq; snmpget (net-snmp) optional. All in probe image;
+#            on a bare host these are auto-installed (F2_NO_AUTOINSTALL=1 to skip).
 # =============================================================================
 set -u
 : "${F2_SERVER_URL:?set F2_SERVER_URL}"; : "${F2_TOKEN:?set F2_TOKEN}"
 : "${F2_CIDRS:?set F2_CIDRS e.g. 192.168.1.0/24}"
 SNMP_COMMUNITY="${F2_SNMP_COMMUNITY:-}"
 INTERVAL_MIN="${F2_INTERVAL_MIN:-360}"
+
+# Preflight: the probe needs nmap, curl, jq. The Docker image ships them; a bare
+# host run may not — so auto-install them (set F2_NO_AUTOINSTALL=1 to opt out and
+# fail fast instead). Detects the box's package manager; uses sudo when non-root.
+missing_bins() { local m=""; for b in "$@"; do command -v "$b" >/dev/null 2>&1 || m="$m $b"; done; echo "$m"; }
+
+SUDO=""
+if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then SUDO="sudo"; fi
+
+pkg_mgr() { # echo the first supported package manager found
+  for m in apt-get apk dnf yum pacman zypper brew; do
+    command -v "$m" >/dev/null 2>&1 && { echo "$m"; return 0; }
+  done
+  return 1
+}
+install_pkgs() { # $1=mgr, rest=packages (nmap/curl/jq match their binary names)
+  mgr="$1"; shift
+  case "$mgr" in
+    apt-get) $SUDO apt-get update -y && $SUDO apt-get install -y "$@" ;;
+    apk)     $SUDO apk add --no-cache "$@" ;;
+    dnf)     $SUDO dnf install -y "$@" ;;
+    yum)     $SUDO yum install -y "$@" ;;
+    pacman)  $SUDO pacman -Sy --noconfirm "$@" ;;
+    zypper)  $SUDO zypper --non-interactive install "$@" ;;
+    brew)    brew install "$@" ;;   # macOS; brew refuses root
+    *) return 1 ;;
+  esac
+}
+
+# State dir: records what WE installed so uninstall.sh removes exactly those
+# (and nothing the machine already had).
+STATE_DIR="${F2_STATE_DIR:-${HOME}/.f2-assethub}"
+mkdir -p "$STATE_DIR" 2>/dev/null || { STATE_DIR="/tmp/f2-assethub"; mkdir -p "$STATE_DIR"; }
+
+MISSING="$(missing_bins nmap curl jq)"
+if [ -n "$MISSING" ]; then
+  if [ "${F2_NO_AUTOINSTALL:-0}" = "1" ]; then
+    echo "[probe] ERROR: missing required tool(s):$MISSING (auto-install disabled)" >&2; exit 3
+  fi
+  MGR="$(pkg_mgr || true)"
+  if [ -z "$MGR" ]; then
+    echo "[probe] ERROR: no supported package manager to install:$MISSING" >&2
+    echo "[probe]   install manually — macOS: brew install nmap jq · Debian/Ubuntu: apt-get install -y nmap jq curl" >&2
+    echo "[probe]   or run via docker-compose.probe.yml (image bundles everything)." >&2
+    exit 3
+  fi
+  echo "[probe] installing missing tool(s):$MISSING via $MGR ..." >&2
+  if ! install_pkgs "$MGR" $MISSING; then
+    echo "[probe] ERROR: could not auto-install:$MISSING (install failed)" >&2; exit 3
+  fi
+  STILL="$(missing_bins nmap curl jq)"
+  [ -z "$STILL" ] || { echo "[probe] ERROR: still missing after install:$STILL" >&2; exit 3; }
+  # Manifest for uninstall.sh: which manager + exactly which packages we added.
+  { echo "mgr=$MGR"; echo "pkgs=$(echo $MISSING)"; } > "$STATE_DIR/installed-deps"
+  echo "[probe] dependencies ready (recorded to $STATE_DIR/installed-deps)." >&2
+fi
+
+# Spool dir: /spool is a mounted volume inside the probe image; on a bare host it
+# won't exist / be writable, so fall back to a temp dir (mirrors agents/collect.sh).
+SPOOL_DIR="${F2_SPOOL_DIR:-/spool}"
+mkdir -p "$SPOOL_DIR" 2>/dev/null || { SPOOL_DIR="/tmp/f2-assethub-spool"; mkdir -p "$SPOOL_DIR"; }
 
 snmp_val() { # $1=ip $2=oid
   [ -n "$SNMP_COMMUNITY" ] || return 0
@@ -82,12 +144,12 @@ run_scan() {
        -d "$PAYLOAD" >/dev/null; then
     echo "[probe] OK: $(echo "$PAYLOAD" | jq '.findings | length') findings sent."
   else
-    SP="/spool/discovery-$(date +%s).json"; mkdir -p /spool
+    SP="$SPOOL_DIR/discovery-$(date +%s).json"
     echo "$PAYLOAD" > "$SP"
     echo "[probe] WARN: server unreachable, spooled to $SP" >&2
   fi
   # flush old spool
-  for F in /spool/discovery-*.json; do
+  for F in "$SPOOL_DIR"/discovery-*.json; do
     [ -f "$F" ] || continue
     curl -fsS --max-time 60 -X POST "$F2_SERVER_URL/api/assethub/discovery" \
       -H "Authorization: Bearer $F2_TOKEN" -H "Content-Type: application/json" \

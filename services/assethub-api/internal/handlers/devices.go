@@ -195,6 +195,87 @@ func (h *Handler) PatchDevice(w http.ResponseWriter, r *http.Request) {
 // "clear" vs absent meaning "leave". For MVP we treat empty as no-op (COALESCE).
 type devicepatchInput = devicepatch
 
+// deviceCreateInput is a hand-entered device (source=manual) for gear the
+// collector/probe can't reach — phones, off-network kit, spares in a drawer.
+type deviceCreateInput struct {
+	CustomerID   string `json:"customer_id"`
+	DeviceType   string `json:"device_type"`
+	Hostname     string `json:"hostname"`
+	Brand        string `json:"brand"`
+	Model        string `json:"model"`
+	SerialNumber string `json:"serial_number"`
+	AssetTag     string `json:"asset_tag"`
+	OSName       string `json:"os_name"`
+	OSVersion    string `json:"os_version"`
+	PrimaryIP    string `json:"primary_ip"`
+	PrimaryMAC   string `json:"primary_mac"`
+	SiteID       string `json:"site_id"`
+	AssignedUser string `json:"assigned_user"`
+	NetworkRole  string `json:"network_role"`
+	Notes        string `json:"notes"`
+}
+
+// CreateDevice (staff) inserts a manual device. Identity precedence
+// (serial → MAC → hostname) is reused to avoid duplicating an existing row;
+// a collision returns 409 so the operator edits the real device instead.
+func (h *Handler) CreateDevice(w http.ResponseWriter, r *http.Request) {
+	var in deviceCreateInput
+	if err := decode(w, r, &in); err != nil {
+		return
+	}
+	if in.CustomerID == "" {
+		writeErr(w, http.StatusBadRequest, "customer_id required")
+		return
+	}
+	if strings.TrimSpace(in.Hostname) == "" && strings.TrimSpace(in.SerialNumber) == "" {
+		writeErr(w, http.StatusBadRequest, "hostname or serial_number required")
+		return
+	}
+	ctx := r.Context()
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	// Reject duplicates so manual entry can't shadow an ingested device.
+	var existing string
+	if s := strings.TrimSpace(in.SerialNumber); s != "" {
+		_ = tx.QueryRow(ctx, `SELECT id FROM assethub_devices WHERE customer_id=$1 AND serial_number=$2`, in.CustomerID, s).Scan(&existing)
+	}
+	if existing == "" && strings.TrimSpace(in.PrimaryMAC) != "" {
+		_ = tx.QueryRow(ctx, `SELECT id FROM assethub_devices WHERE customer_id=$1 AND primary_mac=$2`, in.CustomerID, in.PrimaryMAC).Scan(&existing)
+	}
+	if existing == "" && strings.TrimSpace(in.Hostname) != "" {
+		_ = tx.QueryRow(ctx, `SELECT id FROM assethub_devices WHERE customer_id=$1 AND lower(hostname)=lower($2)`, in.CustomerID, in.Hostname).Scan(&existing)
+	}
+	if existing != "" {
+		writeErr(w, http.StatusConflict, "a device with this serial/MAC/hostname already exists: "+existing)
+		return
+	}
+
+	var id string
+	if err := tx.QueryRow(ctx, `
+		INSERT INTO assethub_devices
+		  (customer_id, site_id, device_type, hostname, brand, model, serial_number, asset_tag,
+		   os_name, os_version, primary_ip, primary_mac, assigned_user, network_role, notes, source)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'manual') RETURNING id`,
+		in.CustomerID, nilIfEmpty(in.SiteID), normDeviceTypeManual(in.DeviceType), nilIfEmpty(in.Hostname),
+		nilIfEmpty(in.Brand), nilIfEmpty(in.Model), nilIfEmpty(in.SerialNumber), nilIfEmpty(in.AssetTag),
+		nilIfEmpty(in.OSName), nilIfEmpty(in.OSVersion), nilIfEmpty(in.PrimaryIP), nilIfEmpty(in.PrimaryMAC),
+		nilIfEmpty(in.AssignedUser), normNetworkRole(in.NetworkRole), nilIfEmpty(in.Notes)).Scan(&id); err != nil {
+		writeErr(w, http.StatusInternalServerError, "create failed: "+err.Error())
+		return
+	}
+	_ = writeAudit(ctx, tx, "assethub_device", id, mw.UserID(ctx), "create", map[string]any{"source": "manual"})
+	if err := tx.Commit(ctx); err != nil {
+		writeErr(w, http.StatusInternalServerError, "commit failed")
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]string{"id": id})
+}
+
 // DeleteDevice (admin only).
 func (h *Handler) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")

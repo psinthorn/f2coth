@@ -120,6 +120,11 @@ type Token struct {
 	LastUsedAt  *time.Time `json:"last_used_at"`
 	RevokedAt   *time.Time `json:"revoked_at"`
 	CreatedAt   time.Time  `json:"created_at"`
+	// Daemon scan-control (migration 066).
+	PollIntervalMin   int        `json:"poll_interval_min"`
+	RescanIntervalMin int        `json:"rescan_interval_min"`
+	LastScanAt        *time.Time `json:"last_scan_at"`
+	ScanRequestedAt   *time.Time `json:"scan_requested_at"`
 	// Secret is only populated once, in the create response.
 	Secret string `json:"secret,omitempty"`
 }
