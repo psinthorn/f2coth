@@ -20,6 +20,8 @@ type collectorFile struct {
 }
 
 var collectors = map[string]collectorFile{
+	"install.sh":               {"agents/install.sh", "text/x-shellscript; charset=utf-8"},
+	"install.ps1":              {"agents/install.ps1", "text/plain; charset=utf-8"},
 	"collect.sh":               {"agents/collect.sh", "text/x-shellscript; charset=utf-8"},
 	"collect.ps1":              {"agents/collect.ps1", "text/plain; charset=utf-8"},
 	"discover.sh":              {"probe/discover.sh", "text/x-shellscript; charset=utf-8"},

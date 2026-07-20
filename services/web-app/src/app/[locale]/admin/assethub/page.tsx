@@ -370,11 +370,16 @@ function InstallPanel({ token, t }: { token: string; t: any }) {
   const origin = serverUrl.replace(/\/+$/, "");
   const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|$)/.test(origin);
   const base = `${origin}/api/assethub/collector`;
+  // Auto-detect installers: one paste picks the OS + tool and installs deps.
+  const autoUnix = `curl -fsSL ${base}/install.sh | F2_SERVER_URL="${origin}" F2_TOKEN="${token}" sh`;
+  const autoWin = `$env:F2_SERVER_URL="${origin}"; $env:F2_TOKEN="${token}"; irm ${base}/install.ps1 | iex`;
   const linux = `curl -fsSL ${base}/collect.sh -o collect.sh && F2_SERVER_URL="${origin}" F2_TOKEN="${token}" bash collect.sh`;
   const win = `irm ${base}/collect.ps1 -OutFile collect.ps1; .\\collect.ps1 -ServerUrl "${origin}" -Token "${token}"`;
   const probe = `curl -fsSL ${base}/discover.sh -o discover.sh && F2_SERVER_URL="${origin}" F2_TOKEN="${token}" F2_CIDRS="192.168.1.0/24" bash discover.sh`;
 
   const downloads = [
+    { name: "install.sh", label: t("install.autoUnix") },
+    { name: "install.ps1", label: t("install.autoWin") },
     { name: "collect.sh", label: t("install.linux") },
     { name: "collect.ps1", label: t("install.windows") },
     { name: "discover.sh", label: t("install.probe") },
@@ -402,6 +407,14 @@ function InstallPanel({ token, t }: { token: string; t: any }) {
       {isLocal && <p className="mb-3 text-xs text-amber-600">{t("install.localHint")}</p>}
       {!isLocal && <div className="mb-3" />}
 
+      <div className="mb-2 flex items-center gap-2">
+        <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">{t("install.autoBadge")}</span>
+        <span className="text-xs text-navy-500">{t("install.autoDesc")}</span>
+      </div>
+      <CmdBlock label={t("install.autoUnix")} cmd={autoUnix} t={t} />
+      <CmdBlock label={t("install.autoWin")} cmd={autoWin} t={t} />
+
+      <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-navy-400">{t("install.manualTitle")}</p>
       <CmdBlock label={t("install.linux")} cmd={linux} t={t} />
       <CmdBlock label={t("install.windows")} cmd={win} t={t} />
       <CmdBlock label={t("install.probe")} cmd={probe} t={t} />
