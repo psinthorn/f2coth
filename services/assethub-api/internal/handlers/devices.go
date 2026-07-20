@@ -268,6 +268,11 @@ func (h *Handler) CreateDevice(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "create failed: "+err.Error())
 		return
 	}
+	// Default asset tag (only if the operator didn't supply one).
+	if err := h.assignAssetTagIfEmpty(ctx, tx, id, in.CustomerID, normDeviceTypeManual(in.DeviceType), in.Model, in.OSName); err != nil {
+		writeErr(w, http.StatusInternalServerError, "asset tag failed: "+err.Error())
+		return
+	}
 	_ = writeAudit(ctx, tx, "assethub_device", id, mw.UserID(ctx), "create", map[string]any{"source": "manual"})
 	if err := tx.Commit(ctx); err != nil {
 		writeErr(w, http.StatusInternalServerError, "commit failed")
@@ -345,6 +350,43 @@ func (h *Handler) MoveDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"id": id, "customer_id": in.CustomerID})
+}
+
+// GenerateTag (staff) assigns a fresh default asset tag to a device, using its
+// current type/model/OS. Overwrites any existing tag (the button is an explicit
+// "regenerate"), and advances the per-category counter.
+func (h *Handler) GenerateTag(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	ctx := r.Context()
+	tx, err := h.DB.Begin(ctx)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	var customerID, deviceType string
+	var model, osName *string
+	if err := tx.QueryRow(ctx, `SELECT customer_id, device_type, model, os_name FROM assethub_devices WHERE id=$1`, id).
+		Scan(&customerID, &deviceType, &model, &osName); err != nil {
+		writeErr(w, http.StatusNotFound, "device not found")
+		return
+	}
+	tag, err := h.generateAssetTag(ctx, tx, customerID, deviceType, deref(model), deref(osName))
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "generate failed: "+err.Error())
+		return
+	}
+	if _, err := tx.Exec(ctx, `UPDATE assethub_devices SET asset_tag=$2 WHERE id=$1`, id, tag); err != nil {
+		writeErr(w, http.StatusInternalServerError, "update failed")
+		return
+	}
+	_ = writeAudit(ctx, tx, "assethub_device", id, mw.UserID(ctx), "generate_tag", map[string]any{"asset_tag": tag})
+	if err := tx.Commit(ctx); err != nil {
+		writeErr(w, http.StatusInternalServerError, "commit failed")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"id": id, "asset_tag": tag})
 }
 
 // DeleteDevice (admin only).

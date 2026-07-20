@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
-import { Loader2, ArrowLeft, Save, Trash2, ArrowRightLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Save, Trash2, ArrowRightLeft, Wand2 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import {
   assethubApi, type AssetDevice, type AssetSite, type AssetOrg, type DeviceType, type DeviceStatus,
@@ -91,6 +91,13 @@ export default function AssetHubDeviceDetail() {
     } catch (e) { setErr(String(e)); } finally { setMoving(false); }
   }
 
+  async function genTag() {
+    try {
+      const res = await assethubApi.generateTag(id);
+      setEdit((e) => ({ ...e, asset_tag: res.asset_tag }));
+    } catch (e) { setErr(String(e)); }
+  }
+
   return (
     <AdminShell>
       <Link href={`/admin/assethub`} className="mb-4 inline-flex items-center text-sm text-navy-500 hover:text-navy-800">
@@ -125,7 +132,12 @@ export default function AssetHubDeviceDetail() {
               </select>
             </Field>
             <Field label={t("detail.assetTag")}>
-              <input value={edit.asset_tag} onChange={(e) => setEdit({ ...edit, asset_tag: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm" />
+              <div className="flex gap-1">
+                <input value={edit.asset_tag} onChange={(e) => setEdit({ ...edit, asset_tag: e.target.value })} placeholder="F2-001-002-001" className="w-full rounded border border-navy-200 px-2 py-1.5 font-mono text-sm" />
+                <button type="button" onClick={genTag} title={t("detail.genTagHint")} className="btn-ghost whitespace-nowrap px-2 text-xs">
+                  <Wand2 className="inline h-3.5 w-3.5" />
+                </button>
+              </div>
             </Field>
             <Field label={t("detail.assignedUser")}>
               <input value={edit.assigned_user} onChange={(e) => setEdit({ ...edit, assigned_user: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm" />

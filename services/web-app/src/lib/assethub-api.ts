@@ -260,6 +260,7 @@ export const assethubApi = {
   deleteDevice: (id: string) => request<void>(`/devices/${id}`, { method: "DELETE" }),
   moveDevice: (id: string, customerId: string) =>
     request<{ id: string; customer_id: string }>(`/devices/${id}/move`, { method: "POST", body: JSON.stringify({ customer_id: customerId }) }),
+  generateTag: (id: string) => request<{ id: string; asset_tag: string }>(`/devices/${id}/generate-tag`, { method: "POST" }),
   deviceHistory: (customerId: string, id: string) =>
     request<{ id: string; source: string; collected_at: string | null; received_at: string }[]>(`/devices/${id}/history?customer_id=${customerId}`),
   exportCSV: (customerId: string, f?: DeviceFilters) =>

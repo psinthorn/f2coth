@@ -2283,6 +2283,7 @@
         "status": "Status",
         "site": "Site",
         "assetTag": "Asset tag",
+        "genTagHint": "Generate a default tag (PREFIX-category-subtype-number)",
         "assignedUser": "Assigned user",
         "notes": "Notes",
         "save": "Save changes",
