@@ -123,12 +123,22 @@ if (-not $ServerUrl -or -not $Token) {
 # ---------- send / spool (flush older spooled payloads first) ----------
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $headers = @{ Authorization = "Bearer $Token"; "Content-Type" = "application/json" }
+# BOM-less UTF-8: Windows PowerShell 5.1's `Out-File -Encoding utf8` prepends a
+# byte-order mark, and Go's json.Unmarshal rejects any body that starts with one
+# ("malformed JSON"). Encode and spool without a BOM, and strip a leading BOM
+# from anything we read back before sending.
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 function Send-Payload([string]$body) {
+    $body = $body.TrimStart([char]0xFEFF, ' ', "`t", "`r", "`n")
     try {
         Invoke-RestMethod -Uri "$ServerUrl/api/assethub/ingest" -Method Post -Headers $headers `
-            -Body ([Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 30 | Out-Null
+            -Body ($Utf8NoBom.GetBytes($body)) -TimeoutSec 30 | Out-Null
+        $script:LastSendError = $null
         return $true
-    } catch { return $false }
+    } catch {
+        $script:LastSendError = $_
+        return $false
+    }
 }
 Get-ChildItem $SpoolDir -Filter *.json | ForEach-Object {
     if (Send-Payload (Get-Content $_.FullName -Raw)) { Remove-Item $_.FullName -Force }
@@ -137,6 +147,8 @@ if (Send-Payload $json) {
     Write-Host "OK: inventory sent for $($env:COMPUTERNAME) (role=$netRole, $netName)" -ForegroundColor Green
 } else {
     $f = Join-Path $SpoolDir ("{0}-{1}.json" -f (Get-Date -Format yyyyMMddHHmmss), $PID)
-    $json | Out-File -FilePath $f -Encoding utf8
-    Write-Warning "Server unreachable — spooled to $f (will retry on next run)"
+    [System.IO.File]::WriteAllText($f, $json, $Utf8NoBom)
+    $resp = $script:LastSendError.Exception.Response
+    $reason = if ($resp) { "server returned HTTP $([int]$resp.StatusCode)" } else { "server unreachable" }
+    Write-Warning "send failed ($reason) — spooled to $f (will retry on next run)"
 }
