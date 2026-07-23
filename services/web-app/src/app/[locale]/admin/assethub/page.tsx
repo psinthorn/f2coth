@@ -8,13 +8,14 @@ import AdminShell from "@/components/AdminShell";
 import {
   assethubApi,
   type AssetOrg, type AssetOverview, type AssetDevice, type AssetSite,
-  type AssetToken, type AssetFinding, type AssetReport, type DeviceType,
+  type AssetToken, type AssetFinding, type AssetReport, type DeviceType, type AssetGroup,
 } from "@/lib/assethub-api";
 
-type Tab = "devices" | "discovery" | "sites" | "tokens" | "reports" | "guide";
+type Tab = "devices" | "discovery" | "workstations" | "sites" | "tokens" | "reports" | "guide";
 
 const DEVICE_TYPES: DeviceType[] = [
-  "computer", "server", "nas", "router", "switch", "ap", "printer", "camera", "phone", "tablet", "iot", "unknown",
+  "computer", "server", "nas", "router", "switch", "ap", "printer", "camera", "phone", "tablet", "iot",
+  "monitor", "ups", "keyboard", "mouse", "dock", "unknown",
 ];
 
 export default function AssetHubAdminPage() {
@@ -87,7 +88,7 @@ export default function AssetHubAdminPage() {
       )}
 
       <nav className="mb-4 flex flex-wrap gap-1 rounded-lg bg-navy-50 p-1 text-sm">
-        {(["devices", "discovery", "sites", "tokens", "reports", "guide"] as Tab[]).map((k) => (
+        {(["devices", "discovery", "workstations", "sites", "tokens", "reports", "guide"] as Tab[]).map((k) => (
           <button
             key={k}
             onClick={() => setTab(k)}
@@ -101,6 +102,7 @@ export default function AssetHubAdminPage() {
 
       {customerId && tab === "devices" && <DevicesTab customerId={customerId} t={t} tc={tc} onChanged={refreshCounts} />}
       {customerId && tab === "discovery" && <DiscoveryTab customerId={customerId} t={t} onChanged={refreshCounts} />}
+      {customerId && tab === "workstations" && <WorkstationsTab customerId={customerId} t={t} />}
       {customerId && tab === "sites" && <SitesTab customerId={customerId} t={t} />}
       {customerId && tab === "tokens" && <TokensTab customerId={customerId} t={t} />}
       {customerId && tab === "reports" && <ReportsTab customerId={customerId} t={t} />}
@@ -124,7 +126,7 @@ function StatTile({ label, value, tone }: { label: string; value: number; tone?:
 // Section chips over the single device table (keyed by device_type). The
 // backend maps each key to a device_type group (see categoryTypes in
 // devices.go) so Network/Computers/CCTV stay one dataset, not separate modules.
-const CATEGORIES = ["", "network", "computers", "cctv", "printers"] as const;
+const CATEGORIES = ["", "network", "computers", "cctv", "printers", "peripherals"] as const;
 
 function DevicesTab({ customerId, t, tc, onChanged }: { customerId: string; t: any; tc: any; onChanged: () => void }) {
   const [devices, setDevices] = useState<AssetDevice[]>([]);
@@ -359,6 +361,102 @@ function PromoteRow({ f, status, onPromote, onIgnore, t }: { f: AssetFinding; st
 }
 
 // ---------------- Sites ----------------
+
+// ---------------- Workstations (asset groups) ----------------
+
+function WorkstationsTab({ customerId, t }: { customerId: string; t: any }) {
+  const [groups, setGroups] = useState<AssetGroup[]>([]);
+  const [name, setName] = useState("");
+  const [dept, setDept] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  function load() {
+    setLoading(true);
+    assethubApi.listGroups(customerId).then(setGroups).finally(() => setLoading(false));
+  }
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [customerId]);
+
+  async function add() {
+    if (!name.trim()) return;
+    await assethubApi.createGroup({ customer_id: customerId, name: name.trim(), department: dept.trim() || undefined });
+    setName(""); setDept(""); load();
+  }
+  async function remove(g: AssetGroup) {
+    if (!confirm(t("groups.confirmDelete", { name: g.name }))) return;
+    await assethubApi.deleteGroup(g.id); load();
+  }
+
+  if (loading) return <Loader2 className="h-5 w-5 animate-spin text-navy-400" />;
+  return (
+    <div>
+      <p className="mb-3 text-sm text-navy-600">{t("groups.intro")}</p>
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("groups.name")} className={inp} />
+        <input value={dept} onChange={(e) => setDept(e.target.value)} placeholder={t("groups.department")} className={inp} />
+        <button onClick={add} className="btn-accent text-sm"><Plus className="mr-1 inline h-4 w-4" />{t("groups.add")}</button>
+      </div>
+      <ul className="divide-y divide-navy-100 rounded-lg border border-navy-100">
+        {groups.map((g) => (
+          <GroupRow key={g.id} g={g} customerId={customerId} t={t} onSaved={load} onDelete={() => remove(g)} />
+        ))}
+        {!groups.length && <li className="px-3 py-8 text-center text-navy-400">{t("groups.empty")}</li>}
+      </ul>
+    </div>
+  );
+}
+
+function GroupRow({ g, customerId, t, onSaved, onDelete }: { g: AssetGroup; customerId: string; t: any; onSaved: () => void; onDelete: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(g.name);
+  const [dept, setDept] = useState(g.department ?? "");
+  const [members, setMembers] = useState<AssetDevice[] | null>(null);
+
+  async function save() {
+    if (!name.trim()) return;
+    await assethubApi.updateGroup(g.id, { name: name.trim(), department: dept.trim() || undefined });
+    setEditing(false); onSaved();
+  }
+  function toggle() {
+    const next = !open; setOpen(next);
+    if (next && members === null) assethubApi.listDevices(customerId, { group_id: g.id }).then(setMembers);
+  }
+
+  if (editing) {
+    return (
+      <li className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+        <input value={name} onChange={(e) => setName(e.target.value)} className={inp} />
+        <input value={dept} onChange={(e) => setDept(e.target.value)} placeholder={t("groups.department")} className={inp} />
+        <button onClick={save} className="btn-accent px-2 py-1 text-xs">{t("sites.saveEdit")}</button>
+        <button onClick={() => { setEditing(false); setName(g.name); setDept(g.department ?? ""); }} className="btn-ghost px-2 py-1 text-xs">{t("devices.cancel")}</button>
+      </li>
+    );
+  }
+  return (
+    <li className="px-3 py-2 text-sm">
+      <div className="flex items-center gap-2">
+        <button onClick={toggle} className="font-medium text-navy-900 hover:text-accent-600">{g.name}</button>
+        {g.department && <span className="rounded bg-navy-50 px-1.5 py-0.5 text-xs text-navy-500">{g.department}</span>}
+        <span className="ml-auto text-xs text-navy-500">{t("groups.members", { n: g.member_count })}</span>
+        <button onClick={() => setEditing(true)} className="btn-ghost px-2 py-1 text-xs" title={t("sites.edit")}><Pencil className="inline h-3.5 w-3.5" /></button>
+        <button onClick={onDelete} className="btn-ghost px-2 py-1 text-xs text-red-600" title={t("sites.delete")}><Trash2 className="inline h-3.5 w-3.5" /></button>
+      </div>
+      {open && (
+        <ul className="mt-2 ml-2 border-l border-navy-100 pl-3">
+          {members === null && <li className="py-1 text-xs text-navy-400"><Loader2 className="inline h-3 w-3 animate-spin" /></li>}
+          {members?.map((m) => (
+            <li key={m.id} className="flex items-center gap-2 py-1 text-xs">
+              <Link href={`/admin/assethub/${m.id}?c=${customerId}`} className="text-navy-800 hover:text-accent-600">{m.hostname || m.model || m.serial_number || m.id.slice(0, 8)}</Link>
+              <span className="text-navy-400">{m.device_type}</span>
+              {m.asset_tag && <span className="ml-auto font-mono text-navy-500">{m.asset_tag}</span>}
+            </li>
+          ))}
+          {members?.length === 0 && <li className="py-1 text-xs text-navy-400">{t("groups.noMembers")}</li>}
+        </ul>
+      )}
+    </li>
+  );
+}
 
 function SitesTab({ customerId, t }: { customerId: string; t: any }) {
   const [sites, setSites] = useState<AssetSite[]>([]);

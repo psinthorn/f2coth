@@ -67,8 +67,18 @@ type IngestDevice struct {
 	Interfaces            FlexSlice[IngestIface]    `json:"interfaces"`
 	Disks                 FlexSlice[IngestDisk]     `json:"disks"`
 	Software              FlexSlice[IngestSoftware] `json:"software"`
-	LoggedInUser          string           `json:"logged_in_user"`
-	UptimeHours           float64          `json:"uptime_hours"`
+	Monitors              FlexSlice[IngestMonitor]  `json:"monitors"`
+	LoggedInUser          string                    `json:"logged_in_user"`
+	UptimeHours           float64                   `json:"uptime_hours"`
+}
+
+// IngestMonitor is a connected display the collector read from EDID. Each one
+// becomes its own monitor asset linked to the reporting host.
+type IngestMonitor struct {
+	Brand  string `json:"brand"`
+	Model  string `json:"model"`
+	Serial string `json:"serial"`
+	Size   string `json:"size"`
 }
 
 type IngestOS struct {
@@ -188,11 +198,28 @@ type Device struct {
 	FirstSeen             time.Time  `json:"first_seen"`
 	LastSeen              time.Time  `json:"last_seen"`
 	Notes                 *string    `json:"notes"`
+	GroupID               *string    `json:"group_id"`
+	GroupName             *string    `json:"group_name,omitempty"`
+	ParentDeviceID        *string    `json:"parent_device_id,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`
 	UpdatedAt             time.Time  `json:"updated_at"`
 	Interfaces            []Iface    `json:"interfaces,omitempty"`
 	Disks                 []Disk     `json:"disks,omitempty"`
 	Software              []Software `json:"software,omitempty"`
+}
+
+// AssetGroup is a workstation/seat that bundles individually-tagged assets
+// (a PC + its monitor + UPS…) used together, e.g. "AR1" under "Accounting".
+type AssetGroup struct {
+	ID          string    `json:"id"`
+	CustomerID  string    `json:"customer_id"`
+	SiteID      *string   `json:"site_id"`
+	Name        string    `json:"name"`
+	Department  *string   `json:"department"`
+	Notes       *string   `json:"notes"`
+	MemberCount int       `json:"member_count"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type Iface struct {

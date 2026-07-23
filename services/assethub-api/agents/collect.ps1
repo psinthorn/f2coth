@@ -87,6 +87,32 @@ Get-ItemProperty $paths -ErrorAction SilentlyContinue | Where-Object { $_.Displa
 }
 $sw = @($sw | Sort-Object name -Unique)
 
+# ---------- monitors (EDID via WMI) ----------
+# Each connected display becomes its own monitor asset on the server. Names come
+# back as null-terminated UInt16 char-code arrays; size is derived from the EDID
+# physical image size (cm) as a diagonal in inches.
+$monitors = @()
+try {
+    $edidToStr = { param($codes) if ($codes) { -join ($codes | Where-Object { $_ -gt 0 } | ForEach-Object { [char]$_ }) } else { "" } }
+    $ids    = @(Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorID -ErrorAction SilentlyContinue)
+    $params = @(Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorBasicDisplayParams -ErrorAction SilentlyContinue)
+    foreach ($m in $ids) {
+        $brand = (& $edidToStr $m.ManufacturerName).Trim()
+        $model = (& $edidToStr $m.UserFriendlyName).Trim()
+        $serial = (& $edidToStr $m.SerialNumberID).Trim()
+        $size = ""
+        $p = $params | Where-Object { $_.InstanceName -eq $m.InstanceName } | Select-Object -First 1
+        if ($p -and $p.MaxHorizontalImageSize -and $p.MaxVerticalImageSize) {
+            $diag = [math]::Round([math]::Sqrt(($p.MaxHorizontalImageSize * $p.MaxHorizontalImageSize) + ($p.MaxVerticalImageSize * $p.MaxVerticalImageSize)) / 2.54, 1)
+            if ($diag -gt 0) { $size = "$diag`"" }
+        }
+        if ($brand -or $model -or $serial) {
+            $monitors += [pscustomobject]@{ brand = $brand; model = $model; serial = $serial; size = $size }
+        }
+    }
+} catch {}
+$monitors = @($monitors)
+
 # ---------- assemble ----------
 $payload = [ordered]@{
     schema       = "f2.assethub.v1"
@@ -107,6 +133,7 @@ $payload = [ordered]@{
         interfaces               = $ifaces
         disks                    = $disks
         software                 = $sw
+        monitors                 = $monitors
         logged_in_user           = "$($cs.UserName)"
         uptime_hours             = [math]::Round(((Get-Date) - $os.LastBootUpTime).TotalHours)
     }

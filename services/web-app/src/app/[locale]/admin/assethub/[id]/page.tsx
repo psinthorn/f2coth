@@ -7,12 +7,13 @@ import { Link, useRouter } from "@/i18n/routing";
 import { Loader2, ArrowLeft, Save, Trash2, ArrowRightLeft, Wand2 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import {
-  assethubApi, type AssetDevice, type AssetSite, type AssetOrg, type DeviceType, type DeviceStatus,
+  assethubApi, type AssetDevice, type AssetSite, type AssetOrg, type AssetGroup, type DeviceType, type DeviceStatus,
 } from "@/lib/assethub-api";
 
 type DetailTab = "hardware" | "network" | "software" | "history";
 const DEVICE_TYPES: DeviceType[] = [
-  "computer", "server", "nas", "router", "switch", "ap", "printer", "camera", "phone", "tablet", "iot", "unknown",
+  "computer", "server", "nas", "router", "switch", "ap", "printer", "camera", "phone", "tablet", "iot",
+  "monitor", "ups", "keyboard", "mouse", "dock", "unknown",
 ];
 const STATUSES: DeviceStatus[] = ["active", "retired", "missing"];
 
@@ -26,6 +27,7 @@ export default function AssetHubDeviceDetail() {
 
   const [device, setDevice] = useState<AssetDevice | null>(null);
   const [sites, setSites] = useState<AssetSite[]>([]);
+  const [groups, setGroups] = useState<AssetGroup[]>([]);
   const [orgs, setOrgs] = useState<AssetOrg[]>([]);
   const [history, setHistory] = useState<{ id: string; source: string; received_at: string }[]>([]);
   const [tab, setTab] = useState<DetailTab>("hardware");
@@ -36,7 +38,7 @@ export default function AssetHubDeviceDetail() {
   const [err, setErr] = useState("");
 
   // editable fields
-  const [edit, setEdit] = useState({ device_type: "", asset_tag: "", assigned_user: "", status: "", site_id: "", notes: "" });
+  const [edit, setEdit] = useState({ device_type: "", asset_tag: "", assigned_user: "", status: "", site_id: "", group_id: "", notes: "" });
 
   useEffect(() => {
     if (!customerId) { setErr(t("detail.noOrg")); setLoading(false); return; }
@@ -45,14 +47,16 @@ export default function AssetHubDeviceDetail() {
       assethubApi.listSites(customerId),
       assethubApi.deviceHistory(customerId, id),
       assethubApi.listOrgs().catch(() => [] as AssetOrg[]),
-    ]).then(([d, s, h, o]) => {
+      assethubApi.listGroups(customerId).catch(() => [] as AssetGroup[]),
+    ]).then(([d, s, h, o, g]) => {
       setDevice(d);
       setSites(s);
       setHistory(h);
       setOrgs(o);
+      setGroups(g);
       setEdit({
         device_type: d.device_type, asset_tag: d.asset_tag ?? "", assigned_user: d.assigned_user ?? "",
-        status: d.status, site_id: d.site_id ?? "", notes: d.notes ?? "",
+        status: d.status, site_id: d.site_id ?? "", group_id: d.group_id ?? "", notes: d.notes ?? "",
       });
     }).catch((e) => setErr(String(e))).finally(() => setLoading(false));
   }, [customerId, id, t]);
@@ -66,6 +70,7 @@ export default function AssetHubDeviceDetail() {
         assigned_user: edit.assigned_user,
         status: edit.status as DeviceStatus,
         site_id: edit.site_id || undefined,
+        group_id: edit.group_id, // "" clears the workstation, a UUID assigns it
         notes: edit.notes,
       });
     } catch (e) { setErr(String(e)); } finally { setSaving(false); }
@@ -131,6 +136,12 @@ export default function AssetHubDeviceDetail() {
                 {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </Field>
+            <Field label={t("detail.workstation")}>
+              <select value={edit.group_id} onChange={(e) => setEdit({ ...edit, group_id: e.target.value })} className="w-full rounded border border-navy-200 px-2 py-1.5 text-sm">
+                <option value="">—</option>
+                {groups.map((g) => <option key={g.id} value={g.id}>{g.department ? `${g.department} · ${g.name}` : g.name}</option>)}
+              </select>
+            </Field>
             <Field label={t("detail.assetTag")}>
               <div className="flex gap-1">
                 <input value={edit.asset_tag} onChange={(e) => setEdit({ ...edit, asset_tag: e.target.value })} placeholder="F2-001-002-001" className="w-full rounded border border-navy-200 px-2 py-1.5 font-mono text-sm" />
@@ -175,6 +186,7 @@ export default function AssetHubDeviceDetail() {
 
           {tab === "hardware" && (
             <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+              <Row label={t("detail.brand")} value={[device.brand, device.model].filter(Boolean).join(" ")} />
               <Row label={t("detail.serial")} value={device.serial_number} />
               <Row label={t("detail.cpu")} value={device.cpu} />
               <Row label={t("detail.ram")} value={device.ram_mb ? `${device.ram_mb} MB` : ""} />

@@ -2129,7 +2129,8 @@
         "sites": "Sites",
         "tokens": "Tokens",
         "reports": "Reports",
-        "guide": "Guide"
+        "guide": "Guide",
+        "workstations": "Workstations"
       },
       "guide": {
         "intro": "Reference for the category, device-type, OS and network-role tags used across this register, with live counts for the selected organization.",
@@ -2139,7 +2140,8 @@
           "network": "Core network gear that moves and secures traffic.",
           "computers": "Endpoints people use — PCs, servers and mobiles.",
           "cctv": "Surveillance cameras and recorders.",
-          "printers": "Printers plus other / not-yet-classified devices."
+          "printers": "Printers plus other / not-yet-classified devices.",
+          "peripherals": "Monitors, UPS, keyboards, docks and other peripherals — each tracked as its own asset."
         },
         "typeTitle": "Device-type tags",
         "type": {
@@ -2154,7 +2156,12 @@
           "phone": "Smartphone or VoIP handset.",
           "tablet": "Tablet device.",
           "iot": "Smart / IoT device (sensor, controller, TV, etc.).",
-          "unknown": "Discovered but not yet classified — triage it or run the collector."
+          "unknown": "Discovered but not yet classified — triage it or run the collector.",
+          "monitor": "Display / monitor (EDID auto-detected)",
+          "ups": "Uninterruptible power supply",
+          "keyboard": "Keyboard",
+          "mouse": "Mouse / pointing device",
+          "dock": "Docking station / port replicator"
         },
         "osTitle": "Operating systems in this org",
         "osIntro": "Live breakdown from collected devices. “Unknown” usually means a probe-only device — run the collector on it to fill in OS and serial.",
@@ -2209,7 +2216,8 @@
           "network": "Network & Wi-Fi",
           "computers": "Computers",
           "cctv": "CCTV",
-          "printers": "Printers & Other"
+          "printers": "Printers & Other",
+          "peripherals": "Peripherals"
         }
       },
       "discovery": {
@@ -2309,7 +2317,9 @@
         "ifaceType": "Type",
         "swName": "Software",
         "swVersion": "Version",
-        "swVendor": "Vendor"
+        "swVendor": "Vendor",
+        "workstation": "Workstation",
+        "brand": "Brand / Model"
       },
       "install": {
         "title": "Install client tools",
@@ -2335,6 +2345,16 @@
         "copied": "Copied",
         "serverUrl": "Server URL (must be reachable from the client machine)",
         "localHint": "“localhost” only works on this Mac. For other machines on the LAN use this Mac’s IP (e.g. http://192.168.1.50); in production use your domain."
+      },
+      "groups": {
+        "intro": "Workstations bundle the assets used together as one seat — e.g. a PC with its monitor and UPS. Each asset keeps its own tag; group them here (e.g. AR1, AP1 under Accounting).",
+        "name": "Workstation name (e.g. AR1)",
+        "department": "Department (e.g. Accounting)",
+        "add": "Add workstation",
+        "empty": "No workstations yet.",
+        "confirmDelete": "Delete workstation “{name}”? Its assets are kept and simply un-grouped.",
+        "members": "{n} assets",
+        "noMembers": "No assets assigned yet."
       }
     }
   },

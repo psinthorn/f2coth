@@ -18,7 +18,9 @@ import (
 var categoryCode = map[string]string{
 	"computer": "001", "server": "002", "nas": "003", "router": "004",
 	"switch": "005", "ap": "006", "printer": "007", "camera": "008",
-	"phone": "009", "tablet": "010", "iot": "011", "unknown": "099",
+	"phone": "009", "tablet": "010", "iot": "011",
+	"monitor": "012", "ups": "013", "keyboard": "014", "mouse": "015", "dock": "016",
+	"unknown": "099",
 }
 
 func catCode(deviceType string) string {

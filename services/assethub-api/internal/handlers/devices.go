@@ -51,6 +51,9 @@ func (h *Handler) queryDevices(ctx context.Context, customerID string, q map[str
 	if v := get("site_id"); v != "" {
 		add("d.site_id = $%d", v)
 	}
+	if v := get("group_id"); v != "" {
+		add("d.group_id = $%d", v)
+	}
 	if v := get("network_role"); v != "" {
 		add("d.network_role = $%d", v)
 	}
@@ -72,9 +75,11 @@ func (h *Handler) queryDevices(ctx context.Context, customerID string, q map[str
 		SELECT d.id, d.customer_id, d.site_id, s.name, d.device_type, d.hostname, d.brand, d.model,
 		       d.serial_number, d.asset_tag, d.os_name, d.os_version, d.cpu, d.ram_mb, d.storage_summary,
 		       d.network_role, d.domain_or_workgroup_name, d.primary_mac, d.primary_ip, d.assigned_user,
-		       d.status, d.source, d.first_seen, d.last_seen, d.notes, d.created_at, d.updated_at
+		       d.status, d.source, d.first_seen, d.last_seen, d.notes, d.created_at, d.updated_at,
+		       d.group_id, g.name, d.parent_device_id
 		FROM assethub_devices d
 		LEFT JOIN assethub_sites s ON s.id = d.site_id
+		LEFT JOIN assethub_asset_groups g ON g.id = d.group_id
 		WHERE ` + strings.Join(where, " AND ") + `
 		ORDER BY d.last_seen DESC`
 
@@ -108,6 +113,8 @@ func categoryTypes(cat string) []string {
 		return []string{"camera"}
 	case "printers":
 		return []string{"printer", "iot", "unknown"}
+	case "peripherals":
+		return []string{"monitor", "ups", "keyboard", "mouse", "dock"}
 	default:
 		return nil
 	}
@@ -126,9 +133,11 @@ func (h *Handler) GetDevice(w http.ResponseWriter, r *http.Request) {
 		SELECT d.id, d.customer_id, d.site_id, s.name, d.device_type, d.hostname, d.brand, d.model,
 		       d.serial_number, d.asset_tag, d.os_name, d.os_version, d.cpu, d.ram_mb, d.storage_summary,
 		       d.network_role, d.domain_or_workgroup_name, d.primary_mac, d.primary_ip, d.assigned_user,
-		       d.status, d.source, d.first_seen, d.last_seen, d.notes, d.created_at, d.updated_at
+		       d.status, d.source, d.first_seen, d.last_seen, d.notes, d.created_at, d.updated_at,
+		       d.group_id, g.name, d.parent_device_id
 		FROM assethub_devices d
 		LEFT JOIN assethub_sites s ON s.id = d.site_id
+		LEFT JOIN assethub_asset_groups g ON g.id = d.group_id
 		WHERE d.id=$1 AND d.customer_id=$2`, id, customerID)
 	d, err := scanDevice(row)
 	if err != nil {
@@ -148,6 +157,9 @@ type devicepatch struct {
 	SiteID       *string `json:"site_id"`
 	Status       *string `json:"status"`
 	Notes        *string `json:"notes"`
+	// GroupID assigns/moves the asset to a workstation. Absent = leave as is;
+	// "" = unassign (NULL); a UUID = that workstation.
+	GroupID *string `json:"group_id"`
 }
 
 // PatchDevice (staff) lets an engineer enrich a device: type, asset tag,
@@ -182,6 +194,19 @@ func (h *Handler) PatchDevice(w http.ResponseWriter, r *http.Request) {
 	if tag.RowsAffected() == 0 {
 		writeErr(w, http.StatusNotFound, "device not found")
 		return
+	}
+	// Workstation assignment is handled separately so "" can clear it (COALESCE
+	// can't). Auto-detected child peripherals (monitors) follow their host.
+	if p.GroupID != nil {
+		gid := nilIfEmpty(*p.GroupID)
+		if _, err := tx.Exec(ctx, `UPDATE assethub_devices SET group_id=$2 WHERE id=$1`, id, gid); err != nil {
+			writeErr(w, http.StatusInternalServerError, "group assign failed")
+			return
+		}
+		if _, err := tx.Exec(ctx, `UPDATE assethub_devices SET group_id=$2 WHERE parent_device_id=$1`, id, gid); err != nil {
+			writeErr(w, http.StatusInternalServerError, "group cascade failed")
+			return
+		}
 	}
 	_ = writeAudit(ctx, tx, "assethub_device", id, mw.UserID(ctx), "update", map[string]any{})
 	if err := tx.Commit(ctx); err != nil {
@@ -550,7 +575,8 @@ func scanDevice(s scanner) (models.Device, error) {
 	err := s.Scan(&d.ID, &d.CustomerID, &d.SiteID, &d.SiteName, &d.DeviceType, &d.Hostname, &d.Brand, &d.Model,
 		&d.SerialNumber, &d.AssetTag, &d.OSName, &d.OSVersion, &d.CPU, &d.RAMMB, &d.StorageSummary,
 		&d.NetworkRole, &d.DomainOrWorkgroupName, &d.PrimaryMAC, &d.PrimaryIP, &d.AssignedUser,
-		&d.Status, &d.Source, &d.FirstSeen, &d.LastSeen, &d.Notes, &d.CreatedAt, &d.UpdatedAt)
+		&d.Status, &d.Source, &d.FirstSeen, &d.LastSeen, &d.Notes, &d.CreatedAt, &d.UpdatedAt,
+		&d.GroupID, &d.GroupName, &d.ParentDeviceID)
 	return d, err
 }
 
