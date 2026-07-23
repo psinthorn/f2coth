@@ -9,6 +9,7 @@ import { Link } from "@/i18n/routing";
 const ORG_STORE_KEY = "f2_assethub_org";
 import { Loader2, Plus, Search, Download, RefreshCw, Trash2, KeyRound, FileSpreadsheet, Copy, Check, Terminal, Pencil, X, RotateCcw } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast, useBusyAction } from "@/lib/toast";
 import {
   assethubApi,
   type AssetOrg, type AssetOverview, type AssetDevice, type AssetSite,
@@ -151,6 +152,7 @@ function DevicesTab({ customerId, t, tc, onChanged }: { customerId: string; t: a
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const { busy, run } = useBusyAction();
 
   function load() {
     setLoading(true);
@@ -161,8 +163,7 @@ function DevicesTab({ customerId, t, tc, onChanged }: { customerId: string; t: a
 
   async function remove(d: AssetDevice) {
     if (!confirm(t("devices.confirmDelete", { name: d.hostname || d.primary_ip || d.id.slice(0, 8) }))) return;
-    await assethubApi.deleteDevice(d.id);
-    load(); onChanged();
+    await run(async () => { await assethubApi.deleteDevice(d.id); load(); onChanged(); }, { success: t("toast.deleted") });
   }
 
   return (
@@ -223,7 +224,7 @@ function DevicesTab({ customerId, t, tc, onChanged }: { customerId: string; t: a
                   <td className="px-3 py-2 text-navy-600">{d.primary_ip}</td>
                   <td className="px-3 py-2 text-navy-500">{d.last_seen?.slice(0, 10)}</td>
                   <td className="px-3 py-2 text-right">
-                    <button onClick={() => remove(d)} className="btn-ghost px-2 py-1 text-xs text-red-600" title={t("devices.delete")}>
+                    <button onClick={() => remove(d)} disabled={busy} className="btn-ghost px-2 py-1 text-xs text-red-600 disabled:opacity-40" title={t("devices.delete")}>
                       <Trash2 className="inline h-3.5 w-3.5" />
                     </button>
                   </td>
@@ -251,13 +252,16 @@ function AddDeviceForm({ customerId, t, onDone, onCancel }: { customerId: string
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }));
 
   async function save() {
+    if (saving) return;
     if (!f.hostname.trim() && !f.serial_number.trim()) { setError(t("devices.needIdent")); return; }
     setSaving(true); setError("");
     try {
       await assethubApi.createDevice({ customer_id: customerId, ...f });
+      toast.success(t("toast.added"));
       onDone();
     } catch (e: any) {
-      setError(String(e?.message || e));
+      const msg = String(e?.message || e);
+      setError(msg); toast.error(msg);
     } finally { setSaving(false); }
   }
 
@@ -299,6 +303,7 @@ function DiscoveryTab({ customerId, t, onChanged }: { customerId: string; t: any
   const [findings, setFindings] = useState<AssetFinding[]>([]);
   const [status, setStatus] = useState<string>("untriaged");
   const [loading, setLoading] = useState(true);
+  const { busy, run } = useBusyAction();
 
   function load() {
     setLoading(true);
@@ -307,12 +312,10 @@ function DiscoveryTab({ customerId, t, onChanged }: { customerId: string; t: any
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [customerId, status]);
 
   async function promote(f: AssetFinding, type: string) {
-    await assethubApi.promoteFinding(f.id, { device_type: type });
-    load(); onChanged();
+    await run(async () => { await assethubApi.promoteFinding(f.id, { device_type: type }); load(); onChanged(); }, { success: t("toast.promoted") });
   }
   async function ignore(f: AssetFinding) {
-    await assethubApi.ignoreFinding(f.id);
-    load(); onChanged();
+    await run(async () => { await assethubApi.ignoreFinding(f.id); load(); onChanged(); }, { success: t("toast.ignored") });
   }
 
   return (
@@ -338,7 +341,7 @@ function DiscoveryTab({ customerId, t, onChanged }: { customerId: string; t: any
             </thead>
             <tbody className="divide-y divide-navy-100">
               {findings.map((f) => (
-                <PromoteRow key={f.id} f={f} status={status} onPromote={promote} onIgnore={ignore} t={t} />
+                <PromoteRow key={f.id} f={f} status={status} onPromote={promote} onIgnore={ignore} busy={busy} t={t} />
               ))}
               {!findings.length && (
                 <tr><td colSpan={6} className="px-3 py-8 text-center text-navy-400">{t("discovery.empty")}</td></tr>
@@ -351,7 +354,7 @@ function DiscoveryTab({ customerId, t, onChanged }: { customerId: string; t: any
   );
 }
 
-function PromoteRow({ f, status, onPromote, onIgnore, t }: { f: AssetFinding; status: string; onPromote: (f: AssetFinding, ty: string) => void; onIgnore: (f: AssetFinding) => void; t: any }) {
+function PromoteRow({ f, status, onPromote, onIgnore, busy, t }: { f: AssetFinding; status: string; onPromote: (f: AssetFinding, ty: string) => void; onIgnore: (f: AssetFinding) => void; busy: boolean; t: any }) {
   const [ty, setTy] = useState(f.suggested_type && f.suggested_type !== "unknown" ? f.suggested_type : "computer");
   return (
     <tr className="hover:bg-navy-50/50">
@@ -366,8 +369,8 @@ function PromoteRow({ f, status, onPromote, onIgnore, t }: { f: AssetFinding; st
             <select value={ty} onChange={(e) => setTy(e.target.value)} className="rounded border border-navy-200 px-2 py-1 text-xs">
               {DEVICE_TYPES.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
-            <button onClick={() => onPromote(f, ty)} className="btn-accent px-2 py-1 text-xs">{t("discovery.promote")}</button>
-            <button onClick={() => onIgnore(f)} className="btn-ghost px-2 py-1 text-xs">{t("discovery.ignore")}</button>
+            <button onClick={() => onPromote(f, ty)} disabled={busy} className="btn-accent px-2 py-1 text-xs disabled:opacity-40">{t("discovery.promote")}</button>
+            <button onClick={() => onIgnore(f)} disabled={busy} className="btn-ghost px-2 py-1 text-xs disabled:opacity-40">{t("discovery.ignore")}</button>
           </div>
         ) : (
           <span className="block text-right text-xs text-navy-400">{t(`discovery.f.${status}`)}</span>
@@ -386,6 +389,7 @@ function WorkstationsTab({ customerId, t }: { customerId: string; t: any }) {
   const [name, setName] = useState("");
   const [dept, setDept] = useState("");
   const [loading, setLoading] = useState(true);
+  const { busy, run } = useBusyAction();
 
   function load() {
     setLoading(true);
@@ -395,12 +399,12 @@ function WorkstationsTab({ customerId, t }: { customerId: string; t: any }) {
 
   async function add() {
     if (!name.trim()) return;
-    await assethubApi.createGroup({ customer_id: customerId, name: name.trim(), department: dept.trim() || undefined });
-    setName(""); setDept(""); load();
+    const ok = await run(() => assethubApi.createGroup({ customer_id: customerId, name: name.trim(), department: dept.trim() || undefined }), { success: t("toast.added") });
+    if (ok) { setName(""); setDept(""); load(); }
   }
   async function remove(g: AssetGroup) {
     if (!confirm(t("groups.confirmDelete", { name: g.name }))) return;
-    await assethubApi.deleteGroup(g.id); load();
+    await run(async () => { await assethubApi.deleteGroup(g.id); load(); }, { success: t("toast.deleted") });
   }
 
   if (loading) return <Loader2 className="h-5 w-5 animate-spin text-navy-400" />;
@@ -410,7 +414,7 @@ function WorkstationsTab({ customerId, t }: { customerId: string; t: any }) {
       <div className="mb-3 flex flex-wrap items-end gap-2">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("groups.name")} className={inp} />
         <input value={dept} onChange={(e) => setDept(e.target.value)} placeholder={t("groups.department")} className={inp} />
-        <button onClick={add} className="btn-accent text-sm"><Plus className="mr-1 inline h-4 w-4" />{t("groups.add")}</button>
+        <button onClick={add} disabled={busy} className="btn-accent text-sm disabled:opacity-40"><Plus className="mr-1 inline h-4 w-4" />{t("groups.add")}</button>
       </div>
       <ul className="divide-y divide-navy-100 rounded-lg border border-navy-100">
         {groups.map((g) => (
@@ -428,11 +432,12 @@ function GroupRow({ g, customerId, t, onSaved, onDelete }: { g: AssetGroup; cust
   const [name, setName] = useState(g.name);
   const [dept, setDept] = useState(g.department ?? "");
   const [members, setMembers] = useState<AssetDevice[] | null>(null);
+  const { busy, run } = useBusyAction();
 
   async function save() {
     if (!name.trim()) return;
-    await assethubApi.updateGroup(g.id, { name: name.trim(), department: dept.trim() || undefined });
-    setEditing(false); onSaved();
+    const ok = await run(() => assethubApi.updateGroup(g.id, { name: name.trim(), department: dept.trim() || undefined }), { success: t("toast.updated") });
+    if (ok) { setEditing(false); onSaved(); }
   }
   function toggle() {
     const next = !open; setOpen(next);
@@ -444,7 +449,7 @@ function GroupRow({ g, customerId, t, onSaved, onDelete }: { g: AssetGroup; cust
       <li className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
         <input value={name} onChange={(e) => setName(e.target.value)} className={inp} />
         <input value={dept} onChange={(e) => setDept(e.target.value)} placeholder={t("groups.department")} className={inp} />
-        <button onClick={save} className="btn-accent px-2 py-1 text-xs">{t("sites.saveEdit")}</button>
+        <button onClick={save} disabled={busy} className="btn-accent px-2 py-1 text-xs disabled:opacity-40">{t("sites.saveEdit")}</button>
         <button onClick={() => { setEditing(false); setName(g.name); setDept(g.department ?? ""); }} className="btn-ghost px-2 py-1 text-xs">{t("devices.cancel")}</button>
       </li>
     );
@@ -480,6 +485,7 @@ function SitesTab({ customerId, t }: { customerId: string; t: any }) {
   const [name, setName] = useState("");
   const [cidrs, setCidrs] = useState("");
   const [loading, setLoading] = useState(true);
+  const { busy, run } = useBusyAction();
 
   function load() {
     setLoading(true);
@@ -489,13 +495,13 @@ function SitesTab({ customerId, t }: { customerId: string; t: any }) {
 
   async function add() {
     if (!name.trim()) return;
-    await assethubApi.createSite({ customer_id: customerId, name, cidrs: cidrs.split(",").map((s) => s.trim()).filter(Boolean) });
-    setName(""); setCidrs(""); load();
+    const ok = await run(() => assethubApi.createSite({ customer_id: customerId, name, cidrs: cidrs.split(",").map((s) => s.trim()).filter(Boolean) }), { success: t("toast.added") });
+    if (ok) { setName(""); setCidrs(""); load(); }
   }
 
   async function remove(s: AssetSite) {
     if (!confirm(t("sites.confirmDelete", { name: s.name }))) return;
-    await assethubApi.deleteSite(s.id); load();
+    await run(async () => { await assethubApi.deleteSite(s.id); load(); }, { success: t("toast.deleted") });
   }
 
   if (loading) return <Loader2 className="h-5 w-5 animate-spin text-navy-400" />;
@@ -504,7 +510,7 @@ function SitesTab({ customerId, t }: { customerId: string; t: any }) {
       <div className="mb-3 flex flex-wrap items-end gap-2">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("sites.name")} className={inp} />
         <input value={cidrs} onChange={(e) => setCidrs(e.target.value)} placeholder={t("sites.cidrs")} className={inp} />
-        <button onClick={add} className="btn-accent text-sm"><Plus className="mr-1 inline h-4 w-4" />{t("sites.add")}</button>
+        <button onClick={add} disabled={busy} className="btn-accent text-sm disabled:opacity-40"><Plus className="mr-1 inline h-4 w-4" />{t("sites.add")}</button>
       </div>
       <ul className="divide-y divide-navy-100 rounded-lg border border-navy-100">
         {sites.map((s) => (
@@ -520,11 +526,12 @@ function SiteRow({ s, t, onSaved, onDelete }: { s: AssetSite; t: any; onSaved: (
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(s.name);
   const [cidrs, setCidrs] = useState(s.cidrs.join(", "));
+  const { busy, run } = useBusyAction();
 
   async function save() {
     if (!name.trim()) return;
-    await assethubApi.updateSite(s.id, { name, cidrs: cidrs.split(",").map((c) => c.trim()).filter(Boolean) });
-    setEditing(false); onSaved();
+    const ok = await run(() => assethubApi.updateSite(s.id, { name, cidrs: cidrs.split(",").map((c) => c.trim()).filter(Boolean) }), { success: t("toast.updated") });
+    if (ok) { setEditing(false); onSaved(); }
   }
 
   if (editing) {
@@ -532,7 +539,7 @@ function SiteRow({ s, t, onSaved, onDelete }: { s: AssetSite; t: any; onSaved: (
       <li className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
         <input value={name} onChange={(e) => setName(e.target.value)} className={inp} />
         <input value={cidrs} onChange={(e) => setCidrs(e.target.value)} placeholder={t("sites.cidrs")} className={`${inp} flex-1 font-mono text-xs`} />
-        <button onClick={save} className="btn-accent px-2 py-1 text-xs">{t("sites.saveEdit")}</button>
+        <button onClick={save} disabled={busy} className="btn-accent px-2 py-1 text-xs disabled:opacity-40">{t("sites.saveEdit")}</button>
         <button onClick={() => { setEditing(false); setName(s.name); setCidrs(s.cidrs.join(", ")); }} className="btn-ghost px-2 py-1 text-xs">{t("devices.cancel")}</button>
       </li>
     );
@@ -556,6 +563,7 @@ function TokensTab({ customerId, t }: { customerId: string; t: any }) {
   const [siteId, setSiteId] = useState("");
   const [secret, setSecret] = useState("");
   const [loading, setLoading] = useState(true);
+  const { busy, run } = useBusyAction();
 
   function load() {
     setLoading(true);
@@ -568,14 +576,18 @@ function TokensTab({ customerId, t }: { customerId: string; t: any }) {
 
   async function create() {
     if (!label.trim()) return;
-    const tok = await assethubApi.createToken({ customer_id: customerId, label, site_id: siteId || null });
-    setSecret(tok.secret ?? "");
-    setLabel(""); setSiteId(""); load();
+    await run(async () => {
+      const tok = await assethubApi.createToken({ customer_id: customerId, label, site_id: siteId || null });
+      setSecret(tok.secret ?? "");
+      setLabel(""); setSiteId(""); load();
+    }, { success: t("toast.added") });
   }
-  async function revoke(id: string) { await assethubApi.revokeToken(id); load(); }
+  async function revoke(id: string) {
+    await run(async () => { await assethubApi.revokeToken(id); load(); }, { success: t("toast.revoked") });
+  }
   async function del(tk: AssetToken) {
     if (!confirm(t("tokens.confirmDelete", { name: tk.label }))) return;
-    await assethubApi.deleteToken(tk.id); load();
+    await run(async () => { await assethubApi.deleteToken(tk.id); load(); }, { success: t("toast.deleted") });
   }
 
   const siteName = (id?: string | null) => sites.find((s) => s.id === id)?.name;
@@ -589,7 +601,7 @@ function TokensTab({ customerId, t }: { customerId: string; t: any }) {
           <option value="">{t("tokens.allSites")}</option>
           {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
-        <button onClick={create} className="btn-accent text-sm"><KeyRound className="mr-1 inline h-4 w-4" />{t("tokens.create")}</button>
+        <button onClick={create} disabled={busy} className="btn-accent text-sm disabled:opacity-40"><KeyRound className="mr-1 inline h-4 w-4" />{t("tokens.create")}</button>
       </div>
       {secret && (
         <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
@@ -616,19 +628,19 @@ function TokenRow({ tk, sites, siteName, t, onSaved, onRevoke, onDelete }: { tk:
   const [poll, setPoll] = useState(String(tk.poll_interval_min ?? 5));
   const [rescan, setRescan] = useState(String(tk.rescan_interval_min ?? 360));
   const [scanState, setScanState] = useState<"" | "requested">("");
+  const { busy, run } = useBusyAction();
 
   async function save() {
-    await assethubApi.updateToken(tk.id, {
+    const ok = await run(() => assethubApi.updateToken(tk.id, {
       label, site_id: siteId || null,
       poll_interval_min: Number(poll) || undefined,
       rescan_interval_min: Number(rescan) || undefined,
-    });
-    setEditing(false); onSaved();
+    }), { success: t("toast.updated") });
+    if (ok) { setEditing(false); onSaved(); }
   }
   async function scan() {
-    await assethubApi.scanNow(tk.id);
-    setScanState("requested");
-    setTimeout(() => setScanState(""), 4000);
+    const ok = await run(() => assethubApi.scanNow(tk.id), { success: t("toast.scanQueued") });
+    if (ok) { setScanState("requested"); setTimeout(() => setScanState(""), 4000); }
   }
 
   if (editing) {
@@ -645,7 +657,7 @@ function TokenRow({ tk, sites, siteName, t, onSaved, onRevoke, onDelete }: { tk:
         <label className="flex items-center gap-1 text-xs text-navy-500">{t("tokens.rescanMin")}
           <input type="number" min={1} value={rescan} onChange={(e) => setRescan(e.target.value)} className={`${inp} w-20`} />
         </label>
-        <button onClick={save} className="btn-accent px-2 py-1 text-xs">{t("sites.saveEdit")}</button>
+        <button onClick={save} disabled={busy} className="btn-accent px-2 py-1 text-xs disabled:opacity-40">{t("sites.saveEdit")}</button>
         <button onClick={() => { setEditing(false); setLabel(tk.label); setSiteId(tk.site_id ?? ""); }} className="btn-ghost px-2 py-1 text-xs">{t("devices.cancel")}</button>
       </li>
     );
@@ -659,7 +671,7 @@ function TokenRow({ tk, sites, siteName, t, onSaved, onRevoke, onDelete }: { tk:
       {tk.revoked_at && <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">{t("tokens.revoked")}</span>}
       <div className="ml-auto flex items-center gap-1">
         {!tk.revoked_at && (
-          <button onClick={scan} className="btn-ghost px-2 py-1 text-xs text-emerald-600" title={t("tokens.scanNowHint")}>
+          <button onClick={scan} disabled={busy} className="btn-ghost px-2 py-1 text-xs text-emerald-600 disabled:opacity-40" title={t("tokens.scanNowHint")}>
             <RefreshCw className="mr-1 inline h-3.5 w-3.5" />{scanState === "requested" ? t("tokens.scanRequested") : t("tokens.scanNow")}
           </button>
         )}
@@ -785,6 +797,7 @@ function ReportsTab({ customerId, t }: { customerId: string; t: any }) {
   const [reports, setReports] = useState<AssetReport[]>([]);
   const [format, setFormat] = useState("xlsx");
   const [loading, setLoading] = useState(true);
+  const { busy, run } = useBusyAction();
 
   function load() {
     setLoading(true);
@@ -798,13 +811,14 @@ function ReportsTab({ customerId, t }: { customerId: string; t: any }) {
   }, [customerId]);
 
   async function generate() {
-    await assethubApi.createReport({ customer_id: customerId, format });
-    load();
+    await run(async () => { await assethubApi.createReport({ customer_id: customerId, format }); load(); }, { success: t("toast.reportQueued") });
   }
-  async function retry(id: string) { await assethubApi.retryReport(id); load(); }
+  async function retry(id: string) {
+    await run(async () => { await assethubApi.retryReport(id); load(); }, { success: t("toast.reportQueued") });
+  }
   async function remove(id: string) {
     if (!confirm(t("reports.confirmDelete"))) return;
-    await assethubApi.deleteReport(id); load();
+    await run(async () => { await assethubApi.deleteReport(id); load(); }, { success: t("toast.deleted") });
   }
 
   return (
@@ -815,7 +829,7 @@ function ReportsTab({ customerId, t }: { customerId: string; t: any }) {
           <option value="pdf">PDF</option>
           <option value="docx">DOCX</option>
         </select>
-        <button onClick={generate} className="btn-accent text-sm"><FileSpreadsheet className="mr-1 inline h-4 w-4" />{t("reports.generate")}</button>
+        <button onClick={generate} disabled={busy} className="btn-accent text-sm disabled:opacity-40"><FileSpreadsheet className="mr-1 inline h-4 w-4" />{t("reports.generate")}</button>
         <button onClick={load} className="btn-ghost text-sm"><RefreshCw className="mr-1 inline h-4 w-4" />{t("reports.refresh")}</button>
       </div>
       {loading && !reports.length ? <Loader2 className="h-5 w-5 animate-spin text-navy-400" /> : (
@@ -835,11 +849,11 @@ function ReportsTab({ customerId, t }: { customerId: string; t: any }) {
                   </button>
                 )}
                 {(r.status === "failed" || r.status === "dead") && (
-                  <button onClick={() => retry(r.id)} className="btn-ghost px-2 py-1 text-xs text-blue-600" title={t("reports.retry")}>
+                  <button onClick={() => retry(r.id)} disabled={busy} className="btn-ghost px-2 py-1 text-xs text-blue-600 disabled:opacity-40" title={t("reports.retry")}>
                     <RotateCcw className="mr-1 inline h-3.5 w-3.5" />{t("reports.retry")}
                   </button>
                 )}
-                <button onClick={() => remove(r.id)} className="btn-ghost px-2 py-1 text-xs text-red-600" title={t("reports.delete")}>
+                <button onClick={() => remove(r.id)} disabled={busy} className="btn-ghost px-2 py-1 text-xs text-red-600 disabled:opacity-40" title={t("reports.delete")}>
                   <Trash2 className="inline h-3.5 w-3.5" />
                 </button>
               </div>

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
 import { Loader2, ArrowLeft, Save, Trash2, ArrowRightLeft, Wand2 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import {
   assethubApi, type AssetDevice, type AssetSite, type AssetOrg, type AssetGroup, type DeviceType, type DeviceStatus,
 } from "@/lib/assethub-api";
@@ -33,6 +34,8 @@ export default function AssetHubDeviceDetail() {
   const [tab, setTab] = useState<DetailTab>("hardware");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [genning, setGenning] = useState(false);
   const [moveTo, setMoveTo] = useState("");
   const [moving, setMoving] = useState(false);
   const [err, setErr] = useState("");
@@ -62,6 +65,7 @@ export default function AssetHubDeviceDetail() {
   }, [customerId, id, t]);
 
   async function save() {
+    if (saving) return; // guard double-click while the first save is in flight
     setSaving(true);
     try {
       await assethubApi.patchDevice(id, {
@@ -73,34 +77,41 @@ export default function AssetHubDeviceDetail() {
         group_id: edit.group_id, // "" clears the workstation, a UUID assigns it
         notes: edit.notes,
       });
-    } catch (e) { setErr(String(e)); } finally { setSaving(false); }
+      toast.success(t("toast.saved"));
+    } catch (e) { toast.error(String(e)); setErr(String(e)); } finally { setSaving(false); }
   }
 
   async function remove() {
-    if (!device) return;
+    if (deleting || !device) return;
     if (!confirm(t("detail.confirmDelete", { name: device.hostname || device.primary_ip || id.slice(0, 8) }))) return;
+    setDeleting(true);
     try {
       await assethubApi.deleteDevice(id);
-      router.push("/admin/assethub");
-    } catch (e) { setErr(String(e)); }
+      toast.success(t("toast.deleted"));
+      router.push(customerId ? `/admin/assethub?c=${customerId}` : "/admin/assethub");
+    } catch (e) { toast.error(String(e)); setErr(String(e)); setDeleting(false); }
   }
 
   async function move() {
-    if (!moveTo || !device) return;
+    if (moving || !moveTo || !device) return;
     const target = orgs.find((o) => o.id === moveTo);
     if (!confirm(t("detail.moveConfirm", { name: device.hostname || device.primary_ip || id.slice(0, 8), org: target?.name ?? "" }))) return;
     setMoving(true);
     try {
       await assethubApi.moveDevice(id, moveTo);
+      toast.success(t("toast.moved"));
       router.push("/admin/assethub");
-    } catch (e) { setErr(String(e)); } finally { setMoving(false); }
+    } catch (e) { toast.error(String(e)); setErr(String(e)); } finally { setMoving(false); }
   }
 
   async function genTag() {
+    if (genning) return;
+    setGenning(true);
     try {
       const res = await assethubApi.generateTag(id);
       setEdit((e) => ({ ...e, asset_tag: res.asset_tag }));
-    } catch (e) { setErr(String(e)); }
+      toast.success(t("toast.tagGenerated"));
+    } catch (e) { toast.error(String(e)); setErr(String(e)); } finally { setGenning(false); }
   }
 
   return (
@@ -145,8 +156,8 @@ export default function AssetHubDeviceDetail() {
             <Field label={t("detail.assetTag")}>
               <div className="flex gap-1">
                 <input value={edit.asset_tag} onChange={(e) => setEdit({ ...edit, asset_tag: e.target.value })} placeholder="F2-001-002-001" className="w-full rounded border border-navy-200 px-2 py-1.5 font-mono text-sm" />
-                <button type="button" onClick={genTag} title={t("detail.genTagHint")} className="btn-ghost whitespace-nowrap px-2 text-xs">
-                  <Wand2 className="inline h-3.5 w-3.5" />
+                <button type="button" onClick={genTag} disabled={genning} title={t("detail.genTagHint")} className="btn-ghost whitespace-nowrap px-2 text-xs disabled:opacity-40">
+                  {genning ? <Loader2 className="inline h-3.5 w-3.5 animate-spin" /> : <Wand2 className="inline h-3.5 w-3.5" />}
                 </button>
               </div>
             </Field>
@@ -169,8 +180,8 @@ export default function AssetHubDeviceDetail() {
                 <button onClick={move} disabled={!moveTo || moving} className="btn-ghost text-sm disabled:opacity-40">
                   {moving ? <Loader2 className="mr-1 inline h-4 w-4 animate-spin" /> : <ArrowRightLeft className="mr-1 inline h-4 w-4" />}{t("detail.move")}
                 </button>
-                <button onClick={remove} className="btn-ghost text-sm text-red-600">
-                  <Trash2 className="mr-1 inline h-4 w-4" />{t("detail.delete")}
+                <button onClick={remove} disabled={deleting} className="btn-ghost text-sm text-red-600 disabled:opacity-40">
+                  {deleting ? <Loader2 className="mr-1 inline h-4 w-4 animate-spin" /> : <Trash2 className="mr-1 inline h-4 w-4" />}{t("detail.delete")}
                 </button>
               </div>
             </div>
