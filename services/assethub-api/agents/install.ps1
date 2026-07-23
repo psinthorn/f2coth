@@ -24,11 +24,13 @@ if (-not ($IsWindows -ne $false)) {
 }
 
 $base = ($server.TrimEnd('/')) + "/api/assethub/collector"
-$tmp  = Join-Path $env:TEMP "f2-collect.ps1"
 
 Write-Host "[install] os=windows  mode=collector  tool=collect.ps1"
 Write-Host "[install] downloading collect.ps1 ..."
-Invoke-WebRequest -UseBasicParsing -Uri "$base/collect.ps1" -OutFile $tmp
+$code = (Invoke-WebRequest -UseBasicParsing -Uri "$base/collect.ps1").Content
 
 Write-Host "[install] running collect.ps1 ..."
-& $tmp -ServerUrl $server -Token $token
+# Run the collector in-memory (a scriptblock, not a .ps1 file) so the machine's
+# script execution policy can't block it — the same reason `irm install.ps1 | iex`
+# itself runs. A fresh scriptblock scope keeps collect.ps1's settings isolated.
+& ([scriptblock]::Create($code)) -ServerUrl $server -Token $token
