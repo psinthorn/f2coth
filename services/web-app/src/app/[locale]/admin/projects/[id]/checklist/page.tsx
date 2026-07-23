@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Loader2, Check, X, MinusCircle, Circle, ChevronLeft, ChevronDown, ChevronRight, Camera } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast, useBusyAction } from "@/lib/toast";
 import { checklistApi, type ItemStatus, type ProjectBoard, type ProjectItem } from "@/lib/checklist-api";
 import AttachmentUploader from "@/components/attachments/AttachmentUploader";
 import AttachmentList from "@/components/attachments/AttachmentList";
@@ -114,12 +115,13 @@ function ModuleSection({
 
 function ItemRow({ item, onPatch }: { item: ProjectItem; onPatch: (id: string, u: Partial<ProjectItem>) => void }) {
   const t = useTranslations("admin.projects");
+  const tc = useTranslations("common");
   const ta = useTranslations("attachments");
   const [note, setNote] = useState(item.note ?? "");
-  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [attachTick, setAttachTick] = useState(0);
   const projectId = useContext(ProjectIdContext);
+  const { busy, run } = useBusyAction();
 
   const uploadPhoto = async (file: File) => {
     setUploading(true);
@@ -127,8 +129,9 @@ function ItemRow({ item, onPatch }: { item: ProjectItem; onPatch: (id: string, u
       const { url } = await checklistApi.uploadPhoto(file, projectId || undefined);
       await checklistApi.updateItem(item.id, { photo_url: url });
       onPatch(item.id, { photo_url: url });
-    } catch {
-      // silent; the UI just doesn't reflect the change
+      toast.success(tc("toast.saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : tc("toast.error"));
     } finally {
       setUploading(false);
     }
@@ -136,38 +139,27 @@ function ItemRow({ item, onPatch }: { item: ProjectItem; onPatch: (id: string, u
 
   const cycle = async () => {
     const target = nextStatus[item.status];
+    const prev = item.status;
     onPatch(item.id, { status: target });
-    setSaving(true);
-    try {
-      await checklistApi.updateItem(item.id, { status: target });
-    } catch {
-      onPatch(item.id, { status: item.status });
-    } finally {
-      setSaving(false);
-    }
+    const ok = await run(() => checklistApi.updateItem(item.id, { status: target }), { success: tc("toast.updated") });
+    if (!ok) onPatch(item.id, { status: prev });
   };
 
   const saveNote = async () => {
     if (note === (item.note ?? "")) return;
-    setSaving(true);
-    try {
-      await checklistApi.updateItem(item.id, { note });
-      onPatch(item.id, { note });
-    } catch {
-      setNote(item.note ?? "");
-    } finally {
-      setSaving(false);
-    }
+    const ok = await run(() => checklistApi.updateItem(item.id, { note }), { success: tc("toast.saved") });
+    if (ok) onPatch(item.id, { note });
+    else setNote(item.note ?? "");
   };
 
   return (
     <li className="flex flex-col gap-2 p-3 sm:flex-row sm:items-start">
       <button
         onClick={cycle}
-        disabled={saving}
+        disabled={busy}
         data-testid={`status-${item.id}`}
         aria-label={`status: ${item.status}`}
-        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${statusColor(item.status)}`}
+        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full disabled:opacity-40 ${statusColor(item.status)}`}
       >
         {statusIcon(item.status)}
       </button>

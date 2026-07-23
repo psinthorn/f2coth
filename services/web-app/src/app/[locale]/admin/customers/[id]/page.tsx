@@ -8,6 +8,7 @@ import {
   ArrowLeft, Loader2, AlertTriangle, Plus, Ban, RotateCcw, Save, Ticket,
 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast, useBusyAction } from "@/lib/toast";
 import CustomerShowcasePanel from "@/components/admin/CustomerShowcasePanel";
 import {
   adminApi,
@@ -32,6 +33,7 @@ export default function AdminCustomerDetailPage() {
   const [contacts, setContacts] = useState<CustomerContactRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const { busy: contactBusy, run } = useBusyAction();
 
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("");
@@ -97,9 +99,11 @@ export default function AdminCustomerDetailPage() {
         notes,
         is_active: isActive,
       } as any);
+      toast.success(tc("toast.saved"));
       await load();
     } catch (e: any) {
       setErr(tryMsg(e));
+      toast.error(tryMsg(e));
     } finally {
       setSaving(false);
     }
@@ -111,11 +115,13 @@ export default function AdminCustomerDetailPage() {
     setErr("");
     try {
       await adminApi.createCustomerContact(id, cForm);
+      toast.success(tc("toast.added"));
       setShowAdd(false);
       setCForm({ email: "", full_name: "", role: "member", password: "" });
       await load();
     } catch (e: any) {
       setErr(tryMsg(e));
+      toast.error(tryMsg(e));
     } finally {
       setAdding(false);
     }
@@ -134,20 +140,24 @@ export default function AdminCustomerDetailPage() {
         opened_by_contact_id: tForm.opened_by_contact_id || undefined,
         assign_to_self: tForm.assign_to_self,
       });
+      toast.success(tc("toast.added"));
       router.push(`/admin/tickets/${res.id}` as any);
     } catch (e: any) {
       setErr(tryMsg(e));
+      toast.error(tryMsg(e));
       setCreatingTicket(false);
     }
   }
 
   async function disableContact(contactId: string) {
     if (!id) return;
-    try { await adminApi.disableCustomerContact(id, contactId); await load(); } catch (e: any) { setErr(tryMsg(e)); }
+    const ok = await run(() => adminApi.disableCustomerContact(id, contactId), { success: tc("toast.updated") });
+    if (ok) await load();
   }
   async function enableContact(contactId: string) {
     if (!id) return;
-    try { await adminApi.enableCustomerContact(id, contactId); await load(); } catch (e: any) { setErr(tryMsg(e)); }
+    const ok = await run(() => adminApi.enableCustomerContact(id, contactId), { success: tc("toast.updated") });
+    if (ok) await load();
   }
 
   return (
@@ -247,7 +257,7 @@ export default function AdminCustomerDetailPage() {
                 <button
                   onClick={createTicket}
                   disabled={creatingTicket || !tForm.subject.trim() || !tForm.body.trim()}
-                  className="btn-accent"
+                  className="btn-accent disabled:opacity-40"
                 >
                   {creatingTicket
                     ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("openingTicket")}</>
@@ -291,7 +301,7 @@ export default function AdminCustomerDetailPage() {
                   <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
                   {t("active")}
                 </label>
-                <button onClick={save} disabled={saving} className="btn-accent self-start">
+                <button onClick={save} disabled={saving} className="btn-accent self-start disabled:opacity-40">
                   {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> {tc("saving")}</> : <><Save className="h-4 w-4" /> {t("saveChanges")}</>}
                 </button>
               </div>
@@ -325,7 +335,7 @@ export default function AdminCustomerDetailPage() {
                   </div>
                   <div className="mt-3 flex justify-end gap-2">
                     <button onClick={() => setShowAdd(false)} className="btn-ghost text-xs">{tc("cancel")}</button>
-                    <button onClick={addContact} disabled={adding} className="btn-accent text-xs">
+                    <button onClick={addContact} disabled={adding} className="btn-accent text-xs disabled:opacity-40">
                       {adding ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {tc("creating")}</> : tc("add")}
                     </button>
                   </div>
@@ -345,13 +355,13 @@ export default function AdminCustomerDetailPage() {
                         </div>
                         <div className="shrink-0">
                           {c.disabled_at ? (
-                            <button onClick={() => enableContact(c.id)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-100">
+                            <button onClick={() => enableContact(c.id)} disabled={contactBusy}
+                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-100 disabled:opacity-40">
                               <RotateCcw className="h-3 w-3" /> {t("enable")}
                             </button>
                           ) : (
-                            <button onClick={() => disableContact(c.id)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700 hover:bg-red-100">
+                            <button onClick={() => disableContact(c.id)} disabled={contactBusy}
+                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700 hover:bg-red-100 disabled:opacity-40">
                               <Ban className="h-3 w-3" /> {t("disable")}
                             </button>
                           )}
@@ -401,9 +411,12 @@ function BillingProfileSection({ customerID }: { customerID: string }) {
       const saved = await adminApi.upsertBillingProfile(customerID, profile);
       setProfile(saved);
       setMsg({ kind: "ok", text: t("saved") });
+      toast.success(tc("toast.saved"));
     } catch (e: unknown) {
       const v = e as { body?: string };
-      setMsg({ kind: "err", text: v.body || tc("error") });
+      const text = v.body || tc("error");
+      setMsg({ kind: "err", text });
+      toast.error(text);
     } finally { setBusy(false); }
   }
 
@@ -437,7 +450,7 @@ function BillingProfileSection({ customerID }: { customerID: string }) {
         <p className={`mt-3 text-sm ${msg.kind === "ok" ? "text-emerald-700" : "text-red-700"}`}>{msg.text}</p>
       )}
       <div className="mt-3 flex justify-end">
-        <button type="button" className="btn-accent" disabled={busy} onClick={save}>
+        <button type="button" className="btn-accent disabled:opacity-40" disabled={busy} onClick={save}>
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}{t("save")}
         </button>
       </div>
@@ -482,6 +495,7 @@ function DomainsPanel({ customerId }: { customerId: string }) {
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const { busy: acting, run } = useBusyAction();
 
   async function load() {
     setLoading(true);
@@ -498,22 +512,22 @@ function DomainsPanel({ customerId }: { customerId: string }) {
         ...form,
         expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
       } as any);
+      toast.success(tc("toast.added"));
       setShowAdd(false);
       setForm({ domain: "", registrar: "ResellerClub", expires_at: "", privacy_enabled: true, auto_renew: true, notes: "" });
       await load();
-    } catch (e: any) { setErr(tryMsg(e)); }
+    } catch (e: any) { setErr(tryMsg(e)); toast.error(tryMsg(e)); }
     finally { setBusy(false); }
   }
 
   async function togglePrivacy(d: AdminDomain) {
-    setErr("");
-    try { await adminApi.updateCustomerDomain(customerId, d.id, { privacy_enabled: !d.privacy_enabled }); await load(); }
-    catch (e: any) { setErr(tryMsg(e)); }
+    const ok = await run(() => adminApi.updateCustomerDomain(customerId, d.id, { privacy_enabled: !d.privacy_enabled }), { success: tc("toast.updated") });
+    if (ok) await load();
   }
   async function del(d: AdminDomain) {
     if (!confirm(t("removeConfirm", { domain: d.domain }))) return;
-    try { await adminApi.deleteCustomerDomain(customerId, d.id); await load(); }
-    catch (e: any) { setErr(tryMsg(e)); }
+    const ok = await run(() => adminApi.deleteCustomerDomain(customerId, d.id), { success: tc("toast.deleted") });
+    if (ok) await load();
   }
 
   return (
@@ -542,7 +556,7 @@ function DomainsPanel({ customerId }: { customerId: string }) {
           </label>
           <div className="sm:col-span-2 flex justify-end gap-2">
             <button onClick={() => setShowAdd(false)} className="btn-ghost text-xs">{tc("cancel")}</button>
-            <button onClick={add} disabled={busy || !form.domain} className="btn-accent text-xs">
+            <button onClick={add} disabled={busy || !form.domain} className="btn-accent text-xs disabled:opacity-40">
               {busy ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {tc("creating")}</> : tc("add")}
             </button>
           </div>
@@ -573,13 +587,13 @@ function DomainsPanel({ customerId }: { customerId: string }) {
                   <td className="py-2 text-navy-700">{d.registrar}</td>
                   <td className="py-2 text-navy-700 text-xs">{d.expires_at ? new Date(d.expires_at).toLocaleDateString() : "—"}</td>
                   <td className="py-2">
-                    <button onClick={() => togglePrivacy(d)} className="text-xs text-accent-700 hover:text-accent-900">
+                    <button onClick={() => togglePrivacy(d)} disabled={acting} className="text-xs text-accent-700 hover:text-accent-900 disabled:opacity-40">
                       {d.privacy_enabled ? t("privacyOn") : t("privacyOff")}
                     </button>
                   </td>
                   <td className="py-2 text-navy-700 text-xs">{d.auto_renew ? t("yes") : t("no")}</td>
                   <td className="py-2 text-right">
-                    <button onClick={() => del(d)} className="text-xs text-red-700 hover:text-red-900">{tc("remove")}</button>
+                    <button onClick={() => del(d)} disabled={acting} className="text-xs text-red-700 hover:text-red-900 disabled:opacity-40">{tc("remove")}</button>
                   </td>
                 </tr>
               ))}
@@ -610,6 +624,7 @@ function SLAPanel({ customerId, services }: { customerId: string; services: stri
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const { busy: acting, run } = useBusyAction();
 
   async function load() {
     setLoading(true);
@@ -623,20 +638,21 @@ function SLAPanel({ customerId, services }: { customerId: string; services: stri
     setBusy(true); setErr("");
     try {
       await adminApi.createCustomerSLA(customerId, form);
+      toast.success(tc("toast.added"));
       setShowAdd(false);
       setForm({ ...form, title: "", starts_on: "", ends_on: "", notes: "" });
       await load();
-    } catch (e: any) { setErr(tryMsg(e)); }
+    } catch (e: any) { setErr(tryMsg(e)); toast.error(tryMsg(e)); }
     finally { setBusy(false); }
   }
   async function setStatus(s: AdminSLA, status: typeof slaStatuses[number]) {
-    try { await adminApi.updateCustomerSLA(customerId, s.id, { status }); await load(); }
-    catch (e: any) { setErr(tryMsg(e)); }
+    const ok = await run(() => adminApi.updateCustomerSLA(customerId, s.id, { status }), { success: tc("toast.updated") });
+    if (ok) await load();
   }
   async function del(s: AdminSLA) {
     if (!confirm(t("removeConfirm", { title: s.title }))) return;
-    try { await adminApi.deleteCustomerSLA(customerId, s.id); await load(); }
-    catch (e: any) { setErr(tryMsg(e)); }
+    const ok = await run(() => adminApi.deleteCustomerSLA(customerId, s.id), { success: tc("toast.deleted") });
+    if (ok) await load();
   }
 
   return (
@@ -678,7 +694,7 @@ function SLAPanel({ customerId, services }: { customerId: string; services: stri
           <div className="sm:col-span-2 flex justify-end gap-2">
             <button onClick={() => setShowAdd(false)} className="btn-ghost text-xs">{tc("cancel")}</button>
             <button onClick={add} disabled={busy || !form.title || !form.starts_on || !form.ends_on || !form.service_slug}
-              className="btn-accent text-xs">
+              className="btn-accent text-xs disabled:opacity-40">
               {busy ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {tc("creating")}</> : tc("add")}
             </button>
           </div>
@@ -699,13 +715,13 @@ function SLAPanel({ customerId, services }: { customerId: string; services: stri
                   <p className="mt-0.5 font-medium text-navy-900">{s.title}</p>
                   <p className="mt-1 text-xs text-navy-600">{s.starts_on} → {s.ends_on} · {t("target", { pct: s.target_uptime_pct })}</p>
                 </div>
-                <select value={s.status} onChange={(e) => setStatus(s, e.target.value as typeof slaStatuses[number])}
-                  className="rounded border border-navy-200 px-2 py-1 text-xs">
+                <select value={s.status} onChange={(e) => setStatus(s, e.target.value as typeof slaStatuses[number])} disabled={acting}
+                  className="rounded border border-navy-200 px-2 py-1 text-xs disabled:opacity-40">
                   {slaStatuses.map((v) => <option key={v} value={v}>{tc(`slaStatus.${v}`)}</option>)}
                 </select>
               </div>
               {s.notes && <p className="mt-2 text-xs text-navy-700">{s.notes}</p>}
-              <button onClick={() => del(s)} className="mt-2 text-xs text-red-700 hover:text-red-900">{tc("remove")}</button>
+              <button onClick={() => del(s)} disabled={acting} className="mt-2 text-xs text-red-700 hover:text-red-900 disabled:opacity-40">{tc("remove")}</button>
             </div>
           ))}
         </div>

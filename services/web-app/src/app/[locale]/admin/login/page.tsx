@@ -7,6 +7,7 @@ import { Link, useRouter } from "@/i18n/routing";
 import { useSearchParams } from "next/navigation";
 import { Loader2, AlertTriangle, Lock } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useBusyAction } from "@/lib/toast";
 
 export default function AdminLoginPage() {
   return (
@@ -20,7 +21,7 @@ function LoginForm() {
   const t = useTranslations("admin.login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { busy, run } = useBusyAction();
   const [err, setErr] = useState("");
   const router = useRouter();
   const locale = useLocale();
@@ -29,9 +30,10 @@ function LoginForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setErr("");
-    try {
+    // No success toast — a successful login navigates away. `run` still guards
+    // against double-submit and toasts any failure; keep the inline error too.
+    const ok = await run(async () => {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
       const res = await fetch(`${apiBase}/auth/login`, {
         method: "POST",
@@ -46,15 +48,15 @@ function LoginForm() {
       sessionStorage.setItem("f2_access_token", data.access_token);
       sessionStorage.setItem("f2_refresh_token", data.refresh_token);
       if (data.user) sessionStorage.setItem("f2_user", JSON.stringify(data.user));
+    });
+    if (ok) {
       const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/admin";
       // The i18n router auto-prepends the current locale, so strip any
       // explicit locale segment from `next` before pushing — otherwise
       // /th/admin becomes /th/th/admin.
       router.push(stripLocalePrefix(safeNext, locale) as any);
-    } catch {
+    } else {
       setErr(t("error"));
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -97,7 +99,7 @@ function LoginForm() {
               <span>{err}</span>
             </div>
           )}
-          <button type="submit" disabled={busy} className="btn-primary w-full">
+          <button type="submit" disabled={busy} className="btn-primary w-full disabled:opacity-40">
             {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submit")}
           </button>
           <p className="text-center text-xs text-navy-500">

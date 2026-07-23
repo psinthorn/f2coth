@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Plus, RotateCcw, Pause, Play, X } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast, useBusyAction } from "@/lib/toast";
 import {
   adminApi,
   type AdminSubscription,
@@ -22,6 +23,7 @@ export default function AdminSubscriptionsPage() {
   const [status, setStatus] = useState<string>("");
   const [showCreate, setShowCreate] = useState(false);
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
+  const { busy, run } = useBusyAction();
 
   function load() {
     setRows(null);
@@ -34,8 +36,8 @@ export default function AdminSubscriptionsPage() {
   }, [status]);
 
   async function changeStatus(id: string, next: "active" | "paused" | "cancelled") {
-    await adminApi.setSubscriptionStatus(id, next);
-    load();
+    const ok = await run(() => adminApi.setSubscriptionStatus(id, next), { success: tc("toast.updated") });
+    if (ok) load();
   }
 
   return (
@@ -112,20 +114,20 @@ export default function AdminSubscriptionsPage() {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap space-x-1">
                     {s.status === "active" && (
-                      <button type="button" onClick={() => changeStatus(s.id, "paused")}
-                        className="rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 hover:bg-amber-100">
+                      <button type="button" onClick={() => changeStatus(s.id, "paused")} disabled={busy}
+                        className="rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 hover:bg-amber-100 disabled:opacity-40">
                         <Pause className="inline h-3 w-3" /> {t("pause")}
                       </button>
                     )}
                     {s.status === "paused" && (
-                      <button type="button" onClick={() => changeStatus(s.id, "active")}
-                        className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-800 hover:bg-emerald-100">
+                      <button type="button" onClick={() => changeStatus(s.id, "active")} disabled={busy}
+                        className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-800 hover:bg-emerald-100 disabled:opacity-40">
                         <Play className="inline h-3 w-3" /> {t("resume")}
                       </button>
                     )}
                     {s.status !== "cancelled" && (
-                      <button type="button" onClick={() => changeStatus(s.id, "cancelled")}
-                        className="rounded-md bg-red-50 px-2 py-1 text-xs text-red-800 hover:bg-red-100">
+                      <button type="button" onClick={() => changeStatus(s.id, "cancelled")} disabled={busy}
+                        className="rounded-md bg-red-50 px-2 py-1 text-xs text-red-800 hover:bg-red-100 disabled:opacity-40">
                         <X className="inline h-3 w-3" /> {t("cancel")}
                       </button>
                     )}
@@ -148,6 +150,7 @@ function CreateSubscription({
   onCreated: () => void;
 }) {
   const t = useTranslations("admin.subscriptions");
+  const tc = useTranslations("common");
   const [form, setForm] = useState<AdminSubscriptionInput>({
     customer_id: "",
     title: "",
@@ -200,6 +203,7 @@ function CreateSubscription({
   }
 
   async function submit() {
+    if (busy) return;
     if (!form.customer_id || !form.title || form.amount_cents <= 0) {
       setErr(t("invalid"));
       return;
@@ -208,10 +212,13 @@ function CreateSubscription({
     setErr(null);
     try {
       await adminApi.createSubscription(form);
+      toast.success(tc("toast.added"));
       onCreated();
     } catch (e: unknown) {
       const v = e as { body?: string };
-      setErr(v.body || "error");
+      const msg = v.body || "error";
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }

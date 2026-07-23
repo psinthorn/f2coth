@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Loader2, Plus, ClipboardCheck } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { checklistApi, type Project } from "@/lib/checklist-api";
 import { adminApi, type AdminCustomer } from "@/lib/admin-api";
 
@@ -116,6 +117,7 @@ function ProjectCard({ p }: { p: Project }) {
 
 function CreateProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (p: Project) => void }) {
   const t = useTranslations("admin.projects");
+  const tc = useTranslations("common");
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
   const [clientName, setClientName] = useState("");
@@ -140,6 +142,7 @@ function CreateProjectDialog({ onClose, onCreated }: { onClose: () => void; onCr
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return; // guard double-submit while the first create is in flight
     setSaving(true);
     setError(null);
     try {
@@ -149,9 +152,12 @@ function CreateProjectDialog({ onClose, onCreated }: { onClose: () => void; onCr
         customer_id: customerId || null,
         visible_to_customer: visibleToCustomer,
       });
+      toast.success(tc("toast.added"));
       onCreated(p);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "error");
+      const msg = err instanceof Error ? err.message : "error";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

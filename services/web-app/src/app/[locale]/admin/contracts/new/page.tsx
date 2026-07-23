@@ -8,6 +8,7 @@ import AdminShell from "@/components/AdminShell";
 import {
   contractApi, type Template, type Party, type MergeField,
 } from "@/lib/contract-api";
+import { toast } from "@/lib/toast";
 import { formatTHB } from "../_shared";
 
 type Step = 1 | 2 | 3;
@@ -69,6 +70,7 @@ export default function NewContractPage() {
 
   async function submit() {
     if (!template) return;
+    if (saving) return; // guard against double-clicks while the request is in flight
     setSaving(true);
     setError("");
     try {
@@ -95,9 +97,12 @@ export default function NewContractPage() {
         end_date: (values["end_date"] as string) || undefined,
         fee_total: feeTotal,
       });
+      toast.success(tc("toast.added"));
       router.push(`/admin/contracts/${res.id}`);
     } catch (e) {
-      setError(String(e));
+      const msg = String(e);
+      setError(msg);
+      toast.error(msg);
       setSaving(false);
     }
   }

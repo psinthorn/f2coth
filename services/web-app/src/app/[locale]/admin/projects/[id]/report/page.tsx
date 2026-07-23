@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Loader2, ChevronLeft, Printer, Mail } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { checklistApi, type Report } from "@/lib/checklist-api";
 
 export default function AdminProjectReportPage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,13 +28,17 @@ function ReportView({ projectId }: { projectId: string }) {
   const [sendResult, setSendResult] = useState<string | null>(null);
 
   const sendSummary = async () => {
+    if (sending) return; // guard double-click while the first send is in flight
     setSending(true);
     setSendResult(null);
     try {
       const r = await checklistApi.sendWeeklySummary(projectId, date);
       setSendResult(`Sent to ${r.sent_to}`);
+      toast.success(tc("toast.sent"));
     } catch (e) {
-      setSendResult(e instanceof Error ? e.message : "error");
+      const msg = e instanceof Error ? e.message : "error";
+      setSendResult(msg);
+      toast.error(msg);
     } finally {
       setSending(false);
     }

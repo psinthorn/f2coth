@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/routing";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import { BilingualEditor, BilingualTextArea } from "@/components/admin/BilingualField";
+import { toast } from "@/lib/toast";
 import { adminApi, type AdminCaseStudy, type CaseStudyWriteInput } from "@/lib/admin-api";
 
 interface Props {
@@ -47,6 +48,7 @@ export default function CaseStudyEditor({ cs }: Props) {
   }
 
   async function handleSave() {
+    if (saving) return;
     setSaving(true);
     setError("");
     const services_used = servicesRaw.split(",").map((s) => s.trim()).filter(Boolean);
@@ -78,9 +80,12 @@ export default function CaseStudyEditor({ cs }: Props) {
       } else {
         await adminApi.createCaseStudy(input);
       }
+      toast.success(tc("toast.saved"));
       router.push("/admin/case-studies" as any);
     } catch (e: any) {
-      setError(e?.body ? JSON.parse(e.body)?.error ?? t("saveError") : t("saveError"));
+      const msg = e?.body ? JSON.parse(e.body)?.error ?? t("saveError") : t("saveError");
+      setError(msg);
+      toast.error(msg);
       setSaving(false);
     }
   }
@@ -88,12 +93,16 @@ export default function CaseStudyEditor({ cs }: Props) {
   async function handleDelete() {
     if (!cs) return;
     if (!confirm(t("deleteConfirm"))) return;
+    if (saving) return;
     setSaving(true);
     try {
       await adminApi.deleteCaseStudy(cs.slug);
+      toast.success(tc("toast.deleted"));
       router.push("/admin/case-studies" as any);
     } catch {
-      setError(t("deleteError"));
+      const msg = t("deleteError");
+      setError(msg);
+      toast.error(msg);
       setSaving(false);
     }
   }

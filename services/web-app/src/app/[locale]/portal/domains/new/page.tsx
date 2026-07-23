@@ -8,6 +8,7 @@ import {
   AlertTriangle, Info, X,
 } from "lucide-react";
 import PortalShell from "@/components/PortalShell";
+import { useBusyAction } from "@/lib/toast";
 import {
   portalApi, type AvailabilityResult, type NewPortalDomainOrder,
 } from "@/lib/portal-api";
@@ -41,6 +42,7 @@ export default function PortalNewDomainOrderPage() {
     notes: "",
   });
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const { busy, run } = useBusyAction();
 
   const cleanedSLD = useMemo(() => sanitizeSLD(query), [query]);
 
@@ -68,11 +70,11 @@ export default function PortalNewDomainOrderPage() {
       setStatus({ kind: "err", msg: t("errorContactRequired") });
       return;
     }
-    setStatus({ kind: "submitting" });
-    try {
-      const registry: "thnic" | "resellerclub" =
-        selected.classification === "manual" ? "thnic" : "resellerclub";
-      await portalApi.createDomainOrder({
+    setStatus({ kind: "idle" });
+    const registry: "thnic" | "resellerclub" =
+      selected.classification === "manual" ? "thnic" : "resellerclub";
+    const ok = await run(
+      () => portalApi.createDomainOrder({
         sld: cleanedSLD,
         tld: selected.tld,
         registry,
@@ -83,11 +85,13 @@ export default function PortalNewDomainOrderPage() {
         years: form.years,
         privacy_enabled: form.privacy_enabled,
         notes: form.notes?.trim() || undefined,
-      });
+      }),
+      { success: tc("toast.added") },
+    );
+    if (ok) {
       setStep("done");
-      setStatus({ kind: "idle" });
-    } catch (e: any) {
-      setStatus({ kind: "err", msg: e?.body ?? e?.message ?? t("errorSubmitFailed") });
+    } else {
+      setStatus({ kind: "err", msg: t("errorSubmitFailed") });
     }
   }
 
@@ -252,8 +256,8 @@ export default function PortalNewDomainOrderPage() {
             <button type="button" onClick={() => setStep("results")} className="rounded-lg px-4 py-2 text-sm text-navy-700 hover:bg-navy-50">
               {tc("cancel")}
             </button>
-            <button type="submit" disabled={status.kind === "submitting"} className="btn-accent">
-              {status.kind === "submitting" ? (
+            <button type="submit" disabled={busy} className="btn-accent disabled:opacity-40">
+              {busy ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> {tc("saving")}</>
               ) : (
                 <>{t("submitOrder")} <ArrowRight className="h-4 w-4" /></>

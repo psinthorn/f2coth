@@ -115,7 +115,16 @@
     "all": "All",
     "saved": "Saved",
     "saveAll": "Save all",
-    "next": "Next"
+    "next": "Next",
+    "toast": {
+      "saved": "Saved",
+      "added": "Added",
+      "updated": "Updated",
+      "deleted": "Deleted",
+      "done": "Done",
+      "sent": "Sent",
+      "error": "Something went wrong"
+    }
   },
   "header": {
     "nav": {

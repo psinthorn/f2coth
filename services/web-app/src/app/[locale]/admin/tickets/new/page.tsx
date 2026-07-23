@@ -18,6 +18,7 @@ import {
   ArrowLeft, Loader2, AlertTriangle, Ticket, Search, Paperclip, CheckCircle2,
 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import AttachmentUploader from "@/components/attachments/AttachmentUploader";
 import { adminAttachments } from "@/lib/attachments-api";
 import {
@@ -93,7 +94,7 @@ export default function AdminNewTicketPage() {
   const selected = customers.find((c) => c.id === customerID) ?? null;
 
   async function submit() {
-    if (!customerID || !subject.trim() || !body.trim()) return;
+    if (!customerID || !subject.trim() || !body.trim() || submitting) return;
     setSubmitting(true);
     setErr("");
     try {
@@ -108,9 +109,12 @@ export default function AdminNewTicketPage() {
       // Enter the attach step. AttachmentUploader needs the real ticket
       // id to POST files to. The "View ticket" button ends the flow.
       setCreatedTicketID(res.id);
+      toast.success(tc("toast.added"));
       setSubmitting(false);
     } catch (e: unknown) {
-      setErr(tryMsg(e));
+      const msg = tryMsg(e);
+      setErr(msg);
+      toast.error(msg);
       setSubmitting(false);
     }
   }

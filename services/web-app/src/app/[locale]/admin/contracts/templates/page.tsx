@@ -6,6 +6,7 @@ import { Link } from "@/i18n/routing";
 import { Loader2, ArrowLeft, Save, ToggleLeft, ToggleRight } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import { contractApi, type Template } from "@/lib/contract-api";
+import { toast } from "@/lib/toast";
 
 export default function TemplatesPage() {
   const t = useTranslations("admin.contracts");
@@ -39,6 +40,7 @@ export default function TemplatesPage() {
 
 function TemplateCard({ tpl, onSaved }: { tpl: Template; onSaved: () => void }) {
   const t = useTranslations("admin.contracts");
+  const tc = useTranslations("common");
   const [name, setName] = useState(tpl.name);
   const [version, setVersion] = useState(tpl.version);
   const [prefix, setPrefix] = useState(tpl.doc_prefix);
@@ -49,12 +51,14 @@ function TemplateCard({ tpl, onSaved }: { tpl: Template; onSaved: () => void }) 
   const [ok, setOk] = useState(false);
 
   async function save() {
+    if (busy) return; // guard against double-clicks while the request is in flight
     setBusy(true); setErr(""); setOk(false);
     try {
       const merge_schema = JSON.parse(schema);
       await contractApi.updateTemplate(tpl.id, { name, version, doc_prefix: prefix, merge_schema, is_active: active });
+      toast.success(tc("toast.saved"));
       setOk(true); onSaved();
-    } catch (e) { setErr(String(e)); }
+    } catch (e) { const msg = String(e); setErr(msg); toast.error(msg); }
     finally { setBusy(false); }
   }
 

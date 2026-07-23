@@ -6,19 +6,20 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Loader2, AlertTriangle, KeyRound } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useBusyAction } from "@/lib/toast";
 
 export default function AdminForgotPasswordPage() {
   const t = useTranslations("admin.login.forgot");
+  const tc = useTranslations("common");
   const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { busy, run } = useBusyAction();
   const [err, setErr] = useState("");
   const [sent, setSent] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setErr("");
-    try {
+    const ok = await run(async () => {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
       const res = await fetch(`${apiBase}/auth/forgot-password`, {
         method: "POST",
@@ -29,11 +30,11 @@ export default function AdminForgotPasswordPage() {
       // 200 whether or not the email matched. Only surface a real network
       // error, not a "email not found".
       if (!res.ok && res.status >= 500) throw new Error("server error");
+    }, { success: tc("toast.sent") });
+    if (ok) {
       setSent(true);
-    } catch {
+    } else {
       setErr(t("error"));
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -67,7 +68,7 @@ export default function AdminForgotPasswordPage() {
                   <AlertTriangle className="mt-0.5 h-4 w-4" /><span>{err}</span>
                 </div>
               )}
-              <button type="submit" disabled={busy} className="btn-primary w-full">
+              <button type="submit" disabled={busy} className="btn-primary w-full disabled:opacity-40">
                 {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submit")}
               </button>
             </>
