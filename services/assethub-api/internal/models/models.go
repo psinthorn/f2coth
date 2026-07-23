@@ -1,12 +1,45 @@
 package models
 
-import "time"
+import (
+	"bytes"
+	"encoding/json"
+	"time"
+)
 
 // ---------- Canonical ingest schema (f2.assethub.v1, spec §6.3) ----------
 // The collector scripts (agents/collect.sh, collect.ps1) POST this shape.
 // Unknown/extra fields are tolerated; the full body is stored raw in JSONB.
 
 const SchemaV1 = "f2.assethub.v1"
+
+// FlexSlice unmarshals either a JSON array ([{...}]) or a single bare object /
+// scalar ({...}) into a slice. Windows PowerShell 5.1's ConvertTo-Json serializes
+// a one-element list as a bare value instead of a one-element array — so a 5.1
+// collector sends e.g. "software": {...} or "ipv4": "1.2.3.4" where the schema
+// expects an array. Accepting both shapes keeps ingest robust across collectors.
+type FlexSlice[T any] []T
+
+func (s *FlexSlice[T]) UnmarshalJSON(b []byte) error {
+	b = bytes.TrimSpace(b)
+	if len(b) == 0 || string(b) == "null" {
+		*s = nil
+		return nil
+	}
+	if b[0] == '[' {
+		var arr []T
+		if err := json.Unmarshal(b, &arr); err != nil {
+			return err
+		}
+		*s = arr
+		return nil
+	}
+	var one T
+	if err := json.Unmarshal(b, &one); err != nil {
+		return err
+	}
+	*s = []T{one}
+	return nil
+}
 
 type IngestEnvelope struct {
 	Schema      string          `json:"schema"`
@@ -31,9 +64,9 @@ type IngestDevice struct {
 	RAMMB                 int              `json:"ram_mb"`
 	NetworkRole           string           `json:"network_role"`
 	DomainOrWorkgroupName string           `json:"domain_or_workgroup_name"`
-	Interfaces            []IngestIface    `json:"interfaces"`
-	Disks                 []IngestDisk     `json:"disks"`
-	Software              []IngestSoftware `json:"software"`
+	Interfaces            FlexSlice[IngestIface]    `json:"interfaces"`
+	Disks                 FlexSlice[IngestDisk]     `json:"disks"`
+	Software              FlexSlice[IngestSoftware] `json:"software"`
 	LoggedInUser          string           `json:"logged_in_user"`
 	UptimeHours           float64          `json:"uptime_hours"`
 }
@@ -46,12 +79,12 @@ type IngestOS struct {
 }
 
 type IngestIface struct {
-	Name string   `json:"name"`
-	MAC  string   `json:"mac"`
-	IPv4 []string `json:"ipv4"`
-	IPv6 []string `json:"ipv6"`
-	Type string   `json:"type"`
-	SSID string   `json:"ssid"`
+	Name string            `json:"name"`
+	MAC  string            `json:"mac"`
+	IPv4 FlexSlice[string] `json:"ipv4"`
+	IPv6 FlexSlice[string] `json:"ipv6"`
+	Type string            `json:"type"`
+	SSID string            `json:"ssid"`
 }
 
 type IngestDisk struct {
