@@ -10,6 +10,7 @@ import { adminApi, clearAuth, redirectToLogin, type User } from "@/lib/admin-api
 import SandboxBanner from "@/components/SandboxBanner";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import F2LogoMark from "@/components/F2LogoMark";
+import Toaster from "@/components/Toaster";
 import { isEnabledIn } from "@/lib/modules";
 
 type GroupKey = "workspace" | "pipeline" | "infrastructure" | "ai" | "system";
@@ -236,6 +237,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen bg-navy-50">
+      <Toaster />
       <SandboxBanner adminCTA />
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-navy-100 bg-white px-4 py-3 lg:hidden">

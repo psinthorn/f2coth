@@ -2355,6 +2355,20 @@
         "confirmDelete": "Delete workstation “{name}”? Its assets are kept and simply un-grouped.",
         "members": "{n} assets",
         "noMembers": "No assets assigned yet."
+      },
+      "toast": {
+        "saved": "Saved",
+        "added": "Added",
+        "updated": "Updated",
+        "deleted": "Deleted",
+        "moved": "Device moved",
+        "tagGenerated": "Asset tag regenerated",
+        "revoked": "Token revoked",
+        "scanQueued": "Scan requested",
+        "reportQueued": "Report queued",
+        "promoted": "Promoted to device",
+        "ignored": "Finding ignored",
+        "copied": "Copied"
       }
     }
   },
