@@ -287,9 +287,11 @@ type deviceMoveInput struct {
 
 // MoveDevice (admin) reassigns a device to another organization. It carries the
 // device's submissions and any promoted discovery findings, clears its site
-// (sites belong to the old org), and refuses when the target org already has a
-// device with the same serial or primary MAC (unique per org). Child rows
-// (interfaces/disks/software) are keyed by device_id, so they follow for free.
+// (sites belong to the old org), reissues the asset tag under the target org's
+// scheme (prefix + per-category counter), and refuses when the target org
+// already has a device with the same serial or primary MAC (unique per org).
+// Child rows (interfaces/disks/software) are keyed by device_id, so they follow
+// for free.
 func (h *Handler) MoveDevice(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var in deviceMoveInput
@@ -308,10 +310,10 @@ func (h *Handler) MoveDevice(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(ctx)
 
-	var cur string
-	var serial, mac *string
-	if err := tx.QueryRow(ctx, `SELECT customer_id, serial_number, primary_mac FROM assethub_devices WHERE id=$1`, id).
-		Scan(&cur, &serial, &mac); err != nil {
+	var cur, deviceType string
+	var serial, mac, model, osName *string
+	if err := tx.QueryRow(ctx, `SELECT customer_id, serial_number, primary_mac, device_type, model, os_name FROM assethub_devices WHERE id=$1`, id).
+		Scan(&cur, &serial, &mac, &deviceType, &model, &osName); err != nil {
 		writeErr(w, http.StatusNotFound, "device not found")
 		return
 	}
@@ -332,7 +334,15 @@ func (h *Handler) MoveDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := tx.Exec(ctx, `UPDATE assethub_devices SET customer_id=$2, site_id=NULL WHERE id=$1`, id, in.CustomerID); err != nil {
+	// Reissue the asset tag under the target org (its prefix + per-category
+	// counter). Old tags carry the source org's prefix, which is misleading once
+	// the device changes hands.
+	newTag, err := h.generateAssetTag(ctx, tx, in.CustomerID, deviceType, deref(model), deref(osName))
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "regenerate tag failed: "+err.Error())
+		return
+	}
+	if _, err := tx.Exec(ctx, `UPDATE assethub_devices SET customer_id=$2, site_id=NULL, asset_tag=$3 WHERE id=$1`, id, in.CustomerID, newTag); err != nil {
 		writeErr(w, http.StatusInternalServerError, "move failed: "+err.Error())
 		return
 	}
@@ -344,12 +354,12 @@ func (h *Handler) MoveDevice(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "move findings failed")
 		return
 	}
-	_ = writeAudit(ctx, tx, "assethub_device", id, mw.UserID(ctx), "move", map[string]any{"from": cur, "to": in.CustomerID})
+	_ = writeAudit(ctx, tx, "assethub_device", id, mw.UserID(ctx), "move", map[string]any{"from": cur, "to": in.CustomerID, "asset_tag": newTag})
 	if err := tx.Commit(ctx); err != nil {
 		writeErr(w, http.StatusInternalServerError, "commit failed")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"id": id, "customer_id": in.CustomerID})
+	writeJSON(w, http.StatusOK, map[string]string{"id": id, "customer_id": in.CustomerID, "asset_tag": newTag})
 }
 
 // GenerateTag (staff) assigns a fresh default asset tag to a device, using its
