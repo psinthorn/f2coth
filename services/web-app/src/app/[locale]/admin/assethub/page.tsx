@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
+
+// Remembers the org across navigation (back from a device, page reload) so the
+// register doesn't snap back to the first org every time.
+const ORG_STORE_KEY = "f2_assethub_org";
 import { Loader2, Plus, Search, Download, RefreshCw, Trash2, KeyRound, FileSpreadsheet, Copy, Check, Terminal, Pencil, X, RotateCcw } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import {
@@ -33,11 +37,24 @@ export default function AssetHubAdminPage() {
     assethubApi.listOrgs()
       .then((o) => {
         setOrgs(o);
-        if (o.length) setCustomerId((prev) => prev || o[0].id);
+        if (!o.length) return;
+        // Prefer the org passed back from a device (?c=), then the last one used
+        // this session, then the first — but only if it still exists.
+        const fromUrl = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("c") : null;
+        const fromStore = typeof window !== "undefined" ? sessionStorage.getItem(ORG_STORE_KEY) : null;
+        const valid = (id: string | null) => !!id && o.some((x) => x.id === id);
+        const pick = [fromUrl, fromStore].find(valid) ?? o[0].id;
+        setCustomerId((prev) => prev || (pick as string));
       })
       .catch((e) => setErr(String(e)))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Persist the chosen org so it survives navigating away and back.
+  useEffect(() => {
+    if (customerId && typeof window !== "undefined") sessionStorage.setItem(ORG_STORE_KEY, customerId);
+  }, [customerId]);
 
   useEffect(() => {
     if (!customerId) return;

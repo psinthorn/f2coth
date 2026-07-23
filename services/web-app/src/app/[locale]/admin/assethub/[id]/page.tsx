@@ -105,7 +105,7 @@ export default function AssetHubDeviceDetail() {
 
   return (
     <AdminShell>
-      <Link href={`/admin/assethub`} className="mb-4 inline-flex items-center text-sm text-navy-500 hover:text-navy-800">
+      <Link href={customerId ? `/admin/assethub?c=${customerId}` : `/admin/assethub`} className="mb-4 inline-flex items-center text-sm text-navy-500 hover:text-navy-800">
         <ArrowLeft className="mr-1 h-4 w-4" />{t("detail.back")}
       </Link>
       {err && <div className="mb-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{err}</div>}
