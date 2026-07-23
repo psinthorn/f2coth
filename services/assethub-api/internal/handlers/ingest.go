@@ -102,6 +102,13 @@ func (h *Handler) Ingest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// EDID-detected displays become their own monitor assets, linked to this host.
+	if len(env.Device.Monitors) > 0 {
+		if err := h.upsertMonitors(ctx, tx, scope.CustomerID, deviceID, env.Device.Monitors); err != nil {
+			writeErr(w, http.StatusInternalServerError, "monitor ingest failed: "+err.Error())
+			return
+		}
+	}
 
 	// Store the full raw submission (audit trail + "changes since last visit").
 	if _, err := tx.Exec(ctx, `
@@ -271,10 +278,52 @@ func primaryNet(ifaces []models.IngestIface) (string, string) {
 	return "", ""
 }
 
+// upsertMonitors turns each EDID-detected display into its own monitor asset,
+// linked to the reporting host via parent_device_id and sharing the host's
+// workstation. Dedup is by (customer, serial) when a serial is present, else by
+// (host, model) so re-runs update the same row instead of duplicating.
+func (h *Handler) upsertMonitors(ctx context.Context, tx pgx.Tx, customerID, hostID string, monitors []models.IngestMonitor) error {
+	var groupID *string
+	_ = tx.QueryRow(ctx, `SELECT group_id FROM assethub_devices WHERE id=$1`, hostID).Scan(&groupID)
+	for _, m := range monitors {
+		model := strings.TrimSpace(m.Model)
+		if s := strings.TrimSpace(m.Size); s != "" {
+			model = strings.TrimSpace(model + " " + s)
+		}
+		if model == "" && strings.TrimSpace(m.Serial) == "" {
+			continue // nothing identifiable to store
+		}
+		serial := nilIfEmpty(strings.TrimSpace(m.Serial))
+		var id string
+		if serial != nil {
+			_ = tx.QueryRow(ctx, `SELECT id FROM assethub_devices WHERE customer_id=$1 AND serial_number=$2`, customerID, *serial).Scan(&id)
+		}
+		if id == "" {
+			_ = tx.QueryRow(ctx, `SELECT id FROM assethub_devices WHERE customer_id=$1 AND parent_device_id=$2 AND device_type='monitor' AND lower(COALESCE(model,''))=lower($3)`, customerID, hostID, model).Scan(&id)
+		}
+		if id != "" {
+			_, _ = tx.Exec(ctx, `UPDATE assethub_devices SET brand=$2, model=$3, parent_device_id=$4, group_id=COALESCE(group_id,$5), last_seen=NOW(), updated_at=NOW() WHERE id=$1`,
+				id, nilIfEmpty(strings.TrimSpace(m.Brand)), nilIfEmpty(model), hostID, groupID)
+			continue
+		}
+		if err := tx.QueryRow(ctx, `
+			INSERT INTO assethub_devices (customer_id, device_type, brand, model, serial_number, parent_device_id, group_id, source)
+			VALUES ($1,'monitor',$2,$3,$4,$5,$6,'agent') RETURNING id`,
+			customerID, nilIfEmpty(strings.TrimSpace(m.Brand)), nilIfEmpty(model), serial, hostID, groupID).Scan(&id); err != nil {
+			return err
+		}
+		if err := h.assignAssetTagIfEmpty(ctx, tx, id, customerID, "monitor", model, ""); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 var validDeviceTypes = map[string]bool{
 	"computer": true, "server": true, "nas": true, "router": true, "switch": true,
 	"ap": true, "printer": true, "camera": true, "phone": true, "tablet": true,
 	"iot": true, "unknown": true,
+	"monitor": true, "ups": true, "keyboard": true, "mouse": true, "dock": true,
 }
 
 func normDeviceType(t string) string {

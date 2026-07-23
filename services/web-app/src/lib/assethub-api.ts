@@ -80,7 +80,8 @@ async function downloadBlob(path: string, filename: string, base = "/assethub/ad
 
 export type DeviceType =
   | "computer" | "server" | "nas" | "router" | "switch" | "ap"
-  | "printer" | "camera" | "phone" | "tablet" | "iot" | "unknown";
+  | "printer" | "camera" | "phone" | "tablet" | "iot"
+  | "monitor" | "ups" | "keyboard" | "mouse" | "dock" | "unknown";
 export type NetworkRole = "domain" | "workgroup" | "standalone" | "n/a";
 export type DeviceStatus = "active" | "retired" | "missing";
 
@@ -165,9 +166,24 @@ export interface AssetDevice {
   first_seen: string;
   last_seen: string;
   notes: string | null;
+  group_id: string | null;
+  group_name?: string | null;
+  parent_device_id?: string | null;
   interfaces?: AssetIface[];
   disks?: AssetDisk[];
   software?: AssetSoftware[];
+}
+
+export interface AssetGroup {
+  id: string;
+  customer_id: string;
+  site_id: string | null;
+  name: string;
+  department: string | null;
+  notes: string | null;
+  member_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AssetFinding {
@@ -212,8 +228,9 @@ export interface AssetReport {
 
 export interface DeviceFilters {
   type?: string;
-  category?: string; // network | computers | cctv | printers (maps to device_type group)
+  category?: string; // network | computers | cctv | printers | peripherals (maps to device_type group)
   site_id?: string;
+  group_id?: string;
   os?: string;
   network_role?: string;
   status?: string;
@@ -239,6 +256,13 @@ export const assethubApi = {
     request<{ id: string }>(`/sites/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteSite: (id: string) => request<void>(`/sites/${id}`, { method: "DELETE" }),
 
+  listGroups: (customerId: string) => request<AssetGroup[]>(`/groups?customer_id=${customerId}`),
+  createGroup: (body: { customer_id: string; name: string; department?: string; site_id?: string | null; notes?: string }) =>
+    request<{ id: string }>("/groups", { method: "POST", body: JSON.stringify(body) }),
+  updateGroup: (id: string, body: { name: string; department?: string; site_id?: string | null; notes?: string }) =>
+    request<{ id: string }>(`/groups/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteGroup: (id: string) => request<void>(`/groups/${id}`, { method: "DELETE" }),
+
   listTokens: (customerId: string) => request<AssetToken[]>(`/tokens?customer_id=${customerId}`),
   createToken: (body: { customer_id: string; site_id?: string | null; label: string }) =>
     request<AssetToken>("/tokens", { method: "POST", body: JSON.stringify(body) }),
@@ -255,7 +279,7 @@ export const assethubApi = {
     primary_mac?: string; site_id?: string; assigned_user?: string; network_role?: string; notes?: string;
   }) => request<{ id: string }>("/devices", { method: "POST", body: JSON.stringify(body) }),
   getDevice: (customerId: string, id: string) => request<AssetDevice>(`/devices/${id}?customer_id=${customerId}`),
-  patchDevice: (id: string, body: Partial<Pick<AssetDevice, "device_type" | "asset_tag" | "assigned_user" | "site_id" | "status" | "notes">>) =>
+  patchDevice: (id: string, body: Partial<Pick<AssetDevice, "device_type" | "asset_tag" | "assigned_user" | "site_id" | "status" | "notes" | "group_id">>) =>
     request<{ id: string }>(`/devices/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteDevice: (id: string) => request<void>(`/devices/${id}`, { method: "DELETE" }),
   moveDevice: (id: string, customerId: string) =>
@@ -301,6 +325,7 @@ async function portalRequest<T>(path: string): Promise<T> {
 export const assethubPortal = {
   overview: () => portalRequest<AssetOverview>("/overview"),
   listSites: () => portalRequest<AssetSite[]>("/sites"),
+  listGroups: () => portalRequest<AssetGroup[]>("/groups"),
   listDevices: (f?: DeviceFilters) => {
     const p = new URLSearchParams();
     if (f) for (const [k, v] of Object.entries(f)) if (v) p.set(k, v);
