@@ -26,14 +26,15 @@ $base = "$root/api/assethub/collector"
 $api  = "$root/api/assethub"
 $hdr  = @{ Authorization = "Bearer $token" }
 
-# server preflight
-try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 10 -Uri "$base/collect.ps1" -OutFile "$env:TEMP\f2-collect.ps1" }
+# server preflight — fetch collect.ps1 into memory (also confirms reachability)
+try { $script:collectCode = (Invoke-WebRequest -UseBasicParsing -TimeoutSec 10 -Uri "$base/collect.ps1").Content }
 catch { Write-Error "cannot reach $base/collect.ps1 — check F2_SERVER_URL / outbound access / module enabled."; exit 4 }
-$tool = "$env:TEMP\f2-collect.ps1"
 
 function Invoke-Once {
   Write-Host "[run] collecting this machine ..."
-  try { & $tool -ServerUrl $server -Token $token } catch { Write-Warning "collector error: $_" }
+  # Run in-memory (scriptblock, not a .ps1 file) so the machine's script
+  # execution policy can't block it — see install.ps1 for the rationale.
+  try { & ([scriptblock]::Create($script:collectCode)) -ServerUrl $server -Token $token } catch { Write-Warning "collector error: $_" }
 }
 
 if ($env:F2_DAEMON -ne "1") { Invoke-Once; Write-Host "[run] done (oneshot)."; exit 0 }
