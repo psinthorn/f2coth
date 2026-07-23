@@ -79,10 +79,13 @@ $paths = @(
  "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
  "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*"
 )
-Get-ItemProperty $paths | Where-Object { $_.DisplayName } | ForEach-Object {
-    $sw += [ordered]@{ name = $_.DisplayName; version = "$($_.DisplayVersion)"; vendor = "$($_.Publisher)" }
+Get-ItemProperty $paths -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName } | ForEach-Object {
+    # Use PSCustomObject, not a hashtable: Sort-Object -Unique below reads `name`
+    # as an object property, which it CANNOT do on a hashtable key — so a hashtable
+    # collapses every entry to one. (That is why only a single app showed up.)
+    $sw += [pscustomobject]@{ name = $_.DisplayName; version = "$($_.DisplayVersion)"; vendor = "$($_.Publisher)" }
 }
-$sw = $sw | Sort-Object name -Unique
+$sw = @($sw | Sort-Object name -Unique)
 
 # ---------- assemble ----------
 $payload = [ordered]@{
