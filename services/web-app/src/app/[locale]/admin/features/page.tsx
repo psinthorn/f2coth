@@ -6,6 +6,7 @@ import {
   Globe, LayoutDashboard, UserSquare2, Server, ShieldCheck, Search, Loader2, Lock, AlertCircle, History, X,
 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type AdminModule, type ModuleArea, type ModuleAuditEntry } from "@/lib/admin-api";
 
 const AREA_ORDER: ModuleArea[] = ["public", "portal", "admin", "api"];
@@ -24,6 +25,7 @@ const AREA_I18N_KEY: Record<ModuleArea, string> = {
 
 export default function AdminFeaturesPage() {
   const t = useTranslations("admin.features");
+  const tc = useTranslations("common");
   const locale = useLocale();
   const [modules, setModules] = useState<AdminModule[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -88,6 +90,7 @@ export default function AdminFeaturesPage() {
 
   async function onToggle(m: AdminModule, next: boolean) {
     if (m.core) return; // UI never shows a switch on core rows, but guard anyway.
+    if (pending.has(m.key)) return; // ignore rapid re-toggle while the PATCH is in flight.
     setPending((p) => new Set(p).add(m.key));
     setRowError((e) => { const { [m.key]: _, ...rest } = e; return rest; });
     // Optimistic update — flip the row immediately so the UI feels instant.
@@ -99,12 +102,15 @@ export default function AdminFeaturesPage() {
       setModules((rows) =>
         rows ? rows.map((r) => (r.key === m.key ? updated : r)) : rows,
       );
+      toast.success(tc("toast.updated"));
     } catch (e) {
       // Revert the optimistic update.
       setModules((rows) =>
         rows ? rows.map((r) => (r.key === m.key ? { ...r, enabled: !next } : r)) : rows,
       );
-      setRowError((er) => ({ ...er, [m.key]: (e as Error).message || "error" }));
+      const msg = (e as Error).message || "error";
+      setRowError((er) => ({ ...er, [m.key]: msg }));
+      toast.error(msg);
     } finally {
       setPending((p) => { const n = new Set(p); n.delete(m.key); return n; });
     }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Home, Check } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type AdminHomeContentItem } from "@/lib/admin-api";
 
 interface Group {
@@ -81,14 +82,18 @@ export default function AdminHomeContentPage() {
   }
 
   async function handleSaveAll() {
+    if (saving) return; // re-entry guard: no double-submit while in flight
     setSaving(true);
     setError("");
     setSaved(false);
     try {
       await adminApi.upsertHomeContent(Object.values(items));
       setSaved(true);
+      toast.success(tc("toast.saved"));
     } catch (e: any) {
-      setError(e?.body ? JSON.parse(e.body)?.error ?? t("saveError") : t("saveError"));
+      const msg = e?.body ? JSON.parse(e.body)?.error ?? t("saveError") : t("saveError");
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

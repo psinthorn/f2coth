@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Loader2, Send, Ban, AlertCircle, CheckCircle2, Printer, RotateCcw } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type AdminInvoiceFull } from "@/lib/admin-api";
 import { formatMoney, invoiceStatusTone, paymentStatusTone } from "@/lib/payment-types";
 
@@ -53,14 +54,17 @@ export default function AdminInvoiceDetailPage() {
   }, [id]);
 
   async function issue() {
+    if (busy) return;
     setBusy(true);
     setMsg(null);
     try {
       setInv(await adminApi.issueInvoice(id));
       setMsg({ kind: "ok", text: t("issued") });
+      toast.success(tc("toast.done"));
     } catch (e: unknown) {
       const err = e as { body?: string };
       setMsg({ kind: "err", text: err.body || "" });
+      toast.error(err.body || tc("toast.error"));
     } finally {
       setBusy(false);
     }
@@ -69,14 +73,17 @@ export default function AdminInvoiceDetailPage() {
   async function voidIt() {
     const reason = window.prompt(t("voidReasonPrompt")) ?? "";
     if (!reason) return;
+    if (busy) return;
     setBusy(true);
     setMsg(null);
     try {
       setInv(await adminApi.voidInvoice(id, reason));
       setMsg({ kind: "ok", text: t("voided") });
+      toast.success(tc("toast.done"));
     } catch (e: unknown) {
       const err = e as { body?: string };
       setMsg({ kind: "err", text: err.body || "" });
+      toast.error(err.body || tc("toast.error"));
     } finally {
       setBusy(false);
     }
@@ -248,6 +255,7 @@ function RefundDialog({
   onDone: () => void;
 }) {
   const t = useTranslations("admin.invoices");
+  const tc = useTranslations("common");
   const [amount, setAmount] = useState<number>(max);
   const [reason, setReason] = useState("");
   const [bankRef, setBankRef] = useState("");
@@ -260,6 +268,7 @@ function RefundDialog({
       setErr(t("refundInvalid"));
       return;
     }
+    if (busy) return;
     setBusy(true);
     setErr(null);
     try {
@@ -270,10 +279,12 @@ function RefundDialog({
         bank_ref: bankRef || undefined,
         proof_url: proofUrl || undefined,
       });
+      toast.success(tc("toast.done"));
       onDone();
     } catch (e: unknown) {
       const v = e as { body?: string };
       setErr(v.body || t("refundFailed"));
+      toast.error(v.body || t("refundFailed"));
     } finally {
       setBusy(false);
     }

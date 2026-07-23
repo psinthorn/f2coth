@@ -18,6 +18,7 @@ import {
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Loader2, X, GripVertical, ClipboardList, FileText } from "lucide-react";
+import { toast, useBusyAction } from "@/lib/toast";
 import {
   checklistApi,
   type Project,
@@ -40,6 +41,7 @@ export default function ProjectBoard({ projectId }: { projectId: string }) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeDrag, setActiveDrag] = useState<{ kind: DragKind; id: string } | null>(null);
+  const { busy, run } = useBusyAction();
 
   useEffect(() => {
     Promise.all([checklistApi.getBoard(projectId), checklistApi.listTemplates()])
@@ -82,26 +84,26 @@ export default function ProjectBoard({ projectId }: { projectId: string }) {
       items: [],
     };
     setBoard({ ...board, modules: [...board.modules, optimistic] });
-    try {
+    const ok = await run(async () => {
       await checklistApi.attachModule(projectId, templateId);
       const fresh = await checklistApi.getBoard(projectId);
       setBoard(fresh);
-    } catch {
+    }, { success: tc("toast.added") });
+    if (!ok) {
       setBoard({ ...board, modules: board.modules.filter((m) => m.id !== tempPmId) });
     }
-  }, [board, projectId, templates]);
+  }, [board, projectId, templates, run, tc]);
 
   const detachModule = useCallback(async (pmId: string) => {
     if (!board) return;
     if (!window.confirm(t("board.confirmDetach"))) return;
     const snapshot = board.modules;
     setBoard({ ...board, modules: board.modules.filter((m) => m.id !== pmId) });
-    try {
-      await checklistApi.detachModule(projectId, pmId);
-    } catch {
+    const ok = await run(() => checklistApi.detachModule(projectId, pmId), { success: tc("toast.deleted") });
+    if (!ok) {
       setBoard({ ...board, modules: snapshot });
     }
-  }, [board, projectId, t]);
+  }, [board, projectId, t, run, tc]);
 
   const onDragStart = (e: DragStartEvent) => {
     const kind = (e.active.data.current?.kind as DragKind) ?? "attached";
@@ -128,9 +130,8 @@ export default function ProjectBoard({ projectId }: { projectId: string }) {
       if (oldIndex < 0 || newIndex < 0) return;
       const next = arrayMove(board.modules, oldIndex, newIndex);
       setBoard({ ...board, modules: next });
-      try {
-        await checklistApi.reorderModules(projectId, next.map((m) => m.id));
-      } catch {
+      const ok = await run(() => checklistApi.reorderModules(projectId, next.map((m) => m.id)), { success: tc("toast.saved") });
+      if (!ok) {
         setBoard({ ...board, modules: board.modules });
       }
     }
@@ -187,6 +188,7 @@ export default function ProjectBoard({ projectId }: { projectId: string }) {
           <AttachedList
             modules={board.modules}
             onDetach={detachModule}
+            busy={busy}
           />
         </div>
         <DragOverlay>
@@ -244,7 +246,7 @@ function LibraryCard({ template, attached }: { template: Template; attached: boo
 
 // ─────────── Attached list (droppable + sortable) ───────────
 
-function AttachedList({ modules, onDetach }: { modules: ProjectModule[]; onDetach: (pmId: string) => void }) {
+function AttachedList({ modules, onDetach, busy }: { modules: ProjectModule[]; onDetach: (pmId: string) => void; busy: boolean }) {
   const t = useTranslations("admin.projects");
   const { setNodeRef, isOver } = useDroppable({ id: "attached-drop-zone" });
   return (
@@ -262,7 +264,7 @@ function AttachedList({ modules, onDetach }: { modules: ProjectModule[]; onDetac
         <SortableContext items={modules.map((m) => m.id)} strategy={verticalListSortingStrategy}>
           <ul className="space-y-2">
             {modules.map((m) => (
-              <AttachedCard key={m.id} module={m} onDetach={onDetach} />
+              <AttachedCard key={m.id} module={m} onDetach={onDetach} busy={busy} />
             ))}
           </ul>
         </SortableContext>
@@ -271,7 +273,7 @@ function AttachedList({ modules, onDetach }: { modules: ProjectModule[]; onDetac
   );
 }
 
-function AttachedCard({ module: m, onDetach }: { module: ProjectModule; onDetach: (pmId: string) => void }) {
+function AttachedCard({ module: m, onDetach, busy }: { module: ProjectModule; onDetach: (pmId: string) => void; busy: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: m.id,
     data: { kind: "attached" satisfies DragKind },
@@ -305,8 +307,9 @@ function AttachedCard({ module: m, onDetach }: { module: ProjectModule; onDetach
       </div>
       <button
         onClick={() => onDetach(m.id)}
+        disabled={busy}
         aria-label="detach module"
-        className="rounded p-1 text-navy-400 hover:bg-red-50 hover:text-red-600"
+        className="rounded p-1 text-navy-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
       >
         <X className="h-4 w-4" />
       </button>
@@ -316,15 +319,19 @@ function AttachedCard({ module: m, onDetach }: { module: ProjectModule; onDetach
 
 function VisibilityToggle({ project, onChange }: { project: Project; onChange: (v: boolean) => void }) {
   const t = useTranslations("admin.projects");
+  const tc = useTranslations("common");
   const [saving, setSaving] = useState(false);
   const toggle = async () => {
+    if (saving) return; // re-entry guard: no double-submit while in flight
     const next = !project.visible_to_customer;
     setSaving(true);
     onChange(next);
     try {
       await checklistApi.updateProject(project.id, { visible_to_customer: next });
+      toast.success(tc("toast.updated"));
     } catch {
       onChange(!next);
+      toast.error(tc("toast.error"));
     } finally {
       setSaving(false);
     }

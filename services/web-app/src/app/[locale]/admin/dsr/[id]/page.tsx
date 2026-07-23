@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { Loader2, ArrowLeft } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type DSR, type DSRStatus } from "@/lib/admin-api";
 
 const NEXT_STATUSES: Record<DSRStatus, DSRStatus[]> = {
@@ -55,9 +56,11 @@ export default function AdminDSRDetailPage({
         status: status !== dsr.status ? status : undefined,
         response_notes: notes !== (dsr.response_notes ?? "") ? notes : undefined,
       });
+      toast.success(tc("toast.saved"));
       router.push("/admin/dsr" as any);
     } catch {
       setError(t("saveError"));
+      toast.error(t("saveError"));
       setSaving(false);
     }
   }

@@ -6,23 +6,24 @@ import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
 import { Loader2, AlertTriangle, KeyRound, CheckCircle2 } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useBusyAction } from "@/lib/toast";
 
 export default function PortalResetPasswordPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const t = useTranslations("portal.login.reset");
+  const tc = useTranslations("common");
   const router = useRouter();
+  const { busy, run } = useBusyAction();
   const [pw1, setPw1] = useState("");
   const [pw2, setPw2] = useState("");
-  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [ok, setOk] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (pw1 !== pw2) { setErr(t("mismatch")); return; }
-    setBusy(true);
     setErr("");
-    try {
+    const done = await run(async () => {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
       const res = await fetch(`${apiBase}/auth/customer/reset-password`, {
         method: "POST",
@@ -38,12 +39,12 @@ export default function PortalResetPasswordPage({ params }: { params: Promise<{ 
           throw new Error(body || String(res.status));
         }
       }
+    }, { success: tc("toast.done") });
+    if (done) {
       setOk(true);
       setTimeout(() => router.push("/portal/login" as any), 1500);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : t("error"));
-    } finally {
-      setBusy(false);
+    } else {
+      setErr(t("error"));
     }
   }
 
@@ -88,7 +89,7 @@ export default function PortalResetPasswordPage({ params }: { params: Promise<{ 
                   <AlertTriangle className="mt-0.5 h-4 w-4" /><span>{err}</span>
                 </div>
               )}
-              <button type="submit" disabled={busy} className="btn-accent w-full">
+              <button type="submit" disabled={busy} className="btn-accent w-full disabled:opacity-40">
                 {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submit")}
               </button>
             </>

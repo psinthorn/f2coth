@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/routing";
 import { Loader2, Eye, EyeOff, ExternalLink } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import { BilingualEditor, BilingualInput, BilingualTextArea } from "@/components/admin/BilingualField";
+import { toast } from "@/lib/toast";
 import { adminApi, type AdminPage, type PageWriteInput } from "@/lib/admin-api";
 
 interface Props {
@@ -41,6 +42,7 @@ export default function PageEditor({ page }: Props) {
   }
 
   async function handleSave() {
+    if (saving) return;
     setSaving(true);
     setError("");
     const input: PageWriteInput = {
@@ -61,9 +63,12 @@ export default function PageEditor({ page }: Props) {
       } else {
         await adminApi.createPage(input);
       }
+      toast.success(tc("toast.saved"));
       router.push("/admin/pages" as any);
     } catch (e: any) {
-      setError(e?.body ? JSON.parse(e.body)?.error ?? t("saveError") : t("saveError"));
+      const msg = e?.body ? JSON.parse(e.body)?.error ?? t("saveError") : t("saveError");
+      setError(msg);
+      toast.error(msg);
       setSaving(false);
     }
   }
@@ -71,12 +76,16 @@ export default function PageEditor({ page }: Props) {
   async function handleDelete() {
     if (!page) return;
     if (!confirm(t("deleteConfirm"))) return;
+    if (saving) return;
     setSaving(true);
     try {
       await adminApi.deletePage(page.slug);
+      toast.success(tc("toast.deleted"));
       router.push("/admin/pages" as any);
     } catch {
-      setError(t("deleteError"));
+      const msg = t("deleteError");
+      setError(msg);
+      toast.error(msg);
       setSaving(false);
     }
   }

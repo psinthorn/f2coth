@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Loader2, Plus, AlertTriangle } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { ShowcaseStatusBadge, computeShowcaseStatus } from "@/components/admin/CustomerShowcasePanel";
 import { adminApi, type AdminCustomer } from "@/lib/admin-api";
 
@@ -50,11 +51,13 @@ export default function AdminCustomersPage() {
     setAdding(true);
     try {
       await adminApi.createCustomer(form as any);
+      toast.success(tc("toast.added"));
       setShowAdd(false);
       setForm({ slug: "", name: "", industry: "", primary_contact_email: "" });
       await load();
     } catch (e: any) {
       setErr(tryMsg(e));
+      toast.error(tryMsg(e));
     } finally {
       setAdding(false);
     }
@@ -89,7 +92,7 @@ export default function AdminCustomersPage() {
           </div>
           <div className="mt-4 flex justify-end gap-2">
             <button onClick={() => setShowAdd(false)} className="btn-ghost">{tc("cancel")}</button>
-            <button onClick={add} disabled={adding || !form.slug || !form.name} className="btn-accent">
+            <button onClick={add} disabled={adding || !form.slug || !form.name} className="btn-accent disabled:opacity-40">
               {adding ? <><Loader2 className="h-4 w-4 animate-spin" /> {tc("creating")}</> : tc("create")}
             </button>
           </div>

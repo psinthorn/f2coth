@@ -12,6 +12,7 @@ import { useTranslations } from "next-intl";
 import {
   AlertTriangle, ExternalLink, FileText, History, Loader2, Save, ShieldCheck,
 } from "lucide-react";
+import { toast } from "@/lib/toast";
 import {
   adminApi,
   type AdminCustomer,
@@ -124,6 +125,7 @@ export default function CustomerShowcasePanel({
   }
 
   async function save() {
+    if (saving) return; // re-entry guard: no double-submit while in flight
     // Guard client-side too — server still enforces this via 409.
     if (showOnWebsite && !consentOnFile) {
       setErr(t("errors.consentRequired"));
@@ -151,9 +153,12 @@ export default function CustomerShowcasePanel({
       const updated = await adminApi.updateCustomerShowcase(customer.id, patch);
       onChange(updated);
       setMsg(t("saved"));
+      toast.success(tc("toast.saved"));
       if (audit !== null) await loadAudit();
     } catch (e: unknown) {
-      setErr(tryMsg(e));
+      const m = tryMsg(e);
+      setErr(m);
+      toast.error(m);
     } finally {
       setSaving(false);
     }
@@ -319,7 +324,7 @@ export default function CustomerShowcasePanel({
       )}
 
       <div className="mt-5 flex justify-end">
-        <button onClick={save} disabled={saving} className="btn-accent">
+        <button onClick={save} disabled={saving} className="btn-accent disabled:opacity-40">
           {saving
             ? <><Loader2 className="h-4 w-4 animate-spin" /> {tc("saving")}</>
             : <><Save className="h-4 w-4" /> {t("saveButton")}</>}

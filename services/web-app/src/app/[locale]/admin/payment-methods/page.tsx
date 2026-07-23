@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Save, CheckCircle2, FlaskConical, Zap, AlertTriangle, KeyRound, Eye, EyeOff, Plus, Trash2, Landmark } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import {
   adminApi,
   type AdminPaymentMethodConfig,
@@ -45,6 +46,7 @@ export default function AdminPaymentMethodsPage() {
     setBusy(method + ".mode");
     try {
       await adminApi.updatePaymentMethod(method, { mode: next });
+      toast.success(tc("toast.updated"));
     } catch (e: unknown) {
       // Revert and surface the error.
       patch(method, { mode: cur.mode });
@@ -55,10 +57,9 @@ export default function AdminPaymentMethodsPage() {
           return u?.role ?? "";
         } catch { return ""; }
       })();
-      setModeErr((m) => ({
-        ...m,
-        [method]: err.status === 403 && role !== "admin" ? t("modeAdminOnly") : (err.body || tc("error")),
-      }));
+      const emsg = err.status === 403 && role !== "admin" ? t("modeAdminOnly") : (err.body || tc("error"));
+      setModeErr((m) => ({ ...m, [method]: emsg }));
+      toast.error(emsg);
     } finally {
       setBusy(null);
     }
@@ -101,6 +102,7 @@ export default function AdminPaymentMethodsPage() {
   }
 
   async function save(method: string) {
+    if (busy) return;
     setBusy(method);
     try {
       const m = edits[method];
@@ -115,6 +117,10 @@ export default function AdminPaymentMethodsPage() {
       });
       setSavedKey(method);
       setTimeout(() => setSavedKey(null), 2500);
+      toast.success(tc("toast.saved"));
+    } catch (e: unknown) {
+      const err = e as { body?: string };
+      toast.error(err.body || tc("error"));
     } finally {
       setBusy(null);
     }

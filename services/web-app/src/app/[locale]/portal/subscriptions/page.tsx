@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Repeat, Ban } from "lucide-react";
 import PortalShell from "@/components/PortalShell";
+import { useBusyAction } from "@/lib/toast";
 import { portalApi, type PortalSubscription } from "@/lib/portal-api";
 import { formatMoney } from "@/lib/payment-types";
 
 export default function PortalSubscriptionsPage() {
   const t = useTranslations("portal.subscriptions");
+  const tc = useTranslations("common");
+  const { busy, run } = useBusyAction();
   const [rows, setRows] = useState<PortalSubscription[] | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   function load() {
@@ -22,14 +24,9 @@ export default function PortalSubscriptionsPage() {
   }, []);
 
   async function cancel(id: string) {
-    setBusy(id);
-    try {
-      await portalApi.cancelSubscription(id);
-      load();
-    } finally {
-      setBusy(null);
-      setConfirmId(null);
-    }
+    const ok = await run(() => portalApi.cancelSubscription(id), { success: tc("toast.updated") });
+    if (ok) load();
+    setConfirmId(null);
   }
 
   const statusTone: Record<string, string> = {
@@ -81,11 +78,11 @@ export default function PortalSubscriptionsPage() {
                       <span className="text-xs text-navy-600">{t("confirm")}</span>
                       <button
                         type="button"
-                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
-                        disabled={busy === s.id}
+                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+                        disabled={busy}
                         onClick={() => cancel(s.id)}
                       >
-                        {busy === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t("confirmYes")}
+                        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t("confirmYes")}
                       </button>
                       <button
                         type="button"

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Mail, Save, Send, AlertTriangle, CheckCircle2 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type SMTPSettings } from "@/lib/admin-api";
 
 const REDACTED = "••••••••";
@@ -26,7 +27,7 @@ export default function AdminSMTPSettingsPage() {
   }, []);
 
   async function save() {
-    if (!s) return;
+    if (!s || saving) return;
     setSaving(true); setFeedback(null);
     try {
       await adminApi.updateSMTP(s);
@@ -34,21 +35,27 @@ export default function AdminSMTPSettingsPage() {
       // subsequent saves without editing it keep the stored value.
       setS({ ...s, password: REDACTED });
       setFeedback({ kind: "ok", msg: t("saved") });
+      toast.success(tc("toast.saved"));
     } catch (e) {
-      setFeedback({ kind: "err", msg: e instanceof Error ? e.message : "error" });
+      const msg = e instanceof Error ? e.message : "error";
+      setFeedback({ kind: "err", msg });
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
   }
 
   async function test() {
-    if (!testTo) return;
+    if (!testTo || testing) return;
     setTesting(true); setFeedback(null);
     try {
       const r = await adminApi.testSMTP(testTo);
       setFeedback({ kind: "ok", msg: t("testSent", { to: r.to }) });
+      toast.success(tc("toast.sent"));
     } catch (e) {
-      setFeedback({ kind: "err", msg: e instanceof Error ? e.message : "test failed" });
+      const msg = e instanceof Error ? e.message : "test failed";
+      setFeedback({ kind: "err", msg });
+      toast.error(msg);
     } finally {
       setTesting(false);
     }

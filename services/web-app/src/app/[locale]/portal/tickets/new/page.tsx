@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
 import { ArrowLeft, Loader2, AlertTriangle, Send, CheckCircle2, Paperclip } from "lucide-react";
 import PortalShell from "@/components/PortalShell";
+import { useBusyAction } from "@/lib/toast";
 import { portalApi, type TicketPriority } from "@/lib/portal-api";
 import AttachmentUploader from "@/components/attachments/AttachmentUploader";
 import { portalAttachments } from "@/lib/attachments-api";
@@ -16,12 +17,12 @@ export default function NewTicketPage() {
   const tc = useTranslations("common");
   const ta = useTranslations("attachments");
   const router = useRouter();
+  const { busy, run } = useBusyAction();
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("normal");
   const [related, setRelated] = useState("");
   const [services, setServices] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [createdId, setCreatedId] = useState<string | null>(null);
 
@@ -33,9 +34,8 @@ export default function NewTicketPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setErr("");
-    try {
+    const ok = await run(async () => {
       const res = await portalApi.createTicket({
         subject: subject.trim(),
         body: body.trim(),
@@ -45,11 +45,8 @@ export default function NewTicketPage() {
       // Attachments need the new ticket id, so surface an optional attach
       // step here rather than redirecting immediately.
       setCreatedId(res.id);
-      setBusy(false);
-    } catch (e: any) {
-      setErr(e?.message ?? t("errorGeneric"));
-      setBusy(false);
-    }
+    }, { success: tc("toast.sent") });
+    if (!ok) setErr(t("errorGeneric"));
   }
 
   return (
@@ -141,7 +138,7 @@ export default function NewTicketPage() {
 
         <div className="flex justify-end gap-2">
           <Link href="/portal/tickets" className="btn-ghost">{tc("cancel")}</Link>
-          <button type="submit" disabled={busy} className="btn-accent">
+          <button type="submit" disabled={busy} className="btn-accent disabled:opacity-40">
             {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : <><Send className="h-4 w-4" /> {t("submit")}</>}
           </button>
         </div>

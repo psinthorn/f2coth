@@ -11,6 +11,7 @@ import SandboxBanner from "@/components/SandboxBanner";
 import SuspendedServicesBanner from "@/components/SuspendedServicesBanner";
 import F2LogoMark from "@/components/F2LogoMark";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import Toaster from "@/components/Toaster";
 
 type GroupKey = "workspace" | "support" | "services";
 
@@ -129,6 +130,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-navy-50">
+      <Toaster />
       <SandboxBanner />
       <SuspendedServicesBanner />
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-navy-100 bg-white px-4 py-3 lg:hidden">

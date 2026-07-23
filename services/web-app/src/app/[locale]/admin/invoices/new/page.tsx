@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Loader2, Plus, Trash2, ChevronLeft } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type AdminCustomer, type AdminCreateInvoiceInput } from "@/lib/admin-api";
 import { formatMoney } from "@/lib/payment-types";
 
@@ -57,6 +58,7 @@ export default function AdminNewInvoicePage() {
       setErr(t("invalidItems"));
       return;
     }
+    if (busy) return;
     setBusy(true);
     try {
       const r = await adminApi.createInvoice({
@@ -67,10 +69,12 @@ export default function AdminNewInvoicePage() {
         notes: notes || undefined,
         items,
       });
+      toast.success(tc("toast.added"));
       router.push(`/admin/invoices/${r.id}`);
     } catch (e: unknown) {
       const v = e as { body?: string };
       setErr(v.body || tc("error"));
+      toast.error(v.body || tc("error"));
     } finally {
       setBusy(false);
     }

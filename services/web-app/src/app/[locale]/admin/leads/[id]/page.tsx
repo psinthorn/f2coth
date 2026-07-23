@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { Link } from "@/i18n/routing";
 import { ArrowLeft, Loader2, Mail, Phone, Building2, MapPin, Send, AlertTriangle } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import {
   adminApi, type Lead, type Activity, type LeadStatus,
 } from "@/lib/admin-api";
@@ -59,10 +60,12 @@ export default function LeadDetailPage() {
     setSavingStatus(true);
     try {
       await adminApi.updateLeadStatus(lead.id, statusDraft, statusNote);
+      toast.success(tc("toast.saved"));
       setStatusNote("");
       await load();
     } catch (e: any) {
       setErr(e?.message ?? "");
+      toast.error(e?.message ?? tc("toast.error"));
     } finally {
       setSavingStatus(false);
     }
@@ -73,10 +76,12 @@ export default function LeadDetailPage() {
     setSavingNote(true);
     try {
       await adminApi.addLeadNote(lead.id, note.trim());
+      toast.success(tc("toast.added"));
       setNote("");
       await load();
     } catch (e: any) {
       setErr(e?.message ?? "");
+      toast.error(e?.message ?? tc("toast.error"));
     } finally {
       setSavingNote(false);
     }
@@ -139,7 +144,7 @@ export default function LeadDetailPage() {
                   <button
                     onClick={addNote}
                     disabled={savingNote || !note.trim()}
-                    className="btn-accent"
+                    className="btn-accent disabled:opacity-40"
                   >
                     {savingNote ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("addingNote")}</> : <><Send className="h-4 w-4" /> {t("addNoteButton")}</>}
                   </button>
@@ -177,7 +182,7 @@ export default function LeadDetailPage() {
                 <button
                   onClick={saveStatus}
                   disabled={savingStatus || (statusDraft === lead.status && !statusNote)}
-                  className="mt-3 btn-accent w-full"
+                  className="mt-3 btn-accent w-full disabled:opacity-40"
                 >
                   {savingStatus ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("savingStatus")}</> : t("saveStatus")}
                 </button>

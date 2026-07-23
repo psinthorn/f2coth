@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, UserPlus, Ban, RotateCcw, AlertTriangle } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type User, type Role } from "@/lib/admin-api";
 
 const roles: Role[] = ["admin", "editor", "viewer"];
@@ -20,6 +21,9 @@ export default function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ email: "", full_name: "", role: "editor" as Role, password: "" });
   const [creating, setCreating] = useState(false);
+  // Which user row has a mutation (role/disable/enable) in flight — disables that
+  // row's controls so a request can't be double-fired.
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -37,48 +41,72 @@ export default function AdminUsersPage() {
   useEffect(() => { load(); }, []);
 
   async function create() {
+    if (creating) return;
     setErr("");
     setCreating(true);
     try {
       await adminApi.createUser(form);
       setShowCreate(false);
       setForm({ email: "", full_name: "", role: "editor", password: "" });
+      toast.success(tc("toast.added"));
       await load();
     } catch (e: any) {
       const msg = e?.body ? tryParse(e.body) : e?.message ?? "create failed";
       setErr(msg);
+      toast.error(msg);
     } finally {
       setCreating(false);
     }
   }
 
   async function changeRole(u: User, role: Role) {
+    if (busyId) return;
     setErr("");
+    setBusyId(u.id);
     try {
       await adminApi.updateUser(u.id, { role });
+      toast.success(tc("toast.updated"));
       await load();
     } catch (e: any) {
-      setErr(tryParse(e?.body ?? "") || e?.message || "update failed");
+      const msg = tryParse(e?.body ?? "") || e?.message || "update failed";
+      setErr(msg);
+      toast.error(msg);
+    } finally {
+      setBusyId(null);
     }
   }
 
   async function disable(u: User) {
+    if (busyId) return;
     setErr("");
+    setBusyId(u.id);
     try {
       await adminApi.disableUser(u.id);
+      toast.success(tc("toast.updated"));
       await load();
     } catch (e: any) {
-      setErr(tryParse(e?.body ?? "") || e?.message || "disable failed");
+      const msg = tryParse(e?.body ?? "") || e?.message || "disable failed";
+      setErr(msg);
+      toast.error(msg);
+    } finally {
+      setBusyId(null);
     }
   }
 
   async function enable(u: User) {
+    if (busyId) return;
     setErr("");
+    setBusyId(u.id);
     try {
       await adminApi.enableUser(u.id);
+      toast.success(tc("toast.updated"));
       await load();
     } catch (e: any) {
-      setErr(tryParse(e?.body ?? "") || e?.message || "enable failed");
+      const msg = tryParse(e?.body ?? "") || e?.message || "enable failed";
+      setErr(msg);
+      toast.error(msg);
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -154,7 +182,7 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3">
                       <select
                         value={u.role}
-                        disabled={isMe || !u.is_active}
+                        disabled={isMe || !u.is_active || busyId === u.id}
                         onChange={(e) => changeRole(u, e.target.value as Role)}
                         className="rounded border border-navy-200 px-2 py-1 text-xs disabled:opacity-50"
                       >
@@ -175,7 +203,7 @@ export default function AdminUsersPage() {
                       {u.is_active ? (
                         <button
                           onClick={() => disable(u)}
-                          disabled={isMe}
+                          disabled={isMe || busyId === u.id}
                           className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700 hover:bg-red-100 disabled:opacity-50"
                         >
                           <Ban className="h-3.5 w-3.5" /> {t("disable")}
@@ -183,7 +211,8 @@ export default function AdminUsersPage() {
                       ) : (
                         <button
                           onClick={() => enable(u)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-100"
+                          disabled={busyId === u.id}
+                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
                         >
                           <RotateCcw className="h-3.5 w-3.5" /> {t("enable")}
                         </button>

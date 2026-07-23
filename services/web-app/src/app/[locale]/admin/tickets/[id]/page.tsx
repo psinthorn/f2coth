@@ -8,6 +8,7 @@ import {
   ArrowLeft, Loader2, AlertTriangle, Send, Save, Lock,
 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import {
   adminApi, type AdminTicket, type AdminTicketMessage, type User,
 } from "@/lib/admin-api";
@@ -74,7 +75,7 @@ export default function AdminTicketDetailPage() {
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
 
   async function send() {
-    if (!id || !reply.trim()) return;
+    if (!id || !reply.trim() || busy) return;
     setBusy(true);
     setErr("");
     try {
@@ -82,16 +83,19 @@ export default function AdminTicketDetailPage() {
       setReply("");
       setInternal(false);
       setReplyMsgId(res.id);
+      toast.success(tc("toast.sent"));
       await load();
     } catch (e: any) {
-      setErr(tryMsg(e));
+      const msg = tryMsg(e);
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
   }
 
   async function saveMeta() {
-    if (!id) return;
+    if (!id || savingMeta) return;
     setSavingMeta(true);
     setErr("");
     try {
@@ -100,9 +104,12 @@ export default function AdminTicketDetailPage() {
         priority,
         assigned_to_user_id: assignee,
       });
+      toast.success(tc("toast.saved"));
       await load();
     } catch (e: any) {
-      setErr(tryMsg(e));
+      const msg = tryMsg(e);
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setSavingMeta(false);
     }

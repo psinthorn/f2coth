@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/routing";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import { BilingualEditor, BilingualInput, BilingualTextArea } from "@/components/admin/BilingualField";
+import { toast } from "@/lib/toast";
 import { adminApi, type AdminService, type ServiceWriteInput } from "@/lib/admin-api";
 
 interface Props {
@@ -37,6 +38,7 @@ export default function ServiceEditor({ service }: Props) {
   }
 
   async function handleSave() {
+    if (saving) return;
     setSaving(true);
     setError("");
     const input: ServiceWriteInput = {
@@ -58,9 +60,12 @@ export default function ServiceEditor({ service }: Props) {
       } else {
         await adminApi.createService(input);
       }
+      toast.success(tc("toast.saved"));
       router.push("/admin/services" as any);
     } catch (e: any) {
-      setError(e?.body ? JSON.parse(e.body)?.error ?? t("saveError") : t("saveError"));
+      const msg = e?.body ? JSON.parse(e.body)?.error ?? t("saveError") : t("saveError");
+      setError(msg);
+      toast.error(msg);
       setSaving(false);
     }
   }
@@ -68,12 +73,16 @@ export default function ServiceEditor({ service }: Props) {
   async function handleDelete() {
     if (!service) return;
     if (!confirm(t("deleteConfirm"))) return;
+    if (saving) return;
     setSaving(true);
     try {
       await adminApi.deleteService(service.slug);
+      toast.success(tc("toast.deleted"));
       router.push("/admin/services" as any);
     } catch {
-      setError(t("deleteError"));
+      const msg = t("deleteError");
+      setError(msg);
+      toast.error(msg);
       setSaving(false);
     }
   }

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { ArrowLeft, Loader2, Save, Info, Send, AlertTriangle } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type AdminDomainOrder, type DomainOrderStatus } from "@/lib/admin-api";
 
 const STATUSES: DomainOrderStatus[] = [
@@ -49,7 +50,7 @@ export default function AdminDomainOrderDetailPage() {
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
 
   async function save() {
-    if (!id) return;
+    if (!id || busy) return;
     setBusy(true);
     setSaved(false);
     setErr("");
@@ -60,16 +61,19 @@ export default function AdminDomainOrderDetailPage() {
         notes,
       });
       setSaved(true);
+      toast.success(tc("toast.saved"));
       load();
     } catch (e: any) {
-      setErr(e?.body ?? e?.message ?? "error");
+      const msg = e?.body ?? e?.message ?? "error";
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
   }
 
   async function place() {
-    if (!id) return;
+    if (!id || placing) return;
     setPlacing(true);
     setErr("");
     try {
@@ -78,16 +82,20 @@ export default function AdminDomainOrderDetailPage() {
       setStatus(updated.status);
       setRegistryOrderID(updated.registry_order_id ?? "");
       setPlaceConfirm(false);
+      toast.success(tc("toast.done"));
     } catch (e: any) {
       // The 502 error path includes both the message and the updated order;
       // fall back to a string body for non-JSON failures.
+      let msg = "";
       try {
         const parsed = JSON.parse(e?.body ?? "{}");
-        setErr(parsed.error ?? e?.body ?? e?.message ?? "error");
+        msg = parsed.error ?? e?.body ?? e?.message ?? "error";
         if (parsed.order) setOrder(parsed.order);
       } catch {
-        setErr(e?.body ?? e?.message ?? "error");
+        msg = e?.body ?? e?.message ?? "error";
       }
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setPlacing(false);
     }

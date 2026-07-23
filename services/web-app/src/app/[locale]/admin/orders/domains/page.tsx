@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Loader2, Plus, X } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type AdminDomainOrder, type DomainOrderStatus, type NewDomainOrder } from "@/lib/admin-api";
 
 const STATUSES: DomainOrderStatus[] = [
@@ -150,6 +151,7 @@ function CreateOrderModal({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     if (!form.sld || !form.tld || !form.contact_name || !form.contact_email) {
       setErr(t("errorRequired"));
       return;
@@ -158,9 +160,12 @@ function CreateOrderModal({
     setErr("");
     try {
       await adminApi.createDomainOrder(form);
+      toast.success(tc("toast.added"));
       onCreated();
     } catch (e: any) {
-      setErr(e?.body ?? e?.message ?? "error");
+      const msg = e?.body ?? e?.message ?? "error";
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }

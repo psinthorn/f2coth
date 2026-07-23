@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Route, Loader2, AlertTriangle, Save, Check } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type AIRoutingRow, type AIProvider } from "@/lib/admin-api";
 
 const PROVIDERS: AIProvider[] = ["anthropic", "ollama", "openai", "voyage"];
@@ -39,6 +40,7 @@ export default function AdminAIRoutingPage() {
   }
 
   async function save(row: AIRoutingRow) {
+    if (savingId === row.id) return;
     setSavingId(row.id); setErr("");
     try {
       await adminApi.updateAIRoute(row.id, {
@@ -50,8 +52,11 @@ export default function AdminAIRoutingPage() {
       });
       setSavedId(row.id);
       setTimeout(() => setSavedId(null), 1500);
+      toast.success(tc("toast.saved"));
     } catch (e: unknown) {
-      setErr(tryMsg(e));
+      const msg = tryMsg(e);
+      setErr(msg);
+      toast.error(msg);
     } finally { setSavingId(null); }
   }
 

@@ -12,6 +12,7 @@ import AdminShell from "@/components/AdminShell";
 import {
   contractApi, openContractFile, type Contract, type ContractFile,
 } from "@/lib/contract-api";
+import { toast } from "@/lib/toast";
 import { StatusBadge, formatTHB, formatDate } from "../_shared";
 
 export default function ContractDetailPage() {
@@ -31,11 +32,12 @@ export default function ContractDetailPage() {
 
   useEffect(() => { load().finally(() => setLoading(false)); }, [load]);
 
-  async function act(kind: string, fn: () => Promise<unknown>) {
+  async function act(kind: string, fn: () => Promise<unknown>, success: string) {
+    if (busy) return; // guard against double-clicks while a request is in flight
     setBusy(kind);
     setError("");
-    try { await fn(); await load(); }
-    catch (e) { setError(String(e)); }
+    try { await fn(); toast.success(success); await load(); }
+    catch (e) { const msg = String(e); setError(msg); toast.error(msg); }
     finally { setBusy(""); }
   }
 
@@ -77,20 +79,20 @@ export default function ContractDetailPage() {
               <ActionButton
                 icon={<Stamp className="h-4 w-4" />} busy={busy === "draft"}
                 label={t("actions.generateDraft")}
-                onClick={() => act("draft", () => contractApi.generate(c.id, true))}
+                onClick={() => act("draft", () => contractApi.generate(c.id, true), tc("toast.done"))}
               />
               {(c.status === "draft") && (
                 <ActionButton
                   icon={<PenLine className="h-4 w-4" />} busy={busy === "sign"} primary
                   label={t("actions.generateSigning")}
-                  onClick={() => act("sign", () => contractApi.generate(c.id, false))}
+                  onClick={() => act("sign", () => contractApi.generate(c.id, false), tc("toast.done"))}
                 />
               )}
               {c.status !== "active" && c.status !== "terminated" && c.status !== "expired" && (
                 <ActionButton
                   icon={<XCircle className="h-4 w-4" />} busy={busy === "term"}
                   label={t("actions.terminate")}
-                  onClick={() => act("term", () => contractApi.changeStatus(c.id, { to: "terminated" }))}
+                  onClick={() => act("term", () => contractApi.changeStatus(c.id, { to: "terminated" }), tc("toast.updated"))}
                 />
               )}
             </div>
@@ -110,7 +112,7 @@ export default function ContractDetailPage() {
               contract={c}
               busy={busy === "active"}
               onConfirm={(effective, end) =>
-                act("active", () => contractApi.changeStatus(c.id, { to: "active", effective_date: effective, end_date: end }))}
+                act("active", () => contractApi.changeStatus(c.id, { to: "active", effective_date: effective, end_date: end }), tc("toast.updated"))}
             />
           )}
 
@@ -217,14 +219,16 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 
 function UploadSigned({ contractId, onUploaded }: { contractId: string; onUploaded: () => void }) {
   const t = useTranslations("admin.contracts");
+  const tc = useTranslations("common");
   const [drag, setDrag] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
   async function handle(file: File) {
+    if (busy) return; // guard against double uploads while one is in flight
     setBusy(true); setErr("");
-    try { await contractApi.uploadSigned(contractId, file); onUploaded(); }
-    catch (e) { setErr(String(e)); }
+    try { await contractApi.uploadSigned(contractId, file); toast.success(tc("toast.saved")); onUploaded(); }
+    catch (e) { const msg = String(e); setErr(msg); toast.error(msg); }
     finally { setBusy(false); }
   }
 
@@ -291,6 +295,7 @@ function MergeDataPanel({ contract, editable, onSaved }: {
   contract: Contract; editable: boolean; onSaved: () => void;
 }) {
   const t = useTranslations("admin.contracts");
+  const tc = useTranslations("common");
   const [raw, setRaw] = useState(JSON.stringify(contract.merge_data ?? {}, null, 2));
   const [eff, setEff] = useState(contract.effective_date ?? "");
   const [end, setEnd] = useState(contract.end_date ?? "");
@@ -299,6 +304,7 @@ function MergeDataPanel({ contract, editable, onSaved }: {
   const [err, setErr] = useState("");
 
   async function save() {
+    if (busy) return; // guard against double-clicks while the request is in flight
     setBusy(true); setErr("");
     try {
       const merge = JSON.parse(raw);
@@ -308,8 +314,9 @@ function MergeDataPanel({ contract, editable, onSaved }: {
         end_date: end || undefined,
         fee_total: fee ? Number(fee) : undefined,
       });
+      toast.success(tc("toast.saved"));
       onSaved();
-    } catch (e) { setErr(String(e)); }
+    } catch (e) { const msg = String(e); setErr(msg); toast.error(msg); }
     finally { setBusy(false); }
   }
 

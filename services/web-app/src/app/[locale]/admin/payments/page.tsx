@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import AdminShell from "@/components/AdminShell";
+import { toast } from "@/lib/toast";
 import { adminApi, type AdminPaymentRow } from "@/lib/admin-api";
 import { formatMoney, paymentStatusTone } from "@/lib/payment-types";
 
@@ -30,10 +31,12 @@ export default function AdminPaymentsPage() {
     try {
       await adminApi.verifyPayment(id);
       setMsg(t("verified"));
+      toast.success(tc("toast.done"));
       load();
     } catch (e: unknown) {
       const err = e as { body?: string };
       setMsg(err.body || tc("error"));
+      toast.error(err.body || tc("error"));
     } finally {
       setBusy(null);
     }
@@ -47,10 +50,12 @@ export default function AdminPaymentsPage() {
     try {
       await adminApi.rejectPayment(id, reason);
       setMsg(t("rejected"));
+      toast.success(tc("toast.done"));
       load();
     } catch (e: unknown) {
       const err = e as { body?: string };
       setMsg(err.body || tc("error"));
+      toast.error(err.body || tc("error"));
     } finally {
       setBusy(null);
     }

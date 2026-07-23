@@ -6,19 +6,20 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Loader2, AlertTriangle, KeyRound } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useBusyAction } from "@/lib/toast";
 
 export default function PortalForgotPasswordPage() {
   const t = useTranslations("portal.login.forgot");
+  const tc = useTranslations("common");
+  const { busy, run } = useBusyAction();
   const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [sent, setSent] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setErr("");
-    try {
+    const ok = await run(async () => {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
       const res = await fetch(`${apiBase}/auth/customer/forgot-password`, {
         method: "POST",
@@ -26,12 +27,9 @@ export default function PortalForgotPasswordPage() {
         body: JSON.stringify({ email }),
       });
       if (!res.ok && res.status >= 500) throw new Error("server error");
-      setSent(true);
-    } catch {
-      setErr(t("error"));
-    } finally {
-      setBusy(false);
-    }
+    }, { success: tc("toast.sent") });
+    if (ok) setSent(true);
+    else setErr(t("error"));
   }
 
   return (
@@ -64,7 +62,7 @@ export default function PortalForgotPasswordPage() {
                   <AlertTriangle className="mt-0.5 h-4 w-4" /><span>{err}</span>
                 </div>
               )}
-              <button type="submit" disabled={busy} className="btn-accent w-full">
+              <button type="submit" disabled={busy} className="btn-accent w-full disabled:opacity-40">
                 {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submit")}
               </button>
             </>
