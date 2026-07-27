@@ -71,6 +71,14 @@ func main() {
 			r.Patch("/me/locale", ch.SetLocale)
 			r.Post("/forgot-password", pr.CustomerForgot)
 			r.Post("/reset-password", pr.CustomerReset)
+
+			// Account lifecycle (migration 071). verify-email and request-link
+			// are public + enumeration-safe; change-password and switch-org
+			// authenticate via the Bearer token they parse internally.
+			r.Post("/verify-email", ch.VerifyEmail)
+			r.Post("/request-link", ch.RequestLink)
+			r.Post("/change-password", ch.ChangePassword)
+			r.Post("/switch-org", ch.SwitchOrg)
 		})
 
 		r.Group(func(r chi.Router) {

@@ -7,6 +7,7 @@ import { Link, useRouter } from "@/i18n/routing";
 import { useSearchParams } from "next/navigation";
 import { Loader2, AlertTriangle, Lock } from "lucide-react";
 import { portalApi } from "@/lib/portal-api";
+import { toast } from "@/lib/toast";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function PortalLoginPage() {
@@ -27,6 +28,24 @@ function LoginForm() {
   const locale = useLocale();
   const searchParams = useSearchParams();
   const next = searchParams?.get("next") ?? "/portal";
+
+  // Self-service: re-send the email-verification link if the user lost it.
+  // Enumeration-safe on the server (always 200), so the message is generic.
+  async function requestVerifyLink() {
+    if (!email.trim()) { setErr(t("needEmailForLink")); return; }
+    setErr("");
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+      await fetch(`${apiBase}/auth/customer/request-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), purpose: "verification" }),
+      });
+      toast.success(t("linkSent"));
+    } catch {
+      toast.error(t("error"));
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,6 +109,11 @@ function LoginForm() {
             <Link href={"/portal/login/forgot" as any} className="hover:text-accent-700">{t("forgotPassword")}</Link>
             <span className="mx-2">·</span>
             <Link href="/" className="hover:text-accent-700">{t("back")}</Link>
+          </p>
+          <p className="text-center text-xs text-navy-500">
+            <button type="button" onClick={requestVerifyLink} className="hover:text-accent-700 underline-offset-2 hover:underline">
+              {t("resendVerification")}
+            </button>
           </p>
         </div>
       </form>

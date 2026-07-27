@@ -90,6 +90,20 @@
       "closed": "closed",
       "all": "all"
     },
+    "markdown": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "list": "Bulleted list",
+      "link": "Link",
+      "code": "Inline code",
+      "write": "Write",
+      "preview": "Preview",
+      "nothingToPreview": "Nothing to preview yet.",
+      "linkText": "text",
+      "boldText": "bold text",
+      "italicText": "italic text",
+      "codeText": "code"
+    },
     "priority": {
       "low": "low",
       "normal": "normal",
@@ -632,6 +646,7 @@
         "dashboard": "Dashboard",
         "leads": "Leads",
         "tickets": "Tickets",
+        "rateCard": "Rate card",
         "customers": "Customers",
         "users": "Users",
         "pricing": "Pricing",
@@ -763,9 +778,61 @@
         "loadFailed": "Could not load lead"
       }
     },
+    "rateCard": {
+      "title": "Rate card",
+      "subtitle": "Price book of services and products used to itemize billable ticket work.",
+      "addButton": "New item",
+      "newItem": "New rate card item",
+      "editItem": "Edit item",
+      "nameEn": "Name (EN) *",
+      "nameTh": "Name (TH)",
+      "unit": "Unit (hour/visit/seat…)",
+      "rate": "Rate ({cur})",
+      "category": "Category",
+      "code": "Code",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saved": "Saved.",
+      "empty": "No rate card items yet.",
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit"
+    },
     "tickets": {
       "title": "Tickets",
       "subtitle": "Customer support queue",
+      "billing": {
+        "title": "Billing",
+        "addLine": "Add line",
+        "coveredBy": "Covered by an active SLA: {title}",
+        "fromRateCard": "From rate card",
+        "freeText": "— free text —",
+        "description": "Description",
+        "qty": "Qty",
+        "unit": "Unit",
+        "rate": "Rate ({cur})",
+        "coveredLabel": "Covered by contract (no charge)",
+        "cancel": "Cancel",
+        "add": "Add",
+        "lineAdded": "Line added.",
+        "updated": "Updated.",
+        "lineRemoved": "Line removed.",
+        "invoiceCreated": "Draft invoice created.",
+        "noLines": "No charges itemized yet.",
+        "loadError": "Could not load billing.",
+        "retry": "Retry",
+        "badgeCovered": "Covered",
+        "markBillable": "Mark billable",
+        "markCovered": "Mark covered",
+        "remove": "Remove",
+        "subtotal": "Subtotal",
+        "vat": "VAT {pct}%",
+        "total": "Total",
+        "viewInvoice": "View invoice {number}",
+        "generateInvoice": "Generate invoice",
+        "generating": "Generating…",
+        "allCovered": "All work covered by contract — no charge."
+      },
       "newTicket": "New ticket",
       "new": {
         "back": "All tickets",
@@ -784,6 +851,12 @@
           "description": "Description",
           "descriptionPlaceholder": "Capture what the customer asked for, when, and how it came in (email / phone / detected by F2).",
           "descriptionHint": "Visible to the customer in their portal — write it as an F2-staff message.",
+          "issue": "Issue",
+          "issuePlaceholder": "Describe the issue: what the customer asked for, when, and how it came in (email / phone / detected by F2). Supports markdown.",
+          "issueHint": "Visible to the customer in their portal — write it as an F2-staff message.",
+          "solution": "Solution",
+          "solutionPlaceholder": "How the issue was (or will be) resolved. Usually left blank at creation and filled in as the ticket is worked. Supports markdown.",
+          "solutionHint": "Shown on the ticket detail. Optional at creation.",
           "priority": "Priority",
           "relatedService": "Related service",
           "noneOption": "— none —",
@@ -793,6 +866,22 @@
           "assignToMe": "Assign to me",
           "assignToMeHint": "Uncheck to leave the ticket unassigned in the queue.",
           "createButton": "Create ticket"
+        },
+        "invite": {
+          "trigger": "Register new user",
+          "hint": "Registers a portal user by email and emails them login instructions + a verify link. They're selected as the requester below.",
+          "namePlaceholder": "Full name",
+          "emailPlaceholder": "Email",
+          "submit": "Invite & select",
+          "sent": "Invite sent — user registered and selected.",
+          "linked": "Existing user linked and selected."
+        },
+        "notes": {
+          "title": "Notes",
+          "hint": "Timestamped working notes. Saved as internal notes (hidden from the customer) when the ticket is created.",
+          "placeholder": "Add an internal note…",
+          "add": "Add note",
+          "saveFailed": "Ticket created, but one or more notes could not be saved."
         },
         "attach": {
           "created": "Ticket created. Attach any supporting files below, then open the ticket.",
@@ -828,10 +917,20 @@
         "viewCustomer": "View customer →",
         "relatedService": "Related service:",
         "customer": "Customer",
-        "replyPlaceholder": "Type your reply…"
+        "replyPlaceholder": "Type your reply…",
+        "solution": "Solution",
+        "solutionPlaceholder": "Document how the issue was resolved. Supports markdown.",
+        "saveSolution": "Save solution"
       }
     },
     "customers": {
+      "verification": {
+        "title": "Require email verification",
+        "hint": "When on, portal users can still log in but must verify their email before opening tickets or replying.",
+        "enabled": "Email verification is now required.",
+        "disabled": "Email verification is no longer required.",
+        "error": "Could not update the setting."
+      },
       "billingProfile": {
         "title": "Billing profile (tax invoice)",
         "subtitle": "Used on issued tax invoices. The current values are snapshotted onto each invoice at issue time so later edits never alter historical documents.",
@@ -1000,15 +1099,27 @@
         "active": "Active",
         "saveChanges": "Save changes",
         "contacts": "Contacts",
-        "addContact": "Add contact",
+        "addContact": "Invite user",
         "fullNameField": "Full name *",
         "emailField": "Email *",
         "passwordField": "Password (≥12 chars) *",
+        "phoneField": "Phone",
+        "jobTitleField": "Job title",
         "roleField": "Role",
         "noContacts": "No contacts yet.",
         "lastLogin": "Last login {date}",
         "disable": "Disable",
-        "enable": "Enable"
+        "enable": "Enable",
+        "inviteHint": "Enter minimal details — the system emails login instructions (temporary password) and a verification link. No password to set here.",
+        "sendInvite": "Send invite",
+        "inviteSent": "Invite sent — login instructions emailed.",
+        "inviteLinked": "Existing user linked to this organization.",
+        "inviteResent": "Verification link re-sent.",
+        "resend": "Resend link",
+        "badgeVerified": "Email verified",
+        "badgeUnverified": "Email unverified",
+        "badgePendingPassword": "Temp password",
+        "badgeLinked": "Linked"
       }
     },
     "users": {
@@ -2382,11 +2493,48 @@
     }
   },
   "portal": {
+    "verifyEmail": {
+      "heading": "Verify your email",
+      "verifying": "Verifying your email address…",
+      "success": "Your email is verified. You can now use all portal features.",
+      "goToLogin": "Go to login",
+      "error": "This verification link is invalid or has expired.",
+      "requestNew": "Back to login to request a new link"
+    },
+    "profile": {
+      "title": "My profile",
+      "subtitle": "Update your contact details and password.",
+      "email": "Email",
+      "verified": "Verified",
+      "verifyNow": "Verify now",
+      "verifySent": "Verification link sent — check your inbox.",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "jobTitle": "Job title",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Profile updated.",
+      "password": "Password",
+      "changePassword": "Change password"
+    },
+    "changePassword": {
+      "heading": "Change your password",
+      "instructions": "Enter your current password and choose a new one (at least 10 characters, with letters and digits).",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "submit": "Update password",
+      "submitting": "Updating…",
+      "success": "Password updated. Please sign in again with your new password…",
+      "mismatch": "The new passwords don't match.",
+      "error": "Could not update your password. Check your current password and try again."
+    },
     "shell": {
       "title": "Client Portal",
       "tagline": "f2.co.th",
       "nav": {
         "account": "Account",
+        "profile": "My profile",
         "tickets": "Tickets",
         "domains": "Domains",
         "sla": "SLA",
@@ -2396,6 +2544,9 @@
         "projects": "Projects"
       },
       "organisation": "Organisation",
+      "switchOrg": "Switch organisation",
+      "unverifiedBanner": "Your email isn't verified yet.",
+      "resendVerification": "Resend verification link",
       "signedInAs": "Signed in as",
       "signOut": "Sign out",
       "toggleMenu": "Toggle menu",
@@ -2415,6 +2566,9 @@
       "error": "Invalid email or password.",
       "back": "← Back to f2.co.th",
       "forgotPassword": "Forgot password?",
+      "resendVerification": "Didn't get your verification email? Resend it",
+      "needEmailForLink": "Enter your email above first.",
+      "linkSent": "If that account exists and is unverified, a verification link is on its way.",
       "forgot": {
         "heading": "Reset your password",
         "instructions": "Enter your account email. We'll send you a link to reset your password.",
@@ -2451,6 +2605,16 @@
       "viewAllTickets": "View all tickets"
     },
     "tickets": {
+      "billing": {
+        "title": "Billing",
+        "coveredBy": "This work is covered by your {title} — no charge.",
+        "subtotal": "Subtotal",
+        "vat": "VAT {pct}%",
+        "total": "Total",
+        "invoiceToFollow": "An invoice will follow.",
+        "viewInvoice": "View invoice {number}",
+        "noCharge": "No extra charge for this ticket."
+      },
       "title": "Tickets",
       "totalCount": "{count} total",
       "newButton": "New ticket",

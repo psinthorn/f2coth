@@ -58,14 +58,22 @@ func main() {
 	r.Route("/api/portal", func(r chi.Router) {
 		r.Use(authmw.RequireJWT(cfg.JWTSecret))
 		r.Use(authmw.RequireAudience("customer"))
+		// Temp-password holders (mcp=true) may read but not mutate until they
+		// change their password via auth-api.
+		r.Use(authmw.BlockIfMustChangePassword)
 
 		r.Get("/me", ph.Me)
+		r.Patch("/me", ph.UpdateProfile)
 		r.Get("/tickets", ph.ListTickets)
 		r.Post("/tickets", ph.CreateTicket)
 		r.Get("/tickets/{id}", ph.GetTicket)
 		r.Patch("/tickets/{id}/status", ph.UpdateStatus)
 		r.Get("/tickets/{id}/messages", ph.ListMessages)
 		r.Post("/tickets/{id}/messages", ph.AddMessage)
+
+		// Ticket billing — read-only coverage + charges for the ticket owner.
+		r.With(authmw.GateModule("portal.ticket_billing")).
+			Get("/tickets/{id}/billing", ph.PortalTicketBilling)
 
 		// Attachments (documents, images, geo-tagged live photos).
 		r.Group(func(r chi.Router) {
@@ -105,11 +113,16 @@ func main() {
 		r.Patch("/customers/{id}/showcase", ah.UpdateShowcase)
 		r.Get("/customers/{id}/showcase/audit", ah.ListShowcaseAudit)
 
-		// Customer contacts
+		// Customer contacts (portal users)
 		r.Get("/customers/{id}/contacts", ah.ListContacts)
 		r.Post("/customers/{id}/contacts", ah.CreateContact)
 		r.Post("/customers/{id}/contacts/{contactId}/disable", ah.DisableContact)
 		r.Post("/customers/{id}/contacts/{contactId}/enable", ah.EnableContact)
+		r.Post("/customers/{id}/contacts/{contactId}/resend", ah.ResendInvite)
+
+		// Portal settings — email-verification enforcement toggle.
+		r.Get("/portal-settings", ah.GetPortalSettings)
+		r.Patch("/portal-settings", ah.UpdatePortalSettings)
 
 		// Staff-on-behalf ticket creation.
 		r.Post("/customers/{id}/tickets", ah.CreateTicketForCustomer)
@@ -133,6 +146,24 @@ func main() {
 		r.Patch("/tickets/{id}", ah.UpdateTicket)
 		r.Get("/tickets/{id}/messages", ah.ListAllMessages)
 		r.Post("/tickets/{id}/messages", ah.AddMessage)
+
+		// Rate card — managed price book (module-gated).
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("admin.rate_card"))
+			r.Get("/rate-card", ah.ListRateCard)
+			r.Post("/rate-card", ah.CreateRateCard)
+			r.Patch("/rate-card/{id}", ah.UpdateRateCard)
+		})
+
+		// Ticket billing — priced line items + invoice generation (module-gated).
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("admin.ticket_billing"))
+			r.Get("/tickets/{id}/billing", ah.GetTicketBilling)
+			r.Post("/tickets/{id}/line-items", ah.AddTicketLine)
+			r.Patch("/tickets/{id}/line-items/{lineId}", ah.UpdateTicketLine)
+			r.Delete("/tickets/{id}/line-items/{lineId}", ah.DeleteTicketLine)
+			r.Post("/tickets/{id}/generate-invoice", ah.GenerateInvoice)
+		})
 
 		// Attachments (documents, images, geo-tagged live photos).
 		r.Group(func(r chi.Router) {

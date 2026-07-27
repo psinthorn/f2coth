@@ -5,9 +5,11 @@ import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { Link } from "@/i18n/routing";
 import {
-  ArrowLeft, Loader2, AlertTriangle, Send, Save, Lock,
+  ArrowLeft, Loader2, AlertTriangle, Send, Save, Lock, Lightbulb,
 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import MarkdownEditor from "@/components/MarkdownEditor";
+import CMSPageBody from "@/components/CMSPageBody";
 import { toast } from "@/lib/toast";
 import {
   adminApi, type AdminTicket, type AdminTicketMessage, type User,
@@ -15,6 +17,7 @@ import {
 import AttachmentUploader from "@/components/attachments/AttachmentUploader";
 import AttachmentList from "@/components/attachments/AttachmentList";
 import { adminAttachments } from "@/lib/attachments-api";
+import TicketBillingPanel from "@/components/admin/TicketBillingPanel";
 
 const statuses = ["open", "in_progress", "waiting_customer", "resolved", "closed"];
 const priorities = ["low", "normal", "high", "urgent"];
@@ -50,6 +53,9 @@ export default function AdminTicketDetailPage() {
   const [assignee, setAssignee] = useState("");
   const [savingMeta, setSavingMeta] = useState(false);
 
+  const [solution, setSolution] = useState("");
+  const [savingSolution, setSavingSolution] = useState(false);
+
   async function load() {
     if (!id) return;
     setLoading(true);
@@ -65,6 +71,7 @@ export default function AdminTicketDetailPage() {
       setStatus(tk.status);
       setPriority(tk.priority);
       setAssignee(tk.assigned_to_user_id ?? "");
+      setSolution(tk.solution ?? "");
     } catch (e: any) {
       setErr(tryMsg(e));
     } finally {
@@ -112,6 +119,23 @@ export default function AdminTicketDetailPage() {
       toast.error(msg);
     } finally {
       setSavingMeta(false);
+    }
+  }
+
+  async function saveSolution() {
+    if (!id || savingSolution) return;
+    setSavingSolution(true);
+    setErr("");
+    try {
+      await adminApi.updateAdminTicket(id, { solution: solution.trim() });
+      toast.success(tc("toast.saved"));
+      await load();
+    } catch (e: any) {
+      const msg = tryMsg(e);
+      setErr(msg);
+      toast.error(msg);
+    } finally {
+      setSavingSolution(false);
     }
   }
 
@@ -163,6 +187,28 @@ export default function AdminTicketDetailPage() {
                 </div>
               </div>
 
+              <div className="card">
+                <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-navy-800">
+                  <Lightbulb className="h-4 w-4 text-accent-700" /> {t("solution")}
+                </div>
+                <MarkdownEditor
+                  value={solution}
+                  onChange={setSolution}
+                  rows={5}
+                  maxLength={10000}
+                  placeholder={t("solutionPlaceholder")}
+                />
+                <div className="mt-2 flex justify-end">
+                  <button onClick={saveSolution} disabled={savingSolution} className="btn-accent">
+                    {savingSolution
+                      ? <><Loader2 className="h-4 w-4 animate-spin" /> {tc("saving")}</>
+                      : <><Save className="h-4 w-4" /> {t("saveSolution")}</>}
+                  </button>
+                </div>
+              </div>
+
+              {id && <TicketBillingPanel ticketId={id} />}
+
               {messages.map((m) => (
                 <div key={m.id}
                   className={`card ${
@@ -181,7 +227,7 @@ export default function AdminTicketDetailPage() {
                     </span>
                     <span>{new Date(m.created_at).toLocaleString()}</span>
                   </div>
-                  <p className="mt-3 whitespace-pre-wrap text-sm text-navy-800">{m.body}</p>
+                  <div className="mt-3 text-sm text-navy-800"><CMSPageBody markdown={m.body} /></div>
                   <div className="mt-2">
                     <AttachmentList ownerType="ticket_message" ownerId={m.id} client={adminAttachments} canDelete />
                   </div>
@@ -201,11 +247,12 @@ export default function AdminTicketDetailPage() {
                       />
                     </div>
                   )}
-                  <textarea
-                    value={reply} onChange={(e) => setReply(e.target.value)}
-                    rows={4} maxLength={10000}
+                  <MarkdownEditor
+                    value={reply}
+                    onChange={setReply}
+                    rows={4}
+                    maxLength={10000}
                     placeholder={t("replyPlaceholder")}
-                    className="w-full rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-accent-500 focus:outline-none"
                   />
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <label className="flex items-center gap-2 text-sm">

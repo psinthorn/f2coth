@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
-import { Loader2, Plus, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, AlertTriangle, ShieldCheck } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import { toast } from "@/lib/toast";
 import { ShowcaseStatusBadge, computeShowcaseStatus } from "@/components/admin/CustomerShowcasePanel";
@@ -74,6 +74,8 @@ export default function AdminCustomersPage() {
           <Plus className="h-4 w-4" /> {t("addButton")}
         </button>
       </header>
+
+      <PortalVerificationToggle />
 
       {err && (
         <div className="mb-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-800">
@@ -165,6 +167,56 @@ export default function AdminCustomersPage() {
         </div>
       )}
     </AdminShell>
+  );
+}
+
+// Global toggle: when ON, unverified portal users can still log in but are
+// blocked from sensitive actions (open ticket / reply) until they verify.
+function PortalVerificationToggle() {
+  const t = useTranslations("admin.customers.verification");
+  const [on, setOn] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    adminApi.getPortalSettings()
+      .then((s) => setOn(s.require_email_verification))
+      .catch(() => setOn(false));
+  }, []);
+
+  async function toggle() {
+    if (on === null || saving) return;
+    setSaving(true);
+    const next = !on;
+    try {
+      await adminApi.updatePortalSettings({ require_email_verification: next });
+      setOn(next);
+      toast.success(next ? t("enabled") : t("disabled"));
+    } catch {
+      toast.error(t("error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mb-6 flex items-center justify-between gap-4 rounded-lg border border-navy-100 bg-navy-50 p-4">
+      <div className="flex items-start gap-3">
+        <ShieldCheck className="mt-0.5 h-5 w-5 text-navy-500" />
+        <div>
+          <p className="text-sm font-medium text-navy-900">{t("title")}</p>
+          <p className="text-xs text-navy-500">{t("hint")}</p>
+        </div>
+      </div>
+      <button
+        onClick={toggle}
+        disabled={on === null || saving}
+        role="switch"
+        aria-checked={on === true}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-40 ${on ? "bg-accent-500" : "bg-navy-200"}`}
+      >
+        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${on ? "translate-x-5" : "translate-x-0.5"}`} />
+      </button>
+    </div>
   );
 }
 

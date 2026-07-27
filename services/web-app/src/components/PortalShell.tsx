@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import {
-  LayoutDashboard, Inbox, LogOut, Menu, X, Loader2, Building2, Globe, ShieldCheck, Receipt, FileSignature, ClipboardCheck, Repeat,
+  LayoutDashboard, Inbox, LogOut, Menu, X, Loader2, Building2, Globe, ShieldCheck, Receipt, FileSignature, ClipboardCheck, Repeat, UserCog, MailWarning,
 } from "lucide-react";
-import { portalApi, clearPortalAuth, redirectToPortalLogin, type PortalContact, type PortalCustomer } from "@/lib/portal-api";
+import { portalApi, clearPortalAuth, redirectToPortalLogin, type PortalContact, type PortalCustomer, type PortalMembership } from "@/lib/portal-api";
 import SandboxBanner from "@/components/SandboxBanner";
 import SuspendedServicesBanner from "@/components/SuspendedServicesBanner";
 import F2LogoMark from "@/components/F2LogoMark";
@@ -16,8 +16,8 @@ import Toaster from "@/components/Toaster";
 type GroupKey = "workspace" | "support" | "services";
 
 type NavItem = {
-  href: "/portal" | "/portal/tickets" | "/portal/domains" | "/portal/sla" | "/portal/billing" | "/portal/subscriptions" | "/portal/billing-profile" | "/portal/projects";
-  labelKey: "account" | "tickets" | "domains" | "sla" | "billing" | "subscriptions" | "billingProfile" | "projects";
+  href: "/portal" | "/portal/tickets" | "/portal/domains" | "/portal/sla" | "/portal/billing" | "/portal/subscriptions" | "/portal/billing-profile" | "/portal/projects" | "/portal/profile";
+  labelKey: "account" | "tickets" | "domains" | "sla" | "billing" | "subscriptions" | "billingProfile" | "projects" | "profile";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   requireService?: string;
@@ -31,6 +31,7 @@ const NAV: NavGroup[] = [
     key: "workspace",
     items: [
       { href: "/portal", labelKey: "account", icon: LayoutDashboard, exact: true },
+      { href: "/portal/profile", labelKey: "profile", icon: UserCog },
       { href: "/portal/billing", labelKey: "billing", icon: Receipt },
       { href: "/portal/subscriptions", labelKey: "subscriptions", icon: Repeat },
       { href: "/portal/billing-profile", labelKey: "billingProfile", icon: FileSignature },
@@ -58,9 +59,11 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   const pathname = usePathname() ?? "";
   const [contact, setContact] = useState<PortalContact | null>(null);
   const [customer, setCustomer] = useState<PortalCustomer | null>(null);
+  const [memberships, setMemberships] = useState<PortalMembership[]>([]);
   const [hasSLA, setHasSLA] = useState(false);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,8 +77,13 @@ export default function PortalShell({ children }: { children: React.ReactNode })
       .me()
       .then((d) => {
         if (!cancelled) {
+          // First login with a temp password → force a change before anything else.
+          if (d.contact.must_change_password && !pathname.endsWith("/portal/change-password")) {
+            router.push("/portal/change-password");
+          }
           setContact(d.contact);
           setCustomer(d.customer);
+          setMemberships(d.memberships ?? []);
         }
         return portalApi.listSLA().then(() => true).catch(() => false);
       })
@@ -105,6 +113,18 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     await portalApi.logout();
     clearPortalAuth();
     router.push("/portal/login");
+  }
+
+  async function switchOrg(customerId: string) {
+    if (!customer || customerId === customer.id || switching) return;
+    setSwitching(true);
+    try {
+      await portalApi.switchOrg(customerId);
+      // Full reload so every portal query re-runs under the new active org.
+      window.location.reload();
+    } catch {
+      setSwitching(false);
+    }
   }
 
   if (loading) {
@@ -172,13 +192,31 @@ export default function PortalShell({ children }: { children: React.ReactNode })
             </button>
           </div>
 
-          {/* Customer/org chip */}
+          {/* Customer/org chip — becomes a switcher when the user has >1 org */}
           <div className="border-b border-navy-100 px-4 py-3">
             <p className="text-[11px] uppercase tracking-wider text-navy-400">{t("organisation")}</p>
-            <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-navy-900">
-              <Building2 className="h-3.5 w-3.5 text-navy-400 shrink-0" />
-              <span className="truncate">{customer.name}</span>
-            </p>
+            {memberships.length > 1 ? (
+              <div className="mt-1 flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5 text-navy-400 shrink-0" />
+                <select
+                  value={customer.id}
+                  disabled={switching}
+                  onChange={(e) => switchOrg(e.target.value)}
+                  aria-label={t("switchOrg")}
+                  className="w-full truncate rounded-md border border-navy-200 bg-white px-2 py-1 text-sm font-medium text-navy-900 focus:border-accent-500 focus:outline-none disabled:opacity-50"
+                >
+                  {memberships.map((m) => (
+                    <option key={m.customer_id} value={m.customer_id}>{m.customer_name}</option>
+                  ))}
+                </select>
+                {switching && <Loader2 className="h-3.5 w-3.5 animate-spin text-navy-400" />}
+              </div>
+            ) : (
+              <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-navy-900">
+                <Building2 className="h-3.5 w-3.5 text-navy-400 shrink-0" />
+                <span className="truncate">{customer.name}</span>
+              </p>
+            )}
           </div>
 
           {/* Scrollable nav */}
@@ -240,7 +278,21 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           </div>
         </aside>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-10">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-10">
+          {!contact.email_verified_at && (
+            <div className="mb-6 flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <MailWarning className="h-4 w-4 shrink-0" />
+              <span>{t("unverifiedBanner")}</span>
+              <button
+                onClick={() => portalApi.requestVerificationLink(contact.email).then(() => {}).catch(() => {})}
+                className="font-medium underline underline-offset-2 hover:text-amber-900"
+              >
+                {t("resendVerification")}
+              </button>
+            </div>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );

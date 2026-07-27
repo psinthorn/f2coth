@@ -1,4 +1,4 @@
-.PHONY: help up down build rebuild logs ps clean db-shell migrate seed test test-integration fmt tidy prod-up prod-down prod-logs staging-up staging-down staging-logs tunnel-cloudflare tunnel-ngrok tunnel-down lan-url
+.PHONY: help up down build rebuild logs ps clean db-shell migrate seed test test-integration fmt tidy prod-up prod-down prod-logs staging-up staging-down staging-logs tunnel-cloudflare tunnel-ngrok tunnel-down lan-url smoke-modules smoke-users smoke-billing
 
 SERVICES := cms-api lead-api ai-chat-api auth-api notification-api customer-api reseller-api payment-api checklist-api contract-api assethub-api
 COMPOSE  := docker compose
@@ -90,6 +90,12 @@ sync-modulegate-check: ## Fail if any service's modulegate.go has drifted from p
 
 smoke-modules: ## End-to-end smoke: toggle public.blog and verify page + sitemap react (needs stack running, JWT_SECRET + ADMIN_USER_ID env)
 	@bash scripts/smoke-module-toggle.sh
+
+smoke-users: ## Smoke: portal user-account lifecycle — invite/verify/change-pw/switch-org/attach (needs stack running)
+	@bash scripts/smoke-user-accounts.sh
+
+smoke-billing: ## Smoke: ticket billing — portal read always; staff writes + generate-invoice when JWT_SECRET + ADMIN_USER_ID set (needs stack running)
+	@bash scripts/smoke-ticket-billing.sh
 
 ci: tidy fmt test i18n-check sync-modulegate-check ## Run the full local CI check (matches GitHub Actions)
 	@echo "✅  All CI checks passed locally."

@@ -227,11 +227,20 @@ export const adminApi = {
     ),
   listCustomerContacts: (id: string) =>
     request<{ contacts: CustomerContactRow[] }>(`/customer/admin/customers/${id}/contacts`),
+  // Invite a portal user by email (no password — the system emails temp
+  // credentials + a verify link). Returns linked=true if an existing user was
+  // added to this org rather than created fresh.
   createCustomerContact: (
     id: string,
-    input: { email: string; full_name: string; role: "owner" | "member"; password: string },
+    input: {
+      email: string;
+      full_name: string;
+      role: "owner" | "member";
+      phone?: string;
+      job_title?: string;
+    },
   ) =>
-    request<{ id: string }>(`/customer/admin/customers/${id}/contacts`, {
+    request<{ id: string; linked: boolean }>(`/customer/admin/customers/${id}/contacts`, {
       method: "POST",
       body: JSON.stringify(input),
     }),
@@ -239,6 +248,47 @@ export const adminApi = {
     request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/disable`, { method: "POST" }),
   enableCustomerContact: (id: string, contactId: string) =>
     request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/enable`, { method: "POST" }),
+  // Resend the email-verification / login link to a portal user.
+  resendCustomerContactInvite: (id: string, contactId: string) =>
+    request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/resend`, { method: "POST" }),
+
+  // Portal settings — email-verification enforcement toggle.
+  getPortalSettings: () =>
+    request<{ require_email_verification: boolean }>(`/customer/admin/portal-settings`),
+  updatePortalSettings: (input: { require_email_verification: boolean }) =>
+    request<void>(`/customer/admin/portal-settings`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+
+  // ---- Rate card (price book) ----
+  listRateCard: (activeOnly = false) =>
+    request<{ items: RateCardItem[] }>(`/customer/admin/rate-card${activeOnly ? "?active=1" : ""}`),
+  createRateCard: (input: RateCardWriteInput) =>
+    request<{ id: string }>(`/customer/admin/rate-card`, { method: "POST", body: JSON.stringify(input) }),
+  updateRateCard: (id: string, input: Partial<RateCardWriteInput> & { is_active?: boolean }) =>
+    request<void>(`/customer/admin/rate-card/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+
+  // ---- Ticket billing ----
+  getTicketBilling: (ticketId: string) =>
+    request<TicketBilling>(`/customer/admin/tickets/${ticketId}/billing`),
+  addTicketLine: (ticketId: string, input: TicketLineWriteInput) =>
+    request<{ id: string }>(`/customer/admin/tickets/${ticketId}/line-items`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateTicketLine: (ticketId: string, lineId: string, input: Partial<TicketLineWriteInput>) =>
+    request<void>(`/customer/admin/tickets/${ticketId}/line-items/${lineId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteTicketLine: (ticketId: string, lineId: string) =>
+    request<void>(`/customer/admin/tickets/${ticketId}/line-items/${lineId}`, { method: "DELETE" }),
+  generateTicketInvoice: (ticketId: string) =>
+    request<{ invoice_id: string; invoice_number: string }>(
+      `/customer/admin/tickets/${ticketId}/generate-invoice`,
+      { method: "POST" },
+    ),
 
   // Staff opens a ticket on behalf of a customer.
   createTicketForCustomer: (
@@ -246,6 +296,7 @@ export const adminApi = {
     input: {
       subject: string;
       body: string;
+      solution?: string;
       priority: "low" | "normal" | "high" | "urgent";
       related_service_slug?: string;
       opened_by_contact_id?: string;
@@ -305,7 +356,7 @@ export const adminApi = {
     }),
   updateAdminTicket: (
     id: string,
-    patch: Partial<{ status: string; priority: string; assigned_to_user_id: string }>,
+    patch: Partial<{ status: string; priority: string; assigned_to_user_id: string; solution: string }>,
   ) =>
     request<void>(`/customer/admin/tickets/${id}`, {
       method: "PATCH",
@@ -1184,6 +1235,12 @@ export interface CustomerContactRow {
   last_login_at: string | null;
   disabled_at: string | null;
   created_at: string;
+  // Account lifecycle (migration 071).
+  email_verified_at?: string | null;
+  must_change_password?: boolean;
+  phone?: string | null;
+  job_title?: string | null;
+  is_primary?: boolean;
 }
 
 export interface AdminTicket {
@@ -1198,6 +1255,7 @@ export interface AdminTicket {
   assigned_to_user_id: string | null;
   assigned_to_name: string | null;
   related_service_slug: string | null;
+  solution?: string;
   last_activity_at: string;
   created_at: string;
   updated_at: string;
@@ -1450,4 +1508,76 @@ export interface PageWriteInput {
   seo_description_en?: string;
   seo_description_th?: string;
   is_published?: boolean;
+}
+
+// ---- Ticket billing (migration 073) ----
+export interface RateCardItem {
+  id: string;
+  code?: string | null;
+  name_en: string;
+  name_th?: string | null;
+  description_en?: string | null;
+  description_th?: string | null;
+  unit: string;
+  default_unit_price_cents: number;
+  currency: "THB" | "USD";
+  category?: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RateCardWriteInput {
+  code?: string;
+  name_en: string;
+  name_th?: string;
+  description_en?: string;
+  description_th?: string;
+  unit?: string;
+  default_unit_price_cents: number;
+  currency?: "THB" | "USD";
+  category?: string;
+}
+
+export interface TicketLineItem {
+  id: string;
+  ticket_id: string;
+  rate_card_item_id?: string | null;
+  description_en: string;
+  description_th?: string | null;
+  unit: string;
+  quantity: number;
+  unit_price_cents: number;
+  covered: boolean;
+  amount_cents: number;
+  currency: "THB" | "USD";
+  sort_order: number;
+  created_at: string;
+}
+
+export interface TicketLineWriteInput {
+  rate_card_item_id?: string;
+  description_en?: string;
+  description_th?: string;
+  unit?: string;
+  quantity?: number;
+  unit_price_cents?: number;
+  covered?: boolean;
+  currency?: "THB" | "USD";
+}
+
+export interface TicketBilling {
+  ticket_id: string;
+  billing_status: "none" | "covered" | "billable";
+  currency: "THB" | "USD";
+  lines: TicketLineItem[];
+  subtotal_cents: number;
+  vat_rate_bp: number;
+  vat_cents: number;
+  total_cents: number;
+  covered_by_title?: string | null;
+  invoice_id?: string | null;
+  invoice_number?: string | null;
+  invoice_status?: string | null;
 }

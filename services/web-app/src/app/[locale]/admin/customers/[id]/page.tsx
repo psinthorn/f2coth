@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/routing";
 import {
   ArrowLeft, Loader2, AlertTriangle, Plus, Ban, RotateCcw, Save, Ticket,
+  Send, MailCheck, MailWarning, KeyRound,
 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
 import { toast, useBusyAction } from "@/lib/toast";
@@ -45,7 +46,7 @@ export default function AdminCustomerDetailPage() {
   const [saving, setSaving] = useState(false);
 
   const [showAdd, setShowAdd] = useState(false);
-  const [cForm, setCForm] = useState({ email: "", full_name: "", role: "member" as "owner" | "member", password: "" });
+  const [cForm, setCForm] = useState({ email: "", full_name: "", role: "member" as "owner" | "member", phone: "", job_title: "" });
   const [adding, setAdding] = useState(false);
 
   const [showTicket, setShowTicket] = useState(false);
@@ -114,10 +115,16 @@ export default function AdminCustomerDetailPage() {
     setAdding(true);
     setErr("");
     try {
-      await adminApi.createCustomerContact(id, cForm);
-      toast.success(tc("toast.added"));
+      const res = await adminApi.createCustomerContact(id, {
+        email: cForm.email.trim(),
+        full_name: cForm.full_name.trim(),
+        role: cForm.role,
+        phone: cForm.phone.trim() || undefined,
+        job_title: cForm.job_title.trim() || undefined,
+      });
+      toast.success(res.linked ? t("inviteLinked") : t("inviteSent"));
       setShowAdd(false);
-      setCForm({ email: "", full_name: "", role: "member", password: "" });
+      setCForm({ email: "", full_name: "", role: "member", phone: "", job_title: "" });
       await load();
     } catch (e: any) {
       setErr(tryMsg(e));
@@ -125,6 +132,14 @@ export default function AdminCustomerDetailPage() {
     } finally {
       setAdding(false);
     }
+  }
+
+  async function resendInvite(contactId: string) {
+    if (!id) return;
+    const ok = await run(() => adminApi.resendCustomerContactInvite(id, contactId), {
+      success: t("inviteResent"),
+    });
+    if (ok) await load();
   }
 
   async function createTicket() {
@@ -317,10 +332,12 @@ export default function AdminCustomerDetailPage() {
 
               {showAdd && (
                 <div className="mt-4 rounded-lg border border-navy-100 bg-navy-50 p-4">
+                  <p className="mb-3 text-xs text-navy-500">{t("inviteHint")}</p>
                   <div className="grid gap-3">
                     <Field label={t("fullNameField")} value={cForm.full_name} onChange={(v) => setCForm({ ...cForm, full_name: v })} />
                     <Field label={t("emailField")} value={cForm.email} onChange={(v) => setCForm({ ...cForm, email: v })} type="email" />
-                    <Field label={t("passwordField")} value={cForm.password} onChange={(v) => setCForm({ ...cForm, password: v })} type="password" />
+                    <Field label={t("phoneField")} value={cForm.phone} onChange={(v) => setCForm({ ...cForm, phone: v })} />
+                    <Field label={t("jobTitleField")} value={cForm.job_title} onChange={(v) => setCForm({ ...cForm, job_title: v })} />
                     <div className="flex flex-col gap-1">
                       <label className="text-sm font-medium text-navy-800">{t("roleField")}</label>
                       <select
@@ -336,7 +353,7 @@ export default function AdminCustomerDetailPage() {
                   <div className="mt-3 flex justify-end gap-2">
                     <button onClick={() => setShowAdd(false)} className="btn-ghost text-xs">{tc("cancel")}</button>
                     <button onClick={addContact} disabled={adding} className="btn-accent text-xs disabled:opacity-40">
-                      {adding ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {tc("creating")}</> : tc("add")}
+                      {adding ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {tc("creating")}</> : <><Send className="h-3.5 w-3.5" /> {t("sendInvite")}</>}
                     </button>
                   </div>
                 </div>
@@ -352,8 +369,35 @@ export default function AdminCustomerDetailPage() {
                         <div className="min-w-0">
                           <p className="font-medium text-navy-900 truncate">{c.full_name}</p>
                           <p className="text-xs text-navy-500 truncate">{c.email} · {tc(`role.${c.role}`)}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {c.email_verified_at ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">
+                                <MailCheck className="h-3 w-3" /> {t("badgeVerified")}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700">
+                                <MailWarning className="h-3 w-3" /> {t("badgeUnverified")}
+                              </span>
+                            )}
+                            {c.must_change_password && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-navy-100 px-2 py-0.5 text-[11px] text-navy-600">
+                                <KeyRound className="h-3 w-3" /> {t("badgePendingPassword")}
+                              </span>
+                            )}
+                            {c.is_primary === false && (
+                              <span className="inline-flex items-center rounded-full bg-navy-100 px-2 py-0.5 text-[11px] text-navy-500">
+                                {t("badgeLinked")}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="shrink-0">
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          {!c.disabled_at && !c.email_verified_at && (
+                            <button onClick={() => resendInvite(c.id)} disabled={contactBusy}
+                              className="inline-flex items-center gap-1 rounded-lg border border-navy-200 bg-white px-2 py-1 text-xs text-navy-700 hover:bg-navy-50 disabled:opacity-40">
+                              <Send className="h-3 w-3" /> {t("resend")}
+                            </button>
+                          )}
                           {c.disabled_at ? (
                             <button onClick={() => enableContact(c.id)} disabled={contactBusy}
                               className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-100 disabled:opacity-40">

@@ -12,6 +12,7 @@ import { portalApi, type PortalTicket, type PortalMessage } from "@/lib/portal-a
 import AttachmentUploader from "@/components/attachments/AttachmentUploader";
 import AttachmentList from "@/components/attachments/AttachmentList";
 import { portalAttachments } from "@/lib/attachments-api";
+import TicketBillingSection from "@/components/portal/TicketBillingSection";
 
 const statusColor: Record<string, string> = {
   open: "bg-accent-50 text-accent-800",
@@ -137,6 +138,8 @@ export default function TicketDetailPage() {
               </div>
             )}
           </section>
+
+          {id && <TicketBillingSection ticketId={id} />}
 
           <section className="space-y-3">
             {messages.map((m) => (
