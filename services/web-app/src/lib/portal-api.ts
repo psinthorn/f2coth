@@ -145,6 +145,9 @@ export interface PortalTicket {
   assigned_to_user_id: string | null;
   assigned_to_name: string | null;
   related_service_slug: string | null;
+  // Resolution write-up. Server only populates this once the ticket is
+  // resolved/closed AND staff enabled sharing; otherwise it's an empty string.
+  solution?: string;
   last_activity_at: string;
   created_at: string;
   updated_at: string;

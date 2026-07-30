@@ -457,6 +457,9 @@ type adminCreateTicketReq struct {
 	// Optional resolution write-up (minimal markdown). Usually empty at
 	// creation and filled in later as the ticket is worked.
 	Solution string `json:"solution"`
+	// Whether the solution may be shown to the customer once the ticket is
+	// resolved/closed. Defaults false.
+	SolutionShared bool `json:"solution_shared"`
 	// Optional: which customer contact this ticket is being raised on behalf
 	// of. If empty, the ticket is "F2-initiated" — opened_by_contact_id stays NULL.
 	OpenedByContactID string `json:"opened_by_contact_id"`
@@ -522,13 +525,13 @@ func (h *AdminHandler) CreateTicketForCustomer(w http.ResponseWriter, r *http.Re
 	err = tx.QueryRow(r.Context(), `
         INSERT INTO tickets
             (customer_id, opened_by_contact_id, subject, priority,
-             related_service_slug, assigned_to_user_id, status, solution)
+             related_service_slug, assigned_to_user_id, status, solution, solution_shared)
         VALUES ($1, NULLIF($2,'')::uuid, $3, $4, NULLIF($5,''),
                 CASE WHEN $6 THEN $7::uuid ELSE NULL END,
-                'in_progress', $8)
+                'in_progress', $8, $9)
         RETURNING id
     `, customerID, req.OpenedByContactID, req.Subject, req.Priority,
-		req.RelatedServiceSlug, req.AssignToSelf, uid, req.Solution).Scan(&ticketID)
+		req.RelatedServiceSlug, req.AssignToSelf, uid, req.Solution, req.SolutionShared).Scan(&ticketID)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "could not create ticket")
 		return
@@ -623,7 +626,7 @@ func (h *AdminHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
         SELECT t.id, t.customer_id, c.name, t.opened_by_contact_id, cc.full_name,
                t.subject, t.status, t.priority,
                t.assigned_to_user_id, u.full_name,
-               t.related_service_slug, t.solution, t.last_activity_at, t.created_at, t.updated_at
+               t.related_service_slug, t.solution, t.solution_shared, t.last_activity_at, t.created_at, t.updated_at
         FROM tickets t
         JOIN customers c ON c.id = t.customer_id
         LEFT JOIN customer_contacts cc ON cc.id = t.opened_by_contact_id
@@ -632,7 +635,7 @@ func (h *AdminHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
     `, id).Scan(&t.ID, &t.CustomerID, &t.CustomerName, &t.OpenedByContactID, &t.OpenedByName,
 		&t.Subject, &t.Status, &t.Priority,
 		&t.AssignedToUserID, &t.AssignedToName,
-		&t.RelatedServiceSlug, &t.Solution, &t.LastActivityAt, &t.CreatedAt, &t.UpdatedAt)
+		&t.RelatedServiceSlug, &t.Solution, &t.SolutionShared, &t.LastActivityAt, &t.CreatedAt, &t.UpdatedAt)
 	if err == pgx.ErrNoRows {
 		writeErr(w, http.StatusNotFound, "ticket not found")
 		return
@@ -753,6 +756,9 @@ type adminTicketUpdateReq struct {
 	// Resolution write-up (minimal markdown). Pointer so an omitted field
 	// leaves the stored value untouched; an explicit "" clears it.
 	Solution *string `json:"solution"`
+	// Share-with-customer toggle for the solution. Pointer so omitting it
+	// leaves the current setting untouched.
+	SolutionShared *bool `json:"solution_shared"`
 }
 
 var validTicketStatuses = map[string]struct{}{
@@ -791,9 +797,10 @@ func (h *AdminHandler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
             priority = COALESCE($3, priority),
             assigned_to_user_id = COALESCE(NULLIF($4,'')::uuid, assigned_to_user_id),
             solution = COALESCE($5, solution),
+            solution_shared = COALESCE($6, solution_shared),
             last_activity_at = NOW()
         WHERE id = $1
-    `, id, req.Status, req.Priority, strPtr(req.AssignedToUserID), req.Solution)
+    `, id, req.Status, req.Priority, strPtr(req.AssignedToUserID), req.Solution, req.SolutionShared)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return

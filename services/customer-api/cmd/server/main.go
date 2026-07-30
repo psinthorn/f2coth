@@ -35,6 +35,7 @@ func main() {
 	ah := &handlers.AdminHandler{DB: pool, Cfg: cfg, Notify: notifier}
 	assets := &handlers.AssetHandler{DB: pool}
 	attach := &handlers.AttachmentHandler{DB: pool, Cfg: cfg}
+	aph := &handlers.ApprovalHandler{DB: pool, Cfg: cfg, Notify: notifier}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -52,6 +53,16 @@ func main() {
 
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte(`{"status":"ok","service":"customer-api"}`))
+	})
+
+	// ---------- Public approval magic-link (NO auth; token is the credential) ----------
+	// Mounted under /api/customer so Traefik routes it here. Gated by the
+	// approvals module only.
+	r.Route("/api/customer/approvals/link", func(r chi.Router) {
+		r.Use(authmw.GateModule("api.approvals"))
+		r.Get("/{token}", aph.PublicView)
+		r.Get("/{token}/files/{fileId}", aph.PublicFile)
+		r.Post("/{token}/decide", aph.PublicDecide)
 	})
 
 	// ---------- Customer-facing portal routes ----------
@@ -172,6 +183,18 @@ func main() {
 			r.Get("/attachments", attach.List)
 			r.Get("/attachments/{id}", attach.Serve)
 			r.Delete("/attachments/{id}", attach.Delete)
+		})
+
+		// Approvals — build / send / resend / cancel customer sign-off requests.
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("api.approvals"))
+			r.Post("/approvals", aph.CreateApproval)
+			r.Get("/approvals", aph.ListApprovals)
+			r.Get("/approvals/{id}", aph.GetApproval)
+			r.Delete("/approvals/{id}", aph.DeleteApproval)
+			r.Post("/approvals/{id}/send", aph.SendApproval)
+			r.Post("/approvals/{id}/resend", aph.ResendApproval)
+			r.Post("/approvals/{id}/cancel", aph.CancelApproval)
 		})
 	})
 

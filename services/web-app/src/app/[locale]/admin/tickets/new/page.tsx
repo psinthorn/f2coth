@@ -59,6 +59,7 @@ export default function AdminNewTicketPage() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [solution, setSolution] = useState("");
+  const [solutionShared, setSolutionShared] = useState(false);
   const [priority, setPriority] = useState<Priority>("normal");
   const [relatedService, setRelatedService] = useState("");
   const [assignToSelf, setAssignToSelf] = useState(true);
@@ -144,6 +145,7 @@ export default function AdminNewTicketPage() {
         subject: subject.trim(),
         body: body.trim(),
         solution: solution.trim() || undefined,
+        solution_shared: solutionShared,
         priority,
         related_service_slug: relatedService || undefined,
         opened_by_contact_id: contactID || undefined,
@@ -348,6 +350,18 @@ export default function AdminNewTicketPage() {
                     <p className="mt-1 text-[11px] text-navy-500">
                       {t("form.solutionHint")}
                     </p>
+                    <label className="mt-2 flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={solutionShared}
+                        onChange={(e) => setSolutionShared(e.target.checked)}
+                        className="mt-0.5"
+                      />
+                      <span>
+                        <span className="font-medium text-navy-900">{t("form.shareSolution")}</span>
+                        <span className="mt-0.5 block text-[11px] text-navy-600">{t("form.shareSolutionHint")}</span>
+                      </span>
+                    </label>
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-3">

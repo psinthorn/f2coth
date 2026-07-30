@@ -241,9 +241,18 @@ export default function TicketBillingPanel({ ticketId }: { ticketId: string }) {
             <FileText className="h-4 w-4" /> {t("viewInvoice", { number: billing.invoice_number ?? "" })}
           </Link>
         ) : billing.billing_status === "billable" ? (
-          <button onClick={generateInvoice} disabled={busy} className="btn-accent text-sm disabled:opacity-40">
-            {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("generating")}</> : <><Receipt className="h-4 w-4" /> {t("generateInvoice")}</>}
-          </button>
+          <div>
+            <button
+              onClick={generateInvoice}
+              disabled={busy || (!!billing.approval_status && billing.approval_status !== "approved")}
+              className="btn-accent text-sm disabled:opacity-40"
+            >
+              {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("generating")}</> : <><Receipt className="h-4 w-4" /> {t("generateInvoice")}</>}
+            </button>
+            {!!billing.approval_status && billing.approval_status !== "approved" && (
+              <p className="mt-2 text-xs text-amber-700">{t("approvalRequired")}</p>
+            )}
+          </div>
         ) : billing.billing_status === "covered" ? (
           <p className="text-sm text-emerald-700">{t("allCovered")}</p>
         ) : null}

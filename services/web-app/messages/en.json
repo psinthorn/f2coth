@@ -831,7 +831,8 @@
         "viewInvoice": "View invoice {number}",
         "generateInvoice": "Generate invoice",
         "generating": "Generating…",
-        "allCovered": "All work covered by contract — no charge."
+        "allCovered": "All work covered by contract — no charge.",
+        "approvalRequired": "The customer must approve the quotation before you can generate the invoice."
       },
       "newTicket": "New ticket",
       "new": {
@@ -857,6 +858,8 @@
           "solution": "Solution",
           "solutionPlaceholder": "How the issue was (or will be) resolved. Usually left blank at creation and filled in as the ticket is worked. Supports markdown.",
           "solutionHint": "Shown on the ticket detail. Optional at creation.",
+          "shareSolution": "Share solution with the customer",
+          "shareSolutionHint": "When on, the solution appears in the customer's portal once the ticket is resolved or closed.",
           "priority": "Priority",
           "relatedService": "Related service",
           "noneOption": "— none —",
@@ -920,7 +923,9 @@
         "replyPlaceholder": "Type your reply…",
         "solution": "Solution",
         "solutionPlaceholder": "Document how the issue was resolved. Supports markdown.",
-        "saveSolution": "Save solution"
+        "saveSolution": "Save solution",
+        "shareSolution": "Share solution with the customer",
+        "shareSolutionHint": "When on, the solution appears in the customer's portal once the ticket is resolved or closed."
       }
     },
     "customers": {
@@ -2650,7 +2655,8 @@
         "markResolved": "Mark resolved",
         "reopen": "Reopen",
         "sendReply": "Send reply",
-        "sending": "Sending…"
+        "sending": "Sending…",
+        "resolution": "Resolution"
       }
     },
     "domains": {
@@ -3159,6 +3165,89 @@
     "trialDefault": "You are viewing a pre-production preview. Data and features may change without notice.",
     "maintenanceDefault": "We're briefly offline for maintenance. Please try again soon.",
     "splashTitle": "We'll be right back."
+  },
+  "approvals": {
+    "kind": {
+      "quotation": "Quotation",
+      "resolution": "Resolution sign-off",
+      "general": "General approval"
+    },
+    "status": {
+      "draft": "Draft",
+      "sent": "Awaiting customer",
+      "approved": "Approved",
+      "declined": "Declined",
+      "cancelled": "Cancelled",
+      "expired": "Expired"
+    },
+    "decision": {
+      "approved": "Approved",
+      "declined": "Declined"
+    },
+    "table": {
+      "item": "Item",
+      "qty": "Qty",
+      "unitPrice": "Unit price",
+      "amount": "Amount",
+      "subtotal": "Subtotal",
+      "vat": "VAT {rate}%",
+      "total": "Total"
+    },
+    "admin": {
+      "title": "Approvals",
+      "new": "New request",
+      "kind": "Type",
+      "titleLabel": "Title",
+      "titlePlaceholder": "e.g. Quotation for replacement parts",
+      "body": "Message to the customer",
+      "bodyPlaceholder": "Explain what you're asking them to approve…",
+      "items": "Line items",
+      "itemsQuotationHint": "Billable lines from this ticket are included automatically.",
+      "addItem": "Add item",
+      "itemLabel": "Description",
+      "itemAmount": "Amount (฿)",
+      "create": "Create draft",
+      "creating": "Creating…",
+      "close": "Close",
+      "loading": "Loading…",
+      "none": "No approval requests yet.",
+      "attach": "Attach files",
+      "pickRecipient": "Choose a recipient",
+      "send": "Send for approval",
+      "sending": "Sending…",
+      "resend": "Resend link",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "decidedBy": "{decision} by {name} · {date}",
+      "declineReason": "Reason: {reason}",
+      "expires": "Expires {date}"
+    },
+    "public": {
+      "loading": "Loading…",
+      "from": "From F2 Co., Ltd. for {org}",
+      "expiresOn": "This request expires on {date}.",
+      "attachments": "Attached files",
+      "approve": "Approve",
+      "decline": "Decline",
+      "declineReason": "Please tell us why (required)",
+      "declineReasonPlaceholder": "Reason for declining…",
+      "submit": "Submit decision",
+      "approvedTitle": "Thank you — approved",
+      "approvedBody": "Your approval has been recorded. F2 will proceed and follow up shortly.",
+      "declinedTitle": "Declined",
+      "declinedBody": "We've recorded your response and the F2 team will be in touch.",
+      "invalidTitle": "Link not valid",
+      "invalidBody": "This approval link is invalid, has been superseded, or has already been used. Please contact F2.",
+      "expiredTitle": "Link expired",
+      "expiredBody": "This approval link has expired. Please contact F2 for a new one.",
+      "alreadyTitle": "Already decided"
+    },
+    "toast": {
+      "created": "Draft created",
+      "sent": "Sent to the customer",
+      "cancelled": "Cancelled",
+      "deleted": "Deleted"
+    }
   },
   "attachments": {
     "title": "Attachments",

@@ -101,6 +101,16 @@ func (h *AdminHandler) buildBilling(ctx context.Context, ticketID string) (*mode
 			b.CoveredByTitle = &title
 		}
 	}
+	// Latest quotation approval (gates invoice generation in the admin UI).
+	var apID, apStatus *string
+	if err := h.DB.QueryRow(ctx, `
+        SELECT id::text, status FROM approvals
+         WHERE subject_type='ticket' AND subject_id=$1 AND kind='quotation'
+         ORDER BY created_at DESC LIMIT 1`, ticketID).Scan(&apID, &apStatus); err == nil {
+		b.ApprovalID = apID
+		b.ApprovalStatus = apStatus
+	}
+
 	// Invoice number + status, if generated. The portal only reveals the number
 	// once the invoice is issued (payment-api hides drafts).
 	if invoiceID != nil {
@@ -415,6 +425,23 @@ func (h *AdminHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request) {
 	}
 	if existingInvID != nil {
 		writeErr(w, http.StatusConflict, "ticket already has an invoice")
+		return
+	}
+
+	// Approval gate (spec §11.1, backward-compatible): if a quotation approval
+	// exists for this ticket, at least one must be approved before invoicing.
+	// Tickets that never used a quotation are unaffected.
+	var quoteCount, approvedCount int
+	if err := tx.QueryRow(ctx, `
+        SELECT COUNT(*), COUNT(*) FILTER (WHERE status='approved')
+          FROM approvals
+         WHERE subject_type='ticket' AND subject_id=$1 AND kind='quotation'`,
+		ticketID).Scan(&quoteCount, &approvedCount); err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if quoteCount > 0 && approvedCount == 0 {
+		writeErr(w, http.StatusConflict, "quotation must be approved by the customer before invoicing")
 		return
 	}
 

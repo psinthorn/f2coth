@@ -18,6 +18,7 @@ import AttachmentUploader from "@/components/attachments/AttachmentUploader";
 import AttachmentList from "@/components/attachments/AttachmentList";
 import { adminAttachments } from "@/lib/attachments-api";
 import TicketBillingPanel from "@/components/admin/TicketBillingPanel";
+import ApprovalSection from "@/components/approvals/ApprovalSection";
 
 const statuses = ["open", "in_progress", "waiting_customer", "resolved", "closed"];
 const priorities = ["low", "normal", "high", "urgent"];
@@ -54,6 +55,7 @@ export default function AdminTicketDetailPage() {
   const [savingMeta, setSavingMeta] = useState(false);
 
   const [solution, setSolution] = useState("");
+  const [solutionShared, setSolutionShared] = useState(false);
   const [savingSolution, setSavingSolution] = useState(false);
 
   async function load() {
@@ -72,6 +74,7 @@ export default function AdminTicketDetailPage() {
       setPriority(tk.priority);
       setAssignee(tk.assigned_to_user_id ?? "");
       setSolution(tk.solution ?? "");
+      setSolutionShared(tk.solution_shared ?? false);
     } catch (e: any) {
       setErr(tryMsg(e));
     } finally {
@@ -127,7 +130,7 @@ export default function AdminTicketDetailPage() {
     setSavingSolution(true);
     setErr("");
     try {
-      await adminApi.updateAdminTicket(id, { solution: solution.trim() });
+      await adminApi.updateAdminTicket(id, { solution: solution.trim(), solution_shared: solutionShared });
       toast.success(tc("toast.saved"));
       await load();
     } catch (e: any) {
@@ -198,6 +201,18 @@ export default function AdminTicketDetailPage() {
                   maxLength={10000}
                   placeholder={t("solutionPlaceholder")}
                 />
+                <label className="mt-3 flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={solutionShared}
+                    onChange={(e) => setSolutionShared(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="font-medium text-navy-900">{t("shareSolution")}</span>
+                    <span className="mt-0.5 block text-[11px] text-navy-600">{t("shareSolutionHint")}</span>
+                  </span>
+                </label>
                 <div className="mt-2 flex justify-end">
                   <button onClick={saveSolution} disabled={savingSolution} className="btn-accent">
                     {savingSolution
@@ -206,6 +221,10 @@ export default function AdminTicketDetailPage() {
                   </button>
                 </div>
               </div>
+
+              {id && ticket && (
+                <ApprovalSection subjectType="ticket" subjectId={id} customerId={ticket.customer_id} />
+              )}
 
               {id && <TicketBillingPanel ticketId={id} />}
 

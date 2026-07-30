@@ -290,6 +290,29 @@ export const adminApi = {
       { method: "POST" },
     ),
 
+  // Approvals — reusable customer sign-off requests (migration 075).
+  listApprovals: (subjectType: string, subjectId: string) =>
+    request<{ approvals: Approval[] }>(
+      `/customer/admin/approvals?subject_type=${encodeURIComponent(subjectType)}&subject_id=${encodeURIComponent(subjectId)}`,
+    ),
+  getApproval: (id: string) => request<Approval>(`/customer/admin/approvals/${id}`),
+  createApproval: (input: CreateApprovalInput) =>
+    request<{ id: string }>(`/customer/admin/approvals`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  sendApproval: (id: string, input: { contact_id: string; expires_in_days?: number }) =>
+    request<{ status: string }>(`/customer/admin/approvals/${id}/send`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  resendApproval: (id: string) =>
+    request<{ status: string }>(`/customer/admin/approvals/${id}/resend`, { method: "POST" }),
+  cancelApproval: (id: string) =>
+    request<void>(`/customer/admin/approvals/${id}/cancel`, { method: "POST" }),
+  deleteApproval: (id: string) =>
+    request<void>(`/customer/admin/approvals/${id}`, { method: "DELETE" }),
+
   // Staff opens a ticket on behalf of a customer.
   createTicketForCustomer: (
     id: string,
@@ -297,6 +320,7 @@ export const adminApi = {
       subject: string;
       body: string;
       solution?: string;
+      solution_shared?: boolean;
       priority: "low" | "normal" | "high" | "urgent";
       related_service_slug?: string;
       opened_by_contact_id?: string;
@@ -356,7 +380,7 @@ export const adminApi = {
     }),
   updateAdminTicket: (
     id: string,
-    patch: Partial<{ status: string; priority: string; assigned_to_user_id: string; solution: string }>,
+    patch: Partial<{ status: string; priority: string; assigned_to_user_id: string; solution: string; solution_shared: boolean }>,
   ) =>
     request<void>(`/customer/admin/tickets/${id}`, {
       method: "PATCH",
@@ -1256,6 +1280,7 @@ export interface AdminTicket {
   assigned_to_name: string | null;
   related_service_slug: string | null;
   solution?: string;
+  solution_shared?: boolean;
   last_activity_at: string;
   created_at: string;
   updated_at: string;
@@ -1580,4 +1605,72 @@ export interface TicketBilling {
   invoice_id?: string | null;
   invoice_number?: string | null;
   invoice_status?: string | null;
+  approval_id?: string | null;
+  approval_status?: ApprovalStatus | null;
+}
+
+export type ApprovalStatus =
+  | "draft" | "sent" | "approved" | "declined" | "cancelled" | "expired";
+export type ApprovalKind = "quotation" | "resolution" | "general";
+
+export interface ApprovalItem {
+  id: string;
+  approval_id: string;
+  item_type: "line" | "issue" | "text";
+  ref_type?: string | null;
+  ref_id?: string | null;
+  label: string;
+  detail_md: string;
+  quantity?: number | null;
+  unit?: string | null;
+  unit_price_cents?: number | null;
+  amount_cents: number;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface Approval {
+  id: string;
+  subject_type: string;
+  subject_id: string;
+  customer_id: string;
+  customer_name?: string;
+  kind: ApprovalKind;
+  status: ApprovalStatus;
+  title: string;
+  body_md: string;
+  currency?: string | null;
+  subtotal_cents: number;
+  vat_rate_bp: number;
+  vat_cents: number;
+  total_cents: number;
+  requested_by_user_id?: string | null;
+  decided_by_contact_id?: string | null;
+  decided_by_name?: string | null;
+  decided_via?: "magic_link" | "portal" | null;
+  decided_at?: string | null;
+  decline_reason?: string | null;
+  sent_at?: string | null;
+  expires_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  items?: ApprovalItem[];
+}
+
+export interface CreateApprovalInput {
+  subject_type: string;
+  subject_id: string;
+  kind: ApprovalKind;
+  title: string;
+  body_md?: string;
+  currency?: string;
+  items?: Array<{
+    item_type?: "line" | "issue" | "text";
+    label: string;
+    detail_md?: string;
+    quantity?: number;
+    unit?: string;
+    unit_price_cents?: number;
+    amount_cents?: number;
+  }>;
 }

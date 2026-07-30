@@ -257,7 +257,10 @@ func (h *PortalHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
         SELECT t.id, t.customer_id, t.opened_by_contact_id, cc.full_name,
                t.subject, t.status, t.priority,
                t.assigned_to_user_id, u.full_name,
-               t.related_service_slug, t.last_activity_at, t.created_at, t.updated_at
+               t.related_service_slug,
+               CASE WHEN t.solution_shared AND t.status IN ('resolved','closed')
+                    THEN t.solution ELSE '' END,
+               t.last_activity_at, t.created_at, t.updated_at
         FROM tickets t
         LEFT JOIN customer_contacts cc ON cc.id = t.opened_by_contact_id
         LEFT JOIN users u ON u.id = t.assigned_to_user_id
@@ -265,7 +268,7 @@ func (h *PortalHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
     `, id, cid).Scan(&t.ID, &t.CustomerID, &t.OpenedByContactID, &t.OpenedByName,
 		&t.Subject, &t.Status, &t.Priority,
 		&t.AssignedToUserID, &t.AssignedToName,
-		&t.RelatedServiceSlug, &t.LastActivityAt, &t.CreatedAt, &t.UpdatedAt)
+		&t.RelatedServiceSlug, &t.Solution, &t.LastActivityAt, &t.CreatedAt, &t.UpdatedAt)
 	if err == pgx.ErrNoRows {
 		writeErr(w, http.StatusNotFound, "ticket not found")
 		return

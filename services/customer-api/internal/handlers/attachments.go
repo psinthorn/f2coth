@@ -57,7 +57,7 @@ var allowedAttachmentMIME = map[string]bool{
 var validAttachmentKind = map[string]bool{"document": true, "image": true, "live_photo": true}
 
 // customerOwnerTypes — owner kinds this service accepts.
-var customerOwnerTypes = map[string]bool{"ticket": true, "ticket_message": true}
+var customerOwnerTypes = map[string]bool{"ticket": true, "ticket_message": true, "approval": true}
 
 var errUnsupportedOwner = errors.New("unsupported owner type")
 
@@ -89,6 +89,10 @@ func (h *AttachmentHandler) ownerCustomer(ctx context.Context, ownerType, ownerI
 			  FROM ticket_messages m
 			  JOIN tickets t ON t.id = m.ticket_id
 			 WHERE m.id=$1`, ownerID).
+			Scan(&customerID, &internal)
+	case "approval":
+		err = h.DB.QueryRow(ctx,
+			`SELECT customer_id::text, FALSE FROM approvals WHERE id=$1`, ownerID).
 			Scan(&customerID, &internal)
 	default:
 		err = errUnsupportedOwner

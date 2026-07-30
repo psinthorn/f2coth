@@ -77,6 +77,7 @@ type Ticket struct {
 	AssignedToName     *string   `json:"assigned_to_name,omitempty"`
 	RelatedServiceSlug *string   `json:"related_service_slug,omitempty"`
 	Solution           string    `json:"solution"`
+	SolutionShared     bool      `json:"solution_shared"`
 	BillingStatus      string    `json:"billing_status,omitempty"`
 	InvoiceID          *string   `json:"invoice_id,omitempty"`
 	LastActivityAt     time.Time `json:"last_activity_at"`
@@ -133,7 +134,9 @@ type TicketBilling struct {
 	CoveredByTitle *string          `json:"covered_by_title,omitempty"` // active SLA hint
 	InvoiceID      *string          `json:"invoice_id,omitempty"`
 	InvoiceNumber  *string          `json:"invoice_number,omitempty"`
-	InvoiceStatus  *string          `json:"invoice_status,omitempty"` // draft|issued|… (portal hides drafts)
+	InvoiceStatus  *string          `json:"invoice_status,omitempty"`  // draft|issued|… (portal hides drafts)
+	ApprovalID     *string          `json:"approval_id,omitempty"`     // latest quotation approval on the ticket
+	ApprovalStatus *string          `json:"approval_status,omitempty"` // gates invoice generation in the admin UI
 }
 
 type TicketMessage struct {
