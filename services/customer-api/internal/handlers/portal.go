@@ -39,8 +39,9 @@ func contactID(r *http.Request) string {
 // ----- /portal/me -----
 
 type meResp struct {
-	Contact  models.Contact  `json:"contact"`
-	Customer models.Customer `json:"customer"`
+	Contact     models.Contact         `json:"contact"`
+	Customer    models.Customer        `json:"customer"`
+	Memberships []models.OrgMembership `json:"memberships"`
 }
 
 func (h *PortalHandler) Me(w http.ResponseWriter, r *http.Request) {
@@ -51,12 +52,22 @@ func (h *PortalHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate the contact against the ACTIVE org via membership (the active
+	// org may differ from the home org after a switch-org). role/is_primary
+	// come from the membership row for this org.
 	var c models.Contact
 	err := h.DB.QueryRow(r.Context(), `
-        SELECT id, customer_id, email, full_name, role, last_login_at, disabled_at, created_at
-        FROM customer_contacts WHERE id = $1 AND customer_id = $2 AND disabled_at IS NULL
+        SELECT cc.id, $2::uuid, cc.email, cc.full_name, m.role,
+               cc.last_login_at, cc.disabled_at, cc.created_at,
+               cc.email_verified_at, cc.must_change_password,
+               cc.phone, cc.job_title, m.is_primary
+        FROM customer_contacts cc
+        JOIN contact_org_memberships m ON m.contact_id = cc.id AND m.customer_id = $2 AND m.disabled_at IS NULL
+        WHERE cc.id = $1 AND cc.disabled_at IS NULL
     `, conid, cid).Scan(&c.ID, &c.CustomerID, &c.Email, &c.FullName, &c.Role,
-		&c.LastLoginAt, &c.DisabledAt, &c.CreatedAt)
+		&c.LastLoginAt, &c.DisabledAt, &c.CreatedAt,
+		&c.EmailVerifiedAt, &c.MustChangePassword,
+		&c.Phone, &c.JobTitle, &c.IsPrimary)
 	if err == pgx.ErrNoRows {
 		writeErr(w, http.StatusUnauthorized, "contact not found")
 		return
@@ -72,7 +83,38 @@ func (h *PortalHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, meResp{Contact: c, Customer: cust})
+	memberships, err := h.loadMemberships(r, conid)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, meResp{Contact: c, Customer: cust, Memberships: memberships})
+}
+
+// loadMemberships returns every org the contact belongs to, for the portal
+// org switcher. Only active orgs are listed.
+func (h *PortalHandler) loadMemberships(r *http.Request, conid string) ([]models.OrgMembership, error) {
+	rows, err := h.DB.Query(r.Context(), `
+        SELECT m.customer_id, c.name, m.role, m.is_primary
+        FROM contact_org_memberships m
+        JOIN customers c ON c.id = m.customer_id
+        WHERE m.contact_id = $1 AND c.is_active = TRUE AND m.disabled_at IS NULL
+        ORDER BY m.is_primary DESC, c.name
+    `, conid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]models.OrgMembership, 0, 4)
+	for rows.Next() {
+		var m models.OrgMembership
+		if err := rows.Scan(&m.CustomerID, &m.CustomerName, &m.Role, &m.IsPrimary); err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	return out, nil
 }
 
 func (h *PortalHandler) loadCustomer(r *http.Request, cid string) (models.Customer, error) {
@@ -143,6 +185,11 @@ func (h *PortalHandler) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	cid := customerID(r)
 	conid := contactID(r)
 
+	if h.emailUnverifiedBlocked(r, conid) {
+		writeErr(w, http.StatusForbidden, "please verify your email before opening a ticket")
+		return
+	}
+
 	var req createTicketReq
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64*1024)).Decode(&req); err != nil {
 		writeErr(w, http.StatusBadRequest, "invalid json")
@@ -210,7 +257,10 @@ func (h *PortalHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
         SELECT t.id, t.customer_id, t.opened_by_contact_id, cc.full_name,
                t.subject, t.status, t.priority,
                t.assigned_to_user_id, u.full_name,
-               t.related_service_slug, t.last_activity_at, t.created_at, t.updated_at
+               t.related_service_slug,
+               CASE WHEN t.solution_shared AND t.status IN ('resolved','closed')
+                    THEN t.solution ELSE '' END,
+               t.last_activity_at, t.created_at, t.updated_at
         FROM tickets t
         LEFT JOIN customer_contacts cc ON cc.id = t.opened_by_contact_id
         LEFT JOIN users u ON u.id = t.assigned_to_user_id
@@ -218,7 +268,7 @@ func (h *PortalHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
     `, id, cid).Scan(&t.ID, &t.CustomerID, &t.OpenedByContactID, &t.OpenedByName,
 		&t.Subject, &t.Status, &t.Priority,
 		&t.AssignedToUserID, &t.AssignedToName,
-		&t.RelatedServiceSlug, &t.LastActivityAt, &t.CreatedAt, &t.UpdatedAt)
+		&t.RelatedServiceSlug, &t.Solution, &t.LastActivityAt, &t.CreatedAt, &t.UpdatedAt)
 	if err == pgx.ErrNoRows {
 		writeErr(w, http.StatusNotFound, "ticket not found")
 		return
@@ -272,6 +322,11 @@ func (h *PortalHandler) AddMessage(w http.ResponseWriter, r *http.Request) {
 	cid := customerID(r)
 	conid := contactID(r)
 	id := chi.URLParam(r, "id")
+
+	if h.emailUnverifiedBlocked(r, conid) {
+		writeErr(w, http.StatusForbidden, "please verify your email before replying")
+		return
+	}
 
 	var req addMessageReq
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64*1024)).Decode(&req); err != nil {

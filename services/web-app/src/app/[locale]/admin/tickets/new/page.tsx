@@ -16,8 +16,10 @@ import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
 import {
   ArrowLeft, Loader2, AlertTriangle, Ticket, Search, Paperclip, CheckCircle2,
+  StickyNote, Plus, X, Clock,
 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import MarkdownEditor from "@/components/MarkdownEditor";
 import { toast } from "@/lib/toast";
 import AttachmentUploader from "@/components/attachments/AttachmentUploader";
 import { adminAttachments } from "@/lib/attachments-api";
@@ -48,12 +50,26 @@ export default function AdminNewTicketPage() {
 
   const [contacts, setContacts] = useState<CustomerContactRow[]>([]);
   const [contactID, setContactID] = useState("");
+  // Inline "register requester by email" (migration 071 invite flow).
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviting, setInviting] = useState(false);
 
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [solution, setSolution] = useState("");
+  const [solutionShared, setSolutionShared] = useState(false);
   const [priority, setPriority] = useState<Priority>("normal");
   const [relatedService, setRelatedService] = useState("");
   const [assignToSelf, setAssignToSelf] = useState(true);
+
+  // Notes are staged locally (the ticket doesn't exist yet) with the time they
+  // were captured, then posted as internal, timestamped ticket messages right
+  // after the ticket is created. `at` is display-only; the server stamps the
+  // authoritative created_at when the note is saved.
+  const [notes, setNotes] = useState<{ text: string; at: string }[]>([]);
+  const [noteDraft, setNoteDraft] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
@@ -80,6 +96,33 @@ export default function AdminNewTicketPage() {
       .catch(() => setContacts([]));
   }, [customerID]);
 
+  async function inviteNewUser() {
+    if (!customerID || !inviteEmail.trim() || !inviteName.trim()) return;
+    setInviting(true);
+    setErr("");
+    try {
+      const res = await adminApi.createCustomerContact(customerID, {
+        email: inviteEmail.trim(),
+        full_name: inviteName.trim(),
+        role: "member",
+      });
+      toast.success(res.linked ? t("invite.linked") : t("invite.sent"));
+      // Reload the contact list and preselect the new/linked person.
+      const d = await adminApi.listCustomerContacts(customerID);
+      setContacts((d.contacts ?? []).filter((c) => !c.disabled_at));
+      setContactID(res.id);
+      setInviteOpen(false);
+      setInviteEmail("");
+      setInviteName("");
+    } catch (e: any) {
+      const msg = (() => { try { return JSON.parse(e.body).error ?? e.body; } catch { return e?.message ?? "error"; } })();
+      setErr(msg);
+      toast.error(msg);
+    } finally {
+      setInviting(false);
+    }
+  }
+
   const filtered = useMemo(() => {
     if (!customerFilter.trim()) return customers;
     const q = customerFilter.trim().toLowerCase();
@@ -101,11 +144,25 @@ export default function AdminNewTicketPage() {
       const res = await adminApi.createTicketForCustomer(customerID, {
         subject: subject.trim(),
         body: body.trim(),
+        solution: solution.trim() || undefined,
+        solution_shared: solutionShared,
         priority,
         related_service_slug: relatedService || undefined,
         opened_by_contact_id: contactID || undefined,
         assign_to_self: assignToSelf,
       });
+      // Persist any staged notes as internal (customer-hidden) messages on the
+      // new ticket. Best-effort: the ticket already exists, so a failed note
+      // shouldn't block the flow — surface it but keep going.
+      let noteErr = false;
+      for (const n of notes) {
+        try {
+          await adminApi.addAdminTicketMessage(res.id, n.text, true);
+        } catch {
+          noteErr = true;
+        }
+      }
+      if (noteErr) toast.error(t("notes.saveFailed"));
       // Enter the attach step. AttachmentUploader needs the real ticket
       // id to POST files to. The "View ticket" button ends the flow.
       setCreatedTicketID(res.id);
@@ -117,6 +174,13 @@ export default function AdminNewTicketPage() {
       toast.error(msg);
       setSubmitting(false);
     }
+  }
+
+  function addNote() {
+    const text = noteDraft.trim();
+    if (!text) return;
+    setNotes((prev) => [...prev, { text, at: new Date().toISOString() }]);
+    setNoteDraft("");
   }
 
   const canSubmit = !!customerID && subject.trim().length > 0 && body.trim().length > 0 && !submitting;
@@ -258,19 +322,46 @@ export default function AdminNewTicketPage() {
 
                   <div>
                     <label className="block text-xs font-medium text-navy-800 mb-1">
-                      {t("form.description")} *
+                      {t("form.issue")} *
                     </label>
-                    <textarea
+                    <MarkdownEditor
                       value={body}
-                      onChange={(e) => setBody(e.target.value)}
+                      onChange={setBody}
                       rows={8}
                       maxLength={10000}
-                      placeholder={t("form.descriptionPlaceholder")}
-                      className="w-full rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-accent-500 focus:outline-none"
+                      placeholder={t("form.issuePlaceholder")}
                     />
                     <p className="mt-1 text-[11px] text-navy-500">
-                      {t("form.descriptionHint")}
+                      {t("form.issueHint")}
                     </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-navy-800 mb-1">
+                      {t("form.solution")}
+                    </label>
+                    <MarkdownEditor
+                      value={solution}
+                      onChange={setSolution}
+                      rows={6}
+                      maxLength={10000}
+                      placeholder={t("form.solutionPlaceholder")}
+                    />
+                    <p className="mt-1 text-[11px] text-navy-500">
+                      {t("form.solutionHint")}
+                    </p>
+                    <label className="mt-2 flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={solutionShared}
+                        onChange={(e) => setSolutionShared(e.target.checked)}
+                        className="mt-0.5"
+                      />
+                      <span>
+                        <span className="font-medium text-navy-900">{t("form.shareSolution")}</span>
+                        <span className="mt-0.5 block text-[11px] text-navy-600">{t("form.shareSolutionHint")}</span>
+                      </span>
+                    </label>
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-3">
@@ -325,9 +416,37 @@ export default function AdminNewTicketPage() {
                           </option>
                         ))}
                       </select>
-                      <p className="mt-1 text-[11px] text-navy-500">
-                        {t("form.onBehalfHint")}
-                      </p>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-navy-500">{t("form.onBehalfHint")}</p>
+                        {customerID && !inviteOpen && (
+                          <button type="button" onClick={() => setInviteOpen(true)}
+                            className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-accent-700 hover:underline">
+                            <Plus className="h-3 w-3" /> {t("invite.trigger")}
+                          </button>
+                        )}
+                      </div>
+
+                      {inviteOpen && (
+                        <div className="mt-2 rounded-lg border border-navy-100 bg-navy-50 p-3">
+                          <p className="mb-2 text-[11px] text-navy-500">{t("invite.hint")}</p>
+                          <div className="grid gap-2">
+                            <input value={inviteName} onChange={(e) => setInviteName(e.target.value)}
+                              placeholder={t("invite.namePlaceholder")}
+                              className="rounded-lg border border-navy-200 px-3 py-2 text-sm" />
+                            <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)}
+                              type="email" placeholder={t("invite.emailPlaceholder")}
+                              className="rounded-lg border border-navy-200 px-3 py-2 text-sm" />
+                          </div>
+                          <div className="mt-2 flex justify-end gap-2">
+                            <button type="button" onClick={() => setInviteOpen(false)} className="btn-ghost text-xs">{tc("cancel")}</button>
+                            <button type="button" onClick={inviteNewUser}
+                              disabled={inviting || !inviteEmail.trim() || !inviteName.trim()}
+                              className="btn-accent text-xs disabled:opacity-40">
+                              {inviting ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {tc("creating")}</> : t("invite.submit")}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -347,6 +466,62 @@ export default function AdminNewTicketPage() {
                       </span>
                     </span>
                   </label>
+
+                  <div className="border-t border-navy-100 pt-4">
+                    <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-navy-800">
+                      <StickyNote className="h-3.5 w-3.5" /> {t("notes.title")}
+                    </div>
+                    <p className="mb-2 text-[11px] text-navy-500">{t("notes.hint")}</p>
+
+                    {notes.length > 0 && (
+                      <ul className="mb-2 space-y-2">
+                        {notes.map((n, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1 text-[10px] text-amber-700">
+                                <Clock className="h-2.5 w-2.5" />
+                                {new Date(n.at).toLocaleString()}
+                              </div>
+                              <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-navy-800">
+                                {n.text}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setNotes((prev) => prev.filter((_, j) => j !== i))}
+                              aria-label={tc("remove")}
+                              className="mt-0.5 shrink-0 rounded p-1 text-amber-700 hover:bg-amber-100"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <MarkdownEditor
+                          value={noteDraft}
+                          onChange={setNoteDraft}
+                          rows={3}
+                          maxLength={10000}
+                          placeholder={t("notes.placeholder")}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addNote}
+                        disabled={!noteDraft.trim()}
+                        className="btn-ghost shrink-0"
+                      >
+                        <Plus className="h-4 w-4" /> {t("notes.add")}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="mt-6 flex justify-end gap-2 border-t border-navy-100 pt-4">

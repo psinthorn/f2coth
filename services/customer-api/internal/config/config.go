@@ -12,6 +12,7 @@ type Config struct {
 	JWTSecret          string
 	CORSAllowedHosts   []string
 	NotificationAPIURL string
+	PaymentAPIURL      string
 	SalesNotifyTo      string
 	PortalBaseURL      string
 	AdminBaseURL       string
@@ -32,6 +33,7 @@ func Load() Config {
 		JWTSecret:          secret,
 		CORSAllowedHosts:   cors,
 		NotificationAPIURL: getenv("NOTIFICATION_API_URL", "http://notification-api:8005"),
+		PaymentAPIURL:      getenv("PAYMENT_API_URL", "http://payment-api:8010"),
 		SalesNotifyTo:      getenv("SALES_NOTIFY_TO", "sales@f2.co.th"),
 		PortalBaseURL:      getenv("PORTAL_BASE_URL", "http://localhost"),
 		AdminBaseURL:       getenv("ADMIN_BASE_URL", "http://localhost"),

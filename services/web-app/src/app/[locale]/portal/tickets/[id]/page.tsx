@@ -5,13 +5,15 @@ import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { Link } from "@/i18n/routing";
 import {
-  ArrowLeft, Loader2, AlertTriangle, Send, CheckCircle2, RotateCcw,
+  ArrowLeft, Loader2, AlertTriangle, Send, CheckCircle2, RotateCcw, Lightbulb,
 } from "lucide-react";
 import PortalShell from "@/components/PortalShell";
+import CMSPageBody from "@/components/CMSPageBody";
 import { portalApi, type PortalTicket, type PortalMessage } from "@/lib/portal-api";
 import AttachmentUploader from "@/components/attachments/AttachmentUploader";
 import AttachmentList from "@/components/attachments/AttachmentList";
 import { portalAttachments } from "@/lib/attachments-api";
+import TicketBillingSection from "@/components/portal/TicketBillingSection";
 
 const statusColor: Record<string, string> = {
   open: "bg-accent-50 text-accent-800",
@@ -116,6 +118,15 @@ export default function TicketDetailPage() {
             </div>
           )}
 
+          {ticket.solution && ticket.solution.trim() && (
+            <section className="card mb-4 border-l-4 border-emerald-500">
+              <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-emerald-800">
+                <Lightbulb className="h-4 w-4" /> {t("resolution")}
+              </div>
+              <div className="text-sm text-navy-800"><CMSPageBody markdown={ticket.solution} /></div>
+            </section>
+          )}
+
           <section className="card mb-4">
             <div className="mb-2 text-sm font-medium text-navy-800">{ta("title")}</div>
             <AttachmentList
@@ -138,6 +149,8 @@ export default function TicketDetailPage() {
             )}
           </section>
 
+          {id && <TicketBillingSection ticketId={id} />}
+
           <section className="space-y-3">
             {messages.map((m) => (
               <div
@@ -151,7 +164,7 @@ export default function TicketDetailPage() {
                   </span>
                   <span>{new Date(m.created_at).toLocaleString()}</span>
                 </div>
-                <p className="mt-3 whitespace-pre-wrap text-sm text-navy-800">{m.body}</p>
+                <div className="mt-3 text-sm text-navy-800"><CMSPageBody markdown={m.body} /></div>
                 <div className="mt-2">
                   <AttachmentList ownerType="ticket_message" ownerId={m.id} client={portalAttachments} />
                 </div>

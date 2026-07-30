@@ -11,11 +11,12 @@ import (
 type ctxKey string
 
 const (
-	CtxAud        ctxKey = "auth.aud"
-	CtxUserID     ctxKey = "auth.user_id"     // sub for staff (users.id)
-	CtxContactID  ctxKey = "auth.contact_id"  // sub for customer (customer_contacts.id)
-	CtxCustomerID ctxKey = "auth.customer_id" // customer_id claim, set on customer tokens only
-	CtxRole       ctxKey = "auth.role"
+	CtxAud          ctxKey = "auth.aud"
+	CtxUserID       ctxKey = "auth.user_id"     // sub for staff (users.id)
+	CtxContactID    ctxKey = "auth.contact_id"  // sub for customer (customer_contacts.id)
+	CtxCustomerID   ctxKey = "auth.customer_id" // customer_id claim, set on customer tokens only
+	CtxRole         ctxKey = "auth.role"
+	CtxMustChangePw ctxKey = "auth.mcp" // must-change-password claim (customer tokens)
 )
 
 // RequireJWT validates HS256 tokens, stores the audience plus identity claims
@@ -44,20 +45,32 @@ func RequireJWT(secret string) func(http.Handler) http.Handler {
 			}
 
 			ctx := r.Context()
-			if v, ok := claims["aud"].(string); ok {
-				ctx = context.WithValue(ctx, CtxAud, v)
-			}
+			aud, _ := claims["aud"].(string)
+			ctx = context.WithValue(ctx, CtxAud, aud)
 			if v, ok := claims["sub"].(string); ok {
-				// We don't know yet whether sub is a user_id or contact_id;
-				// store under both keys to keep handlers terse.
-				ctx = context.WithValue(ctx, CtxUserID, v)
-				ctx = context.WithValue(ctx, CtxContactID, v)
+				// sub is a staff user id (users.id) on staff tokens and a
+				// customer contact id (customer_contacts.id) on customer tokens.
+				// Store it under the key that matches the audience so
+				// staffID()/contactID() never cross over — otherwise a customer
+				// token looks like a staff user to handlers shared across both
+				// route groups (e.g. attachment uploads, which pick
+				// uploaded_by_user_id vs uploaded_by_contact_id from these).
+				// aud=="" is a legacy pre-audience token, treated as staff (see
+				// RequireAudience).
+				if aud == "customer" {
+					ctx = context.WithValue(ctx, CtxContactID, v)
+				} else {
+					ctx = context.WithValue(ctx, CtxUserID, v)
+				}
 			}
 			if v, ok := claims["customer_id"].(string); ok {
 				ctx = context.WithValue(ctx, CtxCustomerID, v)
 			}
 			if v, ok := claims["role"].(string); ok {
 				ctx = context.WithValue(ctx, CtxRole, v)
+			}
+			if v, ok := claims["mcp"].(bool); ok {
+				ctx = context.WithValue(ctx, CtxMustChangePw, v)
 			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -80,6 +93,26 @@ func RequireAudience(want string) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// BlockIfMustChangePassword rejects mutating requests (POST/PATCH/PUT/DELETE)
+// from a customer whose token carries mcp=true. This enforces the temp-password
+// forced-change server-side — reads still work so the portal can render, but the
+// account can't be used to do anything until the password is changed (via
+// auth-api, which is not behind this gate). Use after RequireJWT.
+func BlockIfMustChangePassword(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet, http.MethodHead, http.MethodOptions:
+			// reads allowed
+		default:
+			if mcp, _ := r.Context().Value(CtxMustChangePw).(bool); mcp {
+				http.Error(w, "password change required", http.StatusForbidden)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // RequireRole gates by role claim. Use after RequireJWT.

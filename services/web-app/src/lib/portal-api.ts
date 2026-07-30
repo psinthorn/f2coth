@@ -102,6 +102,19 @@ export interface PortalContact {
   last_login_at: string | null;
   disabled_at: string | null;
   created_at: string;
+  // Account lifecycle (migration 071).
+  email_verified_at?: string | null;
+  must_change_password?: boolean;
+  phone?: string | null;
+  job_title?: string | null;
+  is_primary?: boolean;
+}
+
+export interface PortalMembership {
+  customer_id: string;
+  customer_name: string;
+  role: "owner" | "member";
+  is_primary: boolean;
 }
 
 export interface PortalCustomer {
@@ -132,9 +145,38 @@ export interface PortalTicket {
   assigned_to_user_id: string | null;
   assigned_to_name: string | null;
   related_service_slug: string | null;
+  // Resolution write-up. Server only populates this once the ticket is
+  // resolved/closed AND staff enabled sharing; otherwise it's an empty string.
+  solution?: string;
   last_activity_at: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface PortalTicketLine {
+  id: string;
+  description_en: string;
+  description_th?: string | null;
+  unit: string;
+  quantity: number;
+  unit_price_cents: number;
+  covered: boolean;
+  amount_cents: number;
+  currency: "THB" | "USD";
+}
+export interface PortalTicketBilling {
+  ticket_id: string;
+  billing_status: "none" | "covered" | "billable";
+  currency: "THB" | "USD";
+  lines: PortalTicketLine[];
+  subtotal_cents: number;
+  vat_rate_bp: number;
+  vat_cents: number;
+  total_cents: number;
+  covered_by_title?: string | null;
+  invoice_id?: string | null;
+  invoice_number?: string | null;
+  invoice_status?: string | null;
 }
 
 export interface PortalMessage {
@@ -175,7 +217,45 @@ export const portalApi = {
     clearPortalAuth();
   },
 
-  me: () => request<{ contact: PortalContact; customer: PortalCustomer }>("/portal/me"),
+  me: () =>
+    request<{ contact: PortalContact; customer: PortalCustomer; memberships: PortalMembership[] }>(
+      "/portal/me",
+    ),
+
+  // Enumeration-safe on the server (always 200); no auth required.
+  requestVerificationLink: (email: string) =>
+    fetch(`${API_BASE}/auth/customer/request-link`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, purpose: "verification" }),
+    }).then(() => {}),
+
+  updateProfile: (input: { full_name?: string; phone?: string; job_title?: string; locale?: string }) =>
+    request<void>("/portal/me", { method: "PATCH", body: JSON.stringify(input) }),
+
+  // Goes through request() so an expired access token is transparently
+  // refreshed. The server revokes all sessions on success, so the caller must
+  // re-authenticate afterwards.
+  changePassword: (current_password: string, new_password: string) =>
+    request<void>("/auth/customer/change-password", {
+      method: "POST",
+      body: JSON.stringify({ current_password, new_password }),
+    }),
+
+  // Re-mint the access token scoped to another org the contact belongs to.
+  // The server also binds the new active org to the refresh token, so a later
+  // transparent refresh preserves the switch.
+  switchOrg: async (customer_id: string) => {
+    const data = await request<{ access_token: string; customer_id: string; role: string }>(
+      "/auth/customer/switch-org",
+      { method: "POST", body: JSON.stringify({ customer_id }) },
+    );
+    // Swap only the access token; refresh token + contact stay as they are.
+    if (typeof window !== "undefined") sessionStorage.setItem(KEY_ACCESS, data.access_token);
+    return data;
+  },
+
+  getTicketBilling: (id: string) => request<PortalTicketBilling>(`/portal/tickets/${id}/billing`),
 
   listTickets: () => request<{ tickets: PortalTicket[] }>("/portal/tickets"),
   getTicket: (id: string) => request<PortalTicket>(`/portal/tickets/${id}`),

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -200,12 +201,23 @@ func strPtr(p *string) string {
 
 // -------------------- Customer contacts --------------------
 
+// ListContacts returns every person who is a member of this org. Membership
+// (contact_org_memberships) is the source of truth since migration 071 — a
+// person may belong to several orgs, so we join through it and surface the
+// per-org role + is_primary alongside the account-level lifecycle fields.
 func (h *AdminHandler) ListContacts(w http.ResponseWriter, r *http.Request) {
 	cid := chi.URLParam(r, "id")
+	// disabled_at reflects this org's membership state (per-org disable), or the
+	// account-level global kill-switch if that's set — whichever disables access.
 	rows, err := h.DB.Query(r.Context(), `
-        SELECT id, customer_id, email, full_name, role, last_login_at, disabled_at, created_at
-        FROM customer_contacts WHERE customer_id = $1
-        ORDER BY (disabled_at IS NULL) DESC, created_at DESC
+        SELECT cc.id, m.customer_id, cc.email, cc.full_name, m.role,
+               cc.last_login_at, COALESCE(m.disabled_at, cc.disabled_at), cc.created_at,
+               cc.email_verified_at, cc.must_change_password,
+               cc.phone, cc.job_title, m.is_primary
+        FROM contact_org_memberships m
+        JOIN customer_contacts cc ON cc.id = m.contact_id
+        WHERE m.customer_id = $1
+        ORDER BY (COALESCE(m.disabled_at, cc.disabled_at) IS NULL) DESC, cc.created_at DESC
     `, cid)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
@@ -216,7 +228,9 @@ func (h *AdminHandler) ListContacts(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var c models.Contact
 		if err := rows.Scan(&c.ID, &c.CustomerID, &c.Email, &c.FullName, &c.Role,
-			&c.LastLoginAt, &c.DisabledAt, &c.CreatedAt); err != nil {
+			&c.LastLoginAt, &c.DisabledAt, &c.CreatedAt,
+			&c.EmailVerifiedAt, &c.MustChangePassword,
+			&c.Phone, &c.JobTitle, &c.IsPrimary); err != nil {
 			writeErr(w, http.StatusInternalServerError, "scan error")
 			return
 		}
@@ -229,9 +243,21 @@ type contactCreateReq struct {
 	Email    string `json:"email"`
 	FullName string `json:"full_name"`
 	Role     string `json:"role"`
-	Password string `json:"password"`
+	Phone    string `json:"phone"`
+	JobTitle string `json:"job_title"`
 }
 
+// CreateContact invites a person to this org by email (migration 071).
+//
+// The admin supplies only minimal info — no password. Because email is
+// globally unique, this is a find-or-create-then-link:
+//   - New person  → create the account with a generated temporary password
+//     (must_change_password = TRUE), add a primary membership, mint an email
+//     verification token, and send login instructions + a verify link.
+//   - Existing person → add a membership to this org (no new password, no
+//     temp-password email — they already have working credentials).
+//
+// Response: {id, linked: bool} — linked=true means an existing user was added.
 func (h *AdminHandler) CreateContact(w http.ResponseWriter, r *http.Request) {
 	cid := chi.URLParam(r, "id")
 	var req contactCreateReq
@@ -241,8 +267,8 @@ func (h *AdminHandler) CreateContact(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	req.FullName = strings.TrimSpace(req.FullName)
-	if req.Email == "" || req.FullName == "" || req.Password == "" {
-		writeErr(w, http.StatusBadRequest, "email, full_name, password required")
+	if req.Email == "" || req.FullName == "" {
+		writeErr(w, http.StatusBadRequest, "email and full_name required")
 		return
 	}
 	if req.Role == "" {
@@ -252,38 +278,141 @@ func (h *AdminHandler) CreateContact(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "role must be owner or member")
 		return
 	}
-	if len(req.Password) < 12 {
-		writeErr(w, http.StatusBadRequest, "password must be at least 12 characters")
+
+	// Confirm the org exists and grab its name for the email.
+	var orgName string
+	if err := h.DB.QueryRow(r.Context(),
+		`SELECT name FROM customers WHERE id = $1`, cid).Scan(&orgName); err != nil {
+		writeErr(w, http.StatusNotFound, "customer not found")
 		return
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
+
+	// Does this email already belong to someone?
+	var (
+		existingID       string
+		existingLocale   string
+		existingName     string
+		existingVerified bool
+	)
+	err := h.DB.QueryRow(r.Context(),
+		`SELECT id, COALESCE(locale,'en'), full_name, (email_verified_at IS NOT NULL)
+		   FROM customer_contacts WHERE email = $1`,
+		req.Email).Scan(&existingID, &existingLocale, &existingName, &existingVerified)
+
+	if err == nil {
+		// Existing person → link them to this org (idempotent). Detect whether
+		// this actually added a membership so we don't re-notify on a no-op.
+		tag, e := h.DB.Exec(r.Context(), `
+            INSERT INTO contact_org_memberships (contact_id, customer_id, role, is_primary)
+            VALUES ($1, $2, $3, FALSE)
+            ON CONFLICT (contact_id, customer_id) DO NOTHING
+        `, existingID, cid, req.Role)
+		if e != nil {
+			writeErr(w, http.StatusInternalServerError, "could not link contact")
+			return
+		}
+		newlyLinked := tag.RowsAffected() > 0
+		// Tell the user they were added to a new org. If they haven't verified
+		// their email yet, send them a verification link so they're informed
+		// and can complete verification.
+		if newlyLinked && !existingVerified {
+			rawToken, tokenHash, e := mintContactToken()
+			if e == nil {
+				if _, e := h.DB.Exec(r.Context(), `
+                    INSERT INTO password_resets (contact_id, token_hash, expires_at, purpose)
+                    VALUES ($1, $2, NOW() + ($3 || ' minutes')::interval, 'verification')
+                `, existingID, tokenHash, verifyTTLMinutes); e == nil {
+					h.sendVerifyEmail(req.Email, existingName, rawToken, existingLocale)
+				}
+			}
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{"id": existingID, "linked": true, "newly_linked": newlyLinked})
+		return
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	// New person → create account with a temporary password.
+	tempPassword, err := genTempPassword()
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "password gen error")
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(tempPassword), 12)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "hash error")
 		return
 	}
+
+	tx, err := h.DB.Begin(r.Context())
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "tx error")
+		return
+	}
+	defer tx.Rollback(r.Context())
+
 	var id string
-	err = h.DB.QueryRow(r.Context(), `
-        INSERT INTO customer_contacts (customer_id, email, password_hash, full_name, role)
-        VALUES ($1, $2, $3, $4, $5)
+	err = tx.QueryRow(r.Context(), `
+        INSERT INTO customer_contacts
+            (customer_id, email, password_hash, full_name, role,
+             phone, job_title, must_change_password, invited_at)
+        VALUES ($1, $2, $3, $4, $5, NULLIF($6,''), NULLIF($7,''), TRUE, NOW())
         RETURNING id
-    `, cid, req.Email, string(hash), req.FullName, req.Role).Scan(&id)
+    `, cid, req.Email, string(hash), req.FullName, req.Role, req.Phone, req.JobTitle).Scan(&id)
 	if err != nil {
 		if strings.Contains(err.Error(), "customer_contacts_email_key") {
+			// Lost a race with a concurrent insert — treat as conflict.
 			writeErr(w, http.StatusConflict, "email already in use")
 			return
 		}
 		writeErr(w, http.StatusInternalServerError, "could not create contact")
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]string{"id": id})
+	if _, err := tx.Exec(r.Context(), `
+        INSERT INTO contact_org_memberships (contact_id, customer_id, role, is_primary)
+        VALUES ($1, $2, $3, TRUE)
+        ON CONFLICT (contact_id, customer_id) DO NOTHING
+    `, id, cid, req.Role); err != nil {
+		writeErr(w, http.StatusInternalServerError, "could not create membership")
+		return
+	}
+	// Mint an email-verification token inside the same tx.
+	rawToken, tokenHash, err := mintContactToken()
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "token error")
+		return
+	}
+	if _, err := tx.Exec(r.Context(), `
+        INSERT INTO password_resets (contact_id, token_hash, expires_at, purpose)
+        VALUES ($1, $2, NOW() + ($3 || ' minutes')::interval, 'verification')
+    `, id, tokenHash, verifyTTLMinutes); err != nil {
+		writeErr(w, http.StatusInternalServerError, "token store error")
+		return
+	}
+	if err := tx.Commit(r.Context()); err != nil {
+		writeErr(w, http.StatusInternalServerError, "commit error")
+		return
+	}
+
+	// Send login instructions (temp password) + verification link. A brand-new
+	// contact has no known locale yet, so "" → the sender defaults to EN.
+	h.sendInviteEmail(req.Email, req.FullName, orgName, tempPassword, rawToken, "")
+
+	writeJSON(w, http.StatusCreated, map[string]any{"id": id, "linked": false})
 }
 
+// DisableContact disables the person's access to THIS org only (per-org, via
+// contact_org_memberships.disabled_at). A person who belongs to several orgs
+// keeps access to the others — disabling from one org must never be a global
+// lockout. Sessions currently active in this org are revoked.
 func (h *AdminHandler) DisableContact(w http.ResponseWriter, r *http.Request) {
 	cid := chi.URLParam(r, "id")
 	contactID := chi.URLParam(r, "contactId")
 	tag, err := h.DB.Exec(r.Context(), `
-        UPDATE customer_contacts SET disabled_at = NOW()
-        WHERE id = $1 AND customer_id = $2 AND disabled_at IS NULL
+        UPDATE contact_org_memberships SET disabled_at = NOW()
+        WHERE contact_id = $1 AND customer_id = $2 AND disabled_at IS NULL
     `, contactID, cid)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
@@ -293,9 +422,10 @@ func (h *AdminHandler) DisableContact(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "contact not found")
 		return
 	}
+	// Revoke only the sessions currently scoped to this org.
 	_, _ = h.DB.Exec(r.Context(),
 		`UPDATE customer_refresh_tokens SET revoked_at = NOW()
-         WHERE contact_id = $1 AND revoked_at IS NULL`, contactID)
+         WHERE contact_id = $1 AND active_customer_id = $2 AND revoked_at IS NULL`, contactID, cid)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -303,8 +433,8 @@ func (h *AdminHandler) EnableContact(w http.ResponseWriter, r *http.Request) {
 	cid := chi.URLParam(r, "id")
 	contactID := chi.URLParam(r, "contactId")
 	tag, err := h.DB.Exec(r.Context(), `
-        UPDATE customer_contacts SET disabled_at = NULL
-        WHERE id = $1 AND customer_id = $2
+        UPDATE contact_org_memberships SET disabled_at = NULL
+        WHERE contact_id = $1 AND customer_id = $2
     `, contactID, cid)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
@@ -324,6 +454,12 @@ type adminCreateTicketReq struct {
 	Body               string `json:"body"`
 	Priority           string `json:"priority"`
 	RelatedServiceSlug string `json:"related_service_slug"`
+	// Optional resolution write-up (minimal markdown). Usually empty at
+	// creation and filled in later as the ticket is worked.
+	Solution string `json:"solution"`
+	// Whether the solution may be shown to the customer once the ticket is
+	// resolved/closed. Defaults false.
+	SolutionShared bool `json:"solution_shared"`
 	// Optional: which customer contact this ticket is being raised on behalf
 	// of. If empty, the ticket is "F2-initiated" — opened_by_contact_id stays NULL.
 	OpenedByContactID string `json:"opened_by_contact_id"`
@@ -342,11 +478,12 @@ func (h *AdminHandler) CreateTicketForCustomer(w http.ResponseWriter, r *http.Re
 	}
 	req.Subject = strings.TrimSpace(req.Subject)
 	req.Body = strings.TrimSpace(req.Body)
+	req.Solution = strings.TrimSpace(req.Solution)
 	if req.Subject == "" || req.Body == "" {
 		writeErr(w, http.StatusBadRequest, "subject and body are required")
 		return
 	}
-	if len(req.Subject) > 200 || len(req.Body) > 10000 {
+	if len(req.Subject) > 200 || len(req.Body) > 10000 || len(req.Solution) > 10000 {
 		writeErr(w, http.StatusBadRequest, "input too long")
 		return
 	}
@@ -388,13 +525,13 @@ func (h *AdminHandler) CreateTicketForCustomer(w http.ResponseWriter, r *http.Re
 	err = tx.QueryRow(r.Context(), `
         INSERT INTO tickets
             (customer_id, opened_by_contact_id, subject, priority,
-             related_service_slug, assigned_to_user_id, status)
+             related_service_slug, assigned_to_user_id, status, solution, solution_shared)
         VALUES ($1, NULLIF($2,'')::uuid, $3, $4, NULLIF($5,''),
                 CASE WHEN $6 THEN $7::uuid ELSE NULL END,
-                'in_progress')
+                'in_progress', $8, $9)
         RETURNING id
     `, customerID, req.OpenedByContactID, req.Subject, req.Priority,
-		req.RelatedServiceSlug, req.AssignToSelf, uid).Scan(&ticketID)
+		req.RelatedServiceSlug, req.AssignToSelf, uid, req.Solution, req.SolutionShared).Scan(&ticketID)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "could not create ticket")
 		return
@@ -489,7 +626,7 @@ func (h *AdminHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
         SELECT t.id, t.customer_id, c.name, t.opened_by_contact_id, cc.full_name,
                t.subject, t.status, t.priority,
                t.assigned_to_user_id, u.full_name,
-               t.related_service_slug, t.last_activity_at, t.created_at, t.updated_at
+               t.related_service_slug, t.solution, t.solution_shared, t.last_activity_at, t.created_at, t.updated_at
         FROM tickets t
         JOIN customers c ON c.id = t.customer_id
         LEFT JOIN customer_contacts cc ON cc.id = t.opened_by_contact_id
@@ -498,7 +635,7 @@ func (h *AdminHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
     `, id).Scan(&t.ID, &t.CustomerID, &t.CustomerName, &t.OpenedByContactID, &t.OpenedByName,
 		&t.Subject, &t.Status, &t.Priority,
 		&t.AssignedToUserID, &t.AssignedToName,
-		&t.RelatedServiceSlug, &t.LastActivityAt, &t.CreatedAt, &t.UpdatedAt)
+		&t.RelatedServiceSlug, &t.Solution, &t.SolutionShared, &t.LastActivityAt, &t.CreatedAt, &t.UpdatedAt)
 	if err == pgx.ErrNoRows {
 		writeErr(w, http.StatusNotFound, "ticket not found")
 		return
@@ -616,6 +753,12 @@ type adminTicketUpdateReq struct {
 	Status           *string `json:"status"`
 	Priority         *string `json:"priority"`
 	AssignedToUserID *string `json:"assigned_to_user_id"`
+	// Resolution write-up (minimal markdown). Pointer so an omitted field
+	// leaves the stored value untouched; an explicit "" clears it.
+	Solution *string `json:"solution"`
+	// Share-with-customer toggle for the solution. Pointer so omitting it
+	// leaves the current setting untouched.
+	SolutionShared *bool `json:"solution_shared"`
 }
 
 var validTicketStatuses = map[string]struct{}{
@@ -641,14 +784,23 @@ func (h *AdminHandler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if req.Solution != nil {
+		*req.Solution = strings.TrimSpace(*req.Solution)
+		if len(*req.Solution) > 10000 {
+			writeErr(w, http.StatusBadRequest, "solution too long")
+			return
+		}
+	}
 	tag, err := h.DB.Exec(r.Context(), `
         UPDATE tickets SET
             status = COALESCE($2, status),
             priority = COALESCE($3, priority),
             assigned_to_user_id = COALESCE(NULLIF($4,'')::uuid, assigned_to_user_id),
+            solution = COALESCE($5, solution),
+            solution_shared = COALESCE($6, solution_shared),
             last_activity_at = NOW()
         WHERE id = $1
-    `, id, req.Status, req.Priority, strPtr(req.AssignedToUserID))
+    `, id, req.Status, req.Priority, strPtr(req.AssignedToUserID), req.Solution, req.SolutionShared)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return

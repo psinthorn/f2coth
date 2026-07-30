@@ -44,6 +44,24 @@ type Contact struct {
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
 	DisabledAt  *time.Time `json:"disabled_at,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
+
+	// Account lifecycle (migration 071). EmailVerifiedAt is independent of
+	// active/disabled — an account can be active while unverified.
+	EmailVerifiedAt    *time.Time `json:"email_verified_at,omitempty"`
+	MustChangePassword bool       `json:"must_change_password"`
+	Phone              *string    `json:"phone,omitempty"`
+	JobTitle           *string    `json:"job_title,omitempty"`
+	// IsPrimary marks this org as the contact's home org (membership context).
+	IsPrimary *bool `json:"is_primary,omitempty"`
+}
+
+// OrgMembership is one org a contact belongs to (migration 071). Drives the
+// portal org switcher.
+type OrgMembership struct {
+	CustomerID   string `json:"customer_id"`
+	CustomerName string `json:"customer_name"`
+	Role         string `json:"role"`
+	IsPrimary    bool   `json:"is_primary"`
 }
 
 type Ticket struct {
@@ -58,9 +76,67 @@ type Ticket struct {
 	AssignedToUserID   *string   `json:"assigned_to_user_id,omitempty"`
 	AssignedToName     *string   `json:"assigned_to_name,omitempty"`
 	RelatedServiceSlug *string   `json:"related_service_slug,omitempty"`
+	Solution           string    `json:"solution"`
+	SolutionShared     bool      `json:"solution_shared"`
+	BillingStatus      string    `json:"billing_status,omitempty"`
+	InvoiceID          *string   `json:"invoice_id,omitempty"`
 	LastActivityAt     time.Time `json:"last_activity_at"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
+}
+
+// RateCardItem — a managed price-book entry (migration 073).
+type RateCardItem struct {
+	ID                    string    `json:"id"`
+	Code                  *string   `json:"code,omitempty"`
+	NameEN                string    `json:"name_en"`
+	NameTH                *string   `json:"name_th,omitempty"`
+	DescriptionEN         *string   `json:"description_en,omitempty"`
+	DescriptionTH         *string   `json:"description_th,omitempty"`
+	Unit                  string    `json:"unit"`
+	DefaultUnitPriceCents int64     `json:"default_unit_price_cents"`
+	Currency              string    `json:"currency"`
+	Category              *string   `json:"category,omitempty"`
+	IsActive              bool      `json:"is_active"`
+	SortOrder             int       `json:"sort_order"`
+	CreatedAt             time.Time `json:"created_at"`
+	UpdatedAt             time.Time `json:"updated_at"`
+}
+
+// TicketLineItem — one priced line attached to a ticket (migration 073).
+// Covered lines keep their rate but contribute amount_cents = 0.
+type TicketLineItem struct {
+	ID             string    `json:"id"`
+	TicketID       string    `json:"ticket_id"`
+	RateCardItemID *string   `json:"rate_card_item_id,omitempty"`
+	DescriptionEN  string    `json:"description_en"`
+	DescriptionTH  *string   `json:"description_th,omitempty"`
+	Unit           string    `json:"unit"`
+	Quantity       int       `json:"quantity"`
+	UnitPriceCents int64     `json:"unit_price_cents"`
+	Covered        bool      `json:"covered"`
+	AmountCents    int64     `json:"amount_cents"`
+	Currency       string    `json:"currency"`
+	SortOrder      int       `json:"sort_order"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+// TicketBilling — the billing view for one ticket (lines + summary).
+type TicketBilling struct {
+	TicketID       string           `json:"ticket_id"`
+	BillingStatus  string           `json:"billing_status"`
+	Currency       string           `json:"currency"`
+	Lines          []TicketLineItem `json:"lines"`
+	SubtotalCents  int64            `json:"subtotal_cents"` // billable only
+	VATRateBP      int              `json:"vat_rate_bp"`
+	VATCents       int64            `json:"vat_cents"`
+	TotalCents     int64            `json:"total_cents"`
+	CoveredByTitle *string          `json:"covered_by_title,omitempty"` // active SLA hint
+	InvoiceID      *string          `json:"invoice_id,omitempty"`
+	InvoiceNumber  *string          `json:"invoice_number,omitempty"`
+	InvoiceStatus  *string          `json:"invoice_status,omitempty"`  // draft|issued|… (portal hides drafts)
+	ApprovalID     *string          `json:"approval_id,omitempty"`     // latest quotation approval on the ticket
+	ApprovalStatus *string          `json:"approval_status,omitempty"` // gates invoice generation in the admin UI
 }
 
 type TicketMessage struct {

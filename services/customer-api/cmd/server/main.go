@@ -35,6 +35,7 @@ func main() {
 	ah := &handlers.AdminHandler{DB: pool, Cfg: cfg, Notify: notifier}
 	assets := &handlers.AssetHandler{DB: pool}
 	attach := &handlers.AttachmentHandler{DB: pool, Cfg: cfg}
+	aph := &handlers.ApprovalHandler{DB: pool, Cfg: cfg, Notify: notifier}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -54,18 +55,36 @@ func main() {
 		w.Write([]byte(`{"status":"ok","service":"customer-api"}`))
 	})
 
+	// ---------- Public approval magic-link (NO auth; token is the credential) ----------
+	// Mounted under /api/customer so Traefik routes it here. Gated by the
+	// approvals module only.
+	r.Route("/api/customer/approvals/link", func(r chi.Router) {
+		r.Use(authmw.GateModule("api.approvals"))
+		r.Get("/{token}", aph.PublicView)
+		r.Get("/{token}/files/{fileId}", aph.PublicFile)
+		r.Post("/{token}/decide", aph.PublicDecide)
+	})
+
 	// ---------- Customer-facing portal routes ----------
 	r.Route("/api/portal", func(r chi.Router) {
 		r.Use(authmw.RequireJWT(cfg.JWTSecret))
 		r.Use(authmw.RequireAudience("customer"))
+		// Temp-password holders (mcp=true) may read but not mutate until they
+		// change their password via auth-api.
+		r.Use(authmw.BlockIfMustChangePassword)
 
 		r.Get("/me", ph.Me)
+		r.Patch("/me", ph.UpdateProfile)
 		r.Get("/tickets", ph.ListTickets)
 		r.Post("/tickets", ph.CreateTicket)
 		r.Get("/tickets/{id}", ph.GetTicket)
 		r.Patch("/tickets/{id}/status", ph.UpdateStatus)
 		r.Get("/tickets/{id}/messages", ph.ListMessages)
 		r.Post("/tickets/{id}/messages", ph.AddMessage)
+
+		// Ticket billing — read-only coverage + charges for the ticket owner.
+		r.With(authmw.GateModule("portal.ticket_billing")).
+			Get("/tickets/{id}/billing", ph.PortalTicketBilling)
 
 		// Attachments (documents, images, geo-tagged live photos).
 		r.Group(func(r chi.Router) {
@@ -105,11 +124,16 @@ func main() {
 		r.Patch("/customers/{id}/showcase", ah.UpdateShowcase)
 		r.Get("/customers/{id}/showcase/audit", ah.ListShowcaseAudit)
 
-		// Customer contacts
+		// Customer contacts (portal users)
 		r.Get("/customers/{id}/contacts", ah.ListContacts)
 		r.Post("/customers/{id}/contacts", ah.CreateContact)
 		r.Post("/customers/{id}/contacts/{contactId}/disable", ah.DisableContact)
 		r.Post("/customers/{id}/contacts/{contactId}/enable", ah.EnableContact)
+		r.Post("/customers/{id}/contacts/{contactId}/resend", ah.ResendInvite)
+
+		// Portal settings — email-verification enforcement toggle.
+		r.Get("/portal-settings", ah.GetPortalSettings)
+		r.Patch("/portal-settings", ah.UpdatePortalSettings)
 
 		// Staff-on-behalf ticket creation.
 		r.Post("/customers/{id}/tickets", ah.CreateTicketForCustomer)
@@ -134,6 +158,24 @@ func main() {
 		r.Get("/tickets/{id}/messages", ah.ListAllMessages)
 		r.Post("/tickets/{id}/messages", ah.AddMessage)
 
+		// Rate card — managed price book (module-gated).
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("admin.rate_card"))
+			r.Get("/rate-card", ah.ListRateCard)
+			r.Post("/rate-card", ah.CreateRateCard)
+			r.Patch("/rate-card/{id}", ah.UpdateRateCard)
+		})
+
+		// Ticket billing — priced line items + invoice generation (module-gated).
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("admin.ticket_billing"))
+			r.Get("/tickets/{id}/billing", ah.GetTicketBilling)
+			r.Post("/tickets/{id}/line-items", ah.AddTicketLine)
+			r.Patch("/tickets/{id}/line-items/{lineId}", ah.UpdateTicketLine)
+			r.Delete("/tickets/{id}/line-items/{lineId}", ah.DeleteTicketLine)
+			r.Post("/tickets/{id}/generate-invoice", ah.GenerateInvoice)
+		})
+
 		// Attachments (documents, images, geo-tagged live photos).
 		r.Group(func(r chi.Router) {
 			r.Use(authmw.GateModule("api.attachments"))
@@ -141,6 +183,18 @@ func main() {
 			r.Get("/attachments", attach.List)
 			r.Get("/attachments/{id}", attach.Serve)
 			r.Delete("/attachments/{id}", attach.Delete)
+		})
+
+		// Approvals — build / send / resend / cancel customer sign-off requests.
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("api.approvals"))
+			r.Post("/approvals", aph.CreateApproval)
+			r.Get("/approvals", aph.ListApprovals)
+			r.Get("/approvals/{id}", aph.GetApproval)
+			r.Delete("/approvals/{id}", aph.DeleteApproval)
+			r.Post("/approvals/{id}/send", aph.SendApproval)
+			r.Post("/approvals/{id}/resend", aph.ResendApproval)
+			r.Post("/approvals/{id}/cancel", aph.CancelApproval)
 		})
 	})
 
