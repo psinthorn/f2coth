@@ -15,7 +15,15 @@ import {
   type RateCardItem,
 } from "@/lib/admin-api";
 
-export default function TicketBillingPanel({ ticketId }: { ticketId: string }) {
+export default function TicketBillingPanel({
+  ticketId,
+  refreshKey,
+  onApprovalRequested,
+}: {
+  ticketId: string;
+  refreshKey?: number;
+  onApprovalRequested?: () => void;
+}) {
   const t = useTranslations("admin.tickets.billing");
   const { busy, run } = useBusyAction();
   const [billing, setBilling] = useState<TicketBilling | null>(null);
@@ -51,7 +59,22 @@ export default function TicketBillingPanel({ ticketId }: { ticketId: string }) {
     }
   }, [ticketId, t]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, refreshKey]);
+
+  // One-click: create a quotation approval prefilled from this ticket's billable
+  // lines (backend snapshots them), then staff send it from the Approvals panel.
+  async function requestApproval() {
+    const ok = await run(
+      () => adminApi.createApproval({
+        subject_type: "ticket",
+        subject_id: ticketId,
+        kind: "quotation",
+        title: t("approvalTitle"),
+      }),
+      { success: t("approvalRequested") },
+    );
+    if (ok) { onApprovalRequested?.(); await load(); }
+  }
 
   function pickRateCard(id: string) {
     const rc = rateCard.find((r) => r.id === id);
@@ -241,18 +264,21 @@ export default function TicketBillingPanel({ ticketId }: { ticketId: string }) {
             <FileText className="h-4 w-4" /> {t("viewInvoice", { number: billing.invoice_number ?? "" })}
           </Link>
         ) : billing.billing_status === "billable" ? (
-          <div>
-            <button
-              onClick={generateInvoice}
-              disabled={busy || (!!billing.approval_status && billing.approval_status !== "approved")}
-              className="btn-accent text-sm disabled:opacity-40"
-            >
+          billing.approval_status === "approved" ? (
+            <button onClick={generateInvoice} disabled={busy} className="btn-accent text-sm disabled:opacity-40">
               {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("generating")}</> : <><Receipt className="h-4 w-4" /> {t("generateInvoice")}</>}
             </button>
-            {!!billing.approval_status && billing.approval_status !== "approved" && (
-              <p className="mt-2 text-xs text-amber-700">{t("approvalRequired")}</p>
-            )}
-          </div>
+          ) : billing.approval_status === "sent" ? (
+            <p className="text-sm text-amber-700">{t("awaitingApproval")}</p>
+          ) : billing.approval_status === "draft" ? (
+            <p className="text-sm text-navy-500">{t("draftPending")}</p>
+          ) : billing.approval_status === "declined" ? (
+            <p className="text-sm text-red-700">{t("approvalDeclinedBilling")}</p>
+          ) : (
+            <button onClick={requestApproval} disabled={busy} className="btn-accent text-sm disabled:opacity-40">
+              {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("requesting")}</> : <><ShieldCheck className="h-4 w-4" /> {t("requestApproval")}</>}
+            </button>
+          )
         ) : billing.billing_status === "covered" ? (
           <p className="text-sm text-emerald-700">{t("allCovered")}</p>
         ) : null}

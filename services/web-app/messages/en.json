@@ -832,7 +832,13 @@
         "generateInvoice": "Generate invoice",
         "generating": "Generating…",
         "allCovered": "All work covered by contract — no charge.",
-        "approvalRequired": "The customer must approve the quotation before you can generate the invoice."
+        "requestApproval": "Request customer approval",
+        "requesting": "Requesting…",
+        "awaitingApproval": "Awaiting customer approval — sent, not yet decided.",
+        "draftPending": "Approval draft created — send it from the Approvals panel above.",
+        "approvalDeclinedBilling": "Customer declined — revise and resend from the Approvals panel.",
+        "approvalTitle": "Quotation for this ticket",
+        "approvalRequested": "Approval draft created"
       },
       "newTicket": "New ticket",
       "new": {

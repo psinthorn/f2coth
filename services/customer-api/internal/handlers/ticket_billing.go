@@ -428,20 +428,18 @@ func (h *AdminHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Approval gate (spec §11.1, backward-compatible): if a quotation approval
-	// exists for this ticket, at least one must be approved before invoicing.
-	// Tickets that never used a quotation are unaffected.
-	var quoteCount, approvedCount int
+	// Approval gate: every billable ticket must have a customer-approved
+	// quotation before an invoice can be generated (staff decision 2026-07-30).
+	var approvedCount int
 	if err := tx.QueryRow(ctx, `
-        SELECT COUNT(*), COUNT(*) FILTER (WHERE status='approved')
-          FROM approvals
-         WHERE subject_type='ticket' AND subject_id=$1 AND kind='quotation'`,
-		ticketID).Scan(&quoteCount, &approvedCount); err != nil {
+        SELECT COUNT(*) FROM approvals
+         WHERE subject_type='ticket' AND subject_id=$1 AND kind='quotation' AND status='approved'`,
+		ticketID).Scan(&approvedCount); err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
-	if quoteCount > 0 && approvedCount == 0 {
-		writeErr(w, http.StatusConflict, "quotation must be approved by the customer before invoicing")
+	if approvedCount == 0 {
+		writeErr(w, http.StatusConflict, "an approved customer quotation is required before invoicing")
 		return
 	}
 
