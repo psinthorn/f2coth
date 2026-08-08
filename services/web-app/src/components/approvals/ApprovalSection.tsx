@@ -33,11 +33,15 @@ export default function ApprovalSection({
   subjectId,
   customerId,
   defaultKind = "quotation",
+  refreshKey,
+  onChanged,
 }: {
   subjectType: string;
   subjectId: string;
   customerId: string;
   defaultKind?: ApprovalKind;
+  refreshKey?: number;
+  onChanged?: () => void;
 }) {
   const t = useTranslations("approvals");
   const [list, setList] = useState<Approval[]>([]);
@@ -72,7 +76,7 @@ export default function ApprovalSection({
     }
   }, [subjectType, subjectId, customerId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, refreshKey]);
 
   async function createDraft() {
     if (!title.trim() || creating) return;
@@ -97,6 +101,7 @@ export default function ApprovalSection({
       setOpen(false);
       setTitle(""); setBody(""); setItems([]); setKind(defaultKind);
       await load();
+      onChanged?.();
     } catch (e) {
       toast.error(tryMsg(e));
     } finally {
@@ -110,6 +115,7 @@ export default function ApprovalSection({
       await fn();
       toast.success(okMsg);
       await load();
+      onChanged?.();
     } catch (e) {
       toast.error(tryMsg(e));
     } finally {

@@ -58,6 +58,11 @@ export default function AdminTicketDetailPage() {
   const [solutionShared, setSolutionShared] = useState(false);
   const [savingSolution, setSavingSolution] = useState(false);
 
+  // Shared counter so the Approvals panel and the Billing panel refresh each
+  // other (request approval in Billing → shows in Approvals; approve/decline in
+  // Approvals → unlocks/locks the invoice button in Billing).
+  const [approvalTick, setApprovalTick] = useState(0);
+
   async function load() {
     if (!id) return;
     setLoading(true);
@@ -223,10 +228,22 @@ export default function AdminTicketDetailPage() {
               </div>
 
               {id && ticket && (
-                <ApprovalSection subjectType="ticket" subjectId={id} customerId={ticket.customer_id} />
+                <ApprovalSection
+                  subjectType="ticket"
+                  subjectId={id}
+                  customerId={ticket.customer_id}
+                  refreshKey={approvalTick}
+                  onChanged={() => setApprovalTick((n) => n + 1)}
+                />
               )}
 
-              {id && <TicketBillingPanel ticketId={id} />}
+              {id && (
+                <TicketBillingPanel
+                  ticketId={id}
+                  refreshKey={approvalTick}
+                  onApprovalRequested={() => setApprovalTick((n) => n + 1)}
+                />
+              )}
 
               {messages.map((m) => (
                 <div key={m.id}
