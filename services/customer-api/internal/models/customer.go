@@ -22,17 +22,17 @@ type Customer struct {
 	// Public showcase + PDPA consent (migration 046). Managed through the
 	// dedicated PATCH /customers/{id}/showcase endpoint so audit_log gets one
 	// atomic row per admin action.
-	ShowOnWebsite         bool       `json:"show_on_website"`
-	WebsiteDisplayName    *string    `json:"website_display_name,omitempty"`
-	WebsiteLogoURL        *string    `json:"website_logo_url,omitempty"`
-	WebsiteIndustryLabel  *string    `json:"website_industry_label,omitempty"`
-	WebsiteIndustryLabelTH *string   `json:"website_industry_label_th,omitempty"`
-	WebsiteSortOrder      int        `json:"website_sort_order"`
-	ConsentDocumentURL    *string    `json:"consent_document_url,omitempty"`
-	ConsentGrantedAt      *time.Time `json:"consent_granted_at,omitempty"`
-	ConsentGrantedBy      *string    `json:"consent_granted_by,omitempty"`
-	ConsentExpiresAt      *time.Time `json:"consent_expires_at,omitempty"`
-	ConsentNotes          *string    `json:"consent_notes,omitempty"`
+	ShowOnWebsite          bool       `json:"show_on_website"`
+	WebsiteDisplayName     *string    `json:"website_display_name,omitempty"`
+	WebsiteLogoURL         *string    `json:"website_logo_url,omitempty"`
+	WebsiteIndustryLabel   *string    `json:"website_industry_label,omitempty"`
+	WebsiteIndustryLabelTH *string    `json:"website_industry_label_th,omitempty"`
+	WebsiteSortOrder       int        `json:"website_sort_order"`
+	ConsentDocumentURL     *string    `json:"consent_document_url,omitempty"`
+	ConsentGrantedAt       *time.Time `json:"consent_granted_at,omitempty"`
+	ConsentGrantedBy       *string    `json:"consent_granted_by,omitempty"`
+	ConsentExpiresAt       *time.Time `json:"consent_expires_at,omitempty"`
+	ConsentNotes           *string    `json:"consent_notes,omitempty"`
 }
 
 type Contact struct {
@@ -137,6 +137,7 @@ type TicketBilling struct {
 	InvoiceStatus  *string          `json:"invoice_status,omitempty"`  // draft|issued|… (portal hides drafts)
 	ApprovalID     *string          `json:"approval_id,omitempty"`     // latest quotation approval on the ticket
 	ApprovalStatus *string          `json:"approval_status,omitempty"` // gates invoice generation in the admin UI
+	ApprovalStale  *bool            `json:"approval_stale,omitempty"`  // approved, but lines changed since → needs re-approval
 }
 
 type TicketMessage struct {

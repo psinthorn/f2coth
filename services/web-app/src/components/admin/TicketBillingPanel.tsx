@@ -265,9 +265,20 @@ export default function TicketBillingPanel({
           </Link>
         ) : billing.billing_status === "billable" ? (
           billing.approval_status === "approved" ? (
-            <button onClick={generateInvoice} disabled={busy} className="btn-accent text-sm disabled:opacity-40">
-              {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("generating")}</> : <><Receipt className="h-4 w-4" /> {t("generateInvoice")}</>}
-            </button>
+            billing.approval_stale ? (
+              <div className="space-y-2">
+                <p className="flex items-start gap-1.5 text-sm text-amber-700">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {t("approvalStale")}
+                </p>
+                <button onClick={requestApproval} disabled={busy} className="btn-accent text-sm disabled:opacity-40">
+                  {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("requesting")}</> : <><ShieldCheck className="h-4 w-4" /> {t("requestApproval")}</>}
+                </button>
+              </div>
+            ) : (
+              <button onClick={generateInvoice} disabled={busy} className="btn-accent text-sm disabled:opacity-40">
+                {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("generating")}</> : <><Receipt className="h-4 w-4" /> {t("generateInvoice")}</>}
+              </button>
+            )
           ) : billing.approval_status === "sent" ? (
             <p className="text-sm text-amber-700">{t("awaitingApproval")}</p>
           ) : billing.approval_status === "draft" ? (

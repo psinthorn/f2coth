@@ -46,7 +46,7 @@ CREATE INDEX IF NOT EXISTS idx_approvals_subject   ON approvals (subject_type, s
 CREATE INDEX IF NOT EXISTS idx_approvals_customer  ON approvals (customer_id, status);
 CREATE INDEX IF NOT EXISTS idx_approvals_status    ON approvals (status, expires_at);
 
-CREATE TRIGGER trg_approvals_updated_at
+CREATE OR REPLACE TRIGGER trg_approvals_updated_at
 BEFORE UPDATE ON approvals
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 

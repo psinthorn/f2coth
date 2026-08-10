@@ -102,13 +102,20 @@ func (h *AdminHandler) buildBilling(ctx context.Context, ticketID string) (*mode
 		}
 	}
 	// Latest quotation approval (gates invoice generation in the admin UI).
+	// When the latest is 'approved' but its frozen subtotal no longer matches
+	// the current billable subtotal, the lines drifted after sign-off → stale.
 	var apID, apStatus *string
+	var apSubtotal int64
 	if err := h.DB.QueryRow(ctx, `
-        SELECT id::text, status FROM approvals
+        SELECT id::text, status, subtotal_cents FROM approvals
          WHERE subject_type='ticket' AND subject_id=$1 AND kind='quotation'
-         ORDER BY created_at DESC LIMIT 1`, ticketID).Scan(&apID, &apStatus); err == nil {
+         ORDER BY created_at DESC LIMIT 1`, ticketID).Scan(&apID, &apStatus, &apSubtotal); err == nil {
 		b.ApprovalID = apID
 		b.ApprovalStatus = apStatus
+		if apStatus != nil && *apStatus == "approved" && apSubtotal != b.SubtotalCents {
+			stale := true
+			b.ApprovalStale = &stale
+		}
 	}
 
 	// Invoice number + status, if generated. The portal only reveals the number
@@ -430,16 +437,20 @@ func (h *AdminHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request) {
 
 	// Approval gate: every billable ticket must have a customer-approved
 	// quotation before an invoice can be generated (staff decision 2026-07-30).
-	var approvedCount int
-	if err := tx.QueryRow(ctx, `
-        SELECT COUNT(*) FROM approvals
-         WHERE subject_type='ticket' AND subject_id=$1 AND kind='quotation' AND status='approved'`,
-		ticketID).Scan(&approvedCount); err != nil {
-		writeErr(w, http.StatusInternalServerError, "db error")
+	// Capture the approved subtotal so we can reject if the lines drifted after
+	// sign-off (the customer approved a specific amount).
+	var approvedSubtotal int64
+	err = tx.QueryRow(ctx, `
+        SELECT subtotal_cents FROM approvals
+         WHERE subject_type='ticket' AND subject_id=$1 AND kind='quotation' AND status='approved'
+         ORDER BY decided_at DESC NULLS LAST, created_at DESC LIMIT 1`,
+		ticketID).Scan(&approvedSubtotal)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeErr(w, http.StatusConflict, "an approved customer quotation is required before invoicing")
 		return
 	}
-	if approvedCount == 0 {
-		writeErr(w, http.StatusConflict, "an approved customer quotation is required before invoicing")
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
 
@@ -478,6 +489,11 @@ func (h *AdminHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request) {
 	}
 	if billableSubtotal <= 0 {
 		writeErr(w, http.StatusBadRequest, "billable total is zero; nothing to invoice")
+		return
+	}
+	// The billable lines must still match what the customer approved.
+	if billableSubtotal != approvedSubtotal {
+		writeErr(w, http.StatusConflict, "billing changed since the customer approved; please re-request approval")
 		return
 	}
 
