@@ -2553,7 +2553,8 @@
         "billing": "Billing",
         "subscriptions": "Subscriptions",
         "billingProfile": "Tax invoice info",
-        "projects": "Projects"
+        "projects": "Projects",
+        "assets": "Asset Register"
       },
       "organisation": "Organisation",
       "switchOrg": "Switch organisation",

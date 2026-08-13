@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import {
-  LayoutDashboard, Inbox, LogOut, Menu, X, Loader2, Building2, Globe, ShieldCheck, Receipt, FileSignature, ClipboardCheck, Repeat, UserCog, MailWarning,
+  LayoutDashboard, Inbox, LogOut, Menu, X, Loader2, Building2, Globe, ShieldCheck, Receipt, FileSignature, ClipboardCheck, Repeat, UserCog, MailWarning, MonitorSmartphone,
 } from "lucide-react";
 import { portalApi, clearPortalAuth, redirectToPortalLogin, type PortalContact, type PortalCustomer, type PortalMembership } from "@/lib/portal-api";
 import SandboxBanner from "@/components/SandboxBanner";
@@ -16,8 +16,8 @@ import Toaster from "@/components/Toaster";
 type GroupKey = "workspace" | "support" | "services";
 
 type NavItem = {
-  href: "/portal" | "/portal/tickets" | "/portal/domains" | "/portal/sla" | "/portal/billing" | "/portal/subscriptions" | "/portal/billing-profile" | "/portal/projects" | "/portal/profile";
-  labelKey: "account" | "tickets" | "domains" | "sla" | "billing" | "subscriptions" | "billingProfile" | "projects" | "profile";
+  href: "/portal" | "/portal/tickets" | "/portal/domains" | "/portal/sla" | "/portal/billing" | "/portal/subscriptions" | "/portal/billing-profile" | "/portal/projects" | "/portal/profile" | "/portal/assethub";
+  labelKey: "account" | "tickets" | "domains" | "sla" | "billing" | "subscriptions" | "billingProfile" | "projects" | "profile" | "assets";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   requireService?: string;
@@ -48,6 +48,7 @@ const NAV: NavGroup[] = [
     key: "services",
     items: [
       { href: "/portal/domains", labelKey: "domains", icon: Globe, requireService: "domain-hosting" },
+      { href: "/portal/assethub", labelKey: "assets", icon: MonitorSmartphone, requireService: "asset-management" },
       { href: "/portal/sla", labelKey: "sla", icon: ShieldCheck, requireSLA: true },
     ],
   },

@@ -2553,7 +2553,8 @@
         "billing": "บิล",
         "subscriptions": "การสมัครบริการ",
         "billingProfile": "ข้อมูลใบกำกับภาษี",
-        "projects": "โปรเจกต์"
+        "projects": "โปรเจกต์",
+        "assets": "ทะเบียนสินทรัพย์"
       },
       "organisation": "องค์กร",
       "switchOrg": "สลับองค์กร",
