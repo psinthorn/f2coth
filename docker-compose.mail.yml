@@ -1,0 +1,26 @@
+# Dev-only mail catcher. Opt-in overlay — NOT part of the prod/staging stacks.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.mail.yml up -d
+#
+# Captured mail is viewable at http://localhost:8025. Lets you verify email
+# (approval magic-links, invoices, …) locally without real SMTP credentials.
+#
+# The notification-api override blanks the SMTP username/password (so it sends
+# unauthenticated to mailpit) and points it at the mailpit host. The local
+# smtp_settings DB row should also have host=mailpit; env fills the blanks.
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: f2-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"   # web UI
+    networks:
+      - f2-net
+
+  notification-api:
+    environment:
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""

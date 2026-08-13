@@ -837,6 +837,7 @@
         "awaitingApproval": "Awaiting customer approval — sent, not yet decided.",
         "draftPending": "Approval draft created — send it from the Approvals panel above.",
         "approvalDeclinedBilling": "Customer declined — revise and resend from the Approvals panel.",
+        "approvalStale": "Billing changed since the customer approved. Re-request approval before invoicing.",
         "approvalTitle": "Quotation for this ticket",
         "approvalRequested": "Approval draft created"
       },
@@ -2552,7 +2553,8 @@
         "billing": "Billing",
         "subscriptions": "Subscriptions",
         "billingProfile": "Tax invoice info",
-        "projects": "Projects"
+        "projects": "Projects",
+        "assets": "Asset Register"
       },
       "organisation": "Organisation",
       "switchOrg": "Switch organisation",

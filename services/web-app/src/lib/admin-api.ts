@@ -1607,6 +1607,7 @@ export interface TicketBilling {
   invoice_status?: string | null;
   approval_id?: string | null;
   approval_status?: ApprovalStatus | null;
+  approval_stale?: boolean | null;
 }
 
 export type ApprovalStatus =
