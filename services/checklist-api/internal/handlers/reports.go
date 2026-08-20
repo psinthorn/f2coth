@@ -49,11 +49,11 @@ func (h *Handler) GetProjectReport(w http.ResponseWriter, r *http.Request) {
 
 	// Item state changes in range
 	rows, err := h.DB.Query(r.Context(), `
-		SELECT pi.id, pm.id, t.code, pi.text_en, pi.text_th,
+		SELECT pi.id, pm.id, COALESCE(pm.code, t.code, ''), pi.text_en, pi.text_th,
 		       pi.status, pi.note, pi.photo_url, pi.checked_at
 		  FROM project_items pi
 		  JOIN project_modules pm ON pm.id = pi.project_module_id
-		  JOIN checklist_templates t ON t.id = pm.template_id
+		  LEFT JOIN checklist_templates t ON t.id = pm.template_id
 		 WHERE pm.project_id = $1
 		   AND pi.checked_at IS NOT NULL
 		   AND pi.checked_at >= $2

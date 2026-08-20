@@ -45,22 +45,35 @@ type Project struct {
 }
 
 type ProjectModule struct {
-	ID         string        `json:"id"`
-	ProjectID  string        `json:"project_id"`
-	TemplateID string        `json:"template_id"`
-	Code       string        `json:"code"`
-	NameEN     string        `json:"name_en"`
-	NameTH     string        `json:"name_th"`
-	Icon       *string       `json:"icon,omitempty"`
-	Position   int           `json:"position"`
-	AddedBy    *string       `json:"added_by,omitempty"`
-	AddedAt    time.Time     `json:"added_at"`
-	Items      []ProjectItem `json:"items"`
+	ID          string              `json:"id"`
+	ProjectID   string              `json:"project_id"`
+	TemplateID  *string             `json:"template_id,omitempty"` // null for custom sections
+	Code        string              `json:"code"`
+	NameEN      string              `json:"name_en"`
+	NameTH      string              `json:"name_th"`
+	Icon        *string             `json:"icon,omitempty"`
+	Position    int                 `json:"position"`
+	IsCustom    bool                `json:"is_custom"`
+	AddedBy     *string             `json:"added_by,omitempty"`
+	AddedAt     time.Time           `json:"added_at"`
+	Subsections []ProjectSubsection `json:"subsections"`
+	Items       []ProjectItem       `json:"items"` // items directly under the section (no sub-section)
+}
+
+type ProjectSubsection struct {
+	ID              string        `json:"id"`
+	ProjectModuleID string        `json:"project_module_id"`
+	NameEN          string        `json:"name_en"`
+	NameTH          string        `json:"name_th"`
+	SortOrder       int           `json:"sort_order"`
+	IsCustom        bool          `json:"is_custom"`
+	Items           []ProjectItem `json:"items"`
 }
 
 type ProjectItem struct {
 	ID              string     `json:"id"`
 	ProjectModuleID string     `json:"project_module_id"`
+	SubsectionID    *string    `json:"subsection_id,omitempty"`
 	TextEN          string     `json:"text_en"`
 	TextTH          string     `json:"text_th"`
 	SortOrder       int        `json:"sort_order"`
@@ -70,6 +83,7 @@ type ProjectItem struct {
 	PhotoURL        *string    `json:"photo_url,omitempty"`
 	CheckedBy       *string    `json:"checked_by,omitempty"`
 	CheckedAt       *time.Time `json:"checked_at,omitempty"`
+	IsCustom        bool       `json:"is_custom"`
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 

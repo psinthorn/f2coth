@@ -54,7 +54,7 @@ export default function ProjectBoard({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   const attachedTemplateIds = useMemo(
-    () => new Set((board?.modules ?? []).map((m) => m.template_id)),
+    () => new Set((board?.modules ?? []).map((m) => m.template_id).filter((id): id is string => id != null)),
     [board],
   );
 
@@ -79,8 +79,10 @@ export default function ProjectBoard({ projectId }: { projectId: string }) {
       name_th: template.name_th,
       icon: template.icon,
       position: board.modules.length,
+      is_custom: false,
       added_by: null,
       added_at: new Date().toISOString(),
+      subsections: [],
       items: [],
     };
     setBoard({ ...board, modules: [...board.modules, optimistic] });

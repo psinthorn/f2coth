@@ -2048,7 +2048,38 @@
         "notePlaceholder": "Add a note…",
         "viewPhoto": "View photo",
         "attachPhoto": "Attach photo",
-        "uploading": "Uploading…"
+        "uploading": "Uploading…",
+        "customBadge": "Custom",
+        "deleteConfirm": "Delete this custom item? This cannot be undone.",
+        "addItem": {
+          "button": "Add item",
+          "textEnPlaceholder": "Item text (English)",
+          "textThPlaceholder": "Item text (ไทย)",
+          "saveToLibrary": "Also save to the module library (future projects get it too)",
+          "bothRequired": "Both English and Thai text are required."
+        },
+        "nameEnPlaceholder": "Name (English)",
+        "nameThPlaceholder": "Name (ไทย)",
+        "section": {
+          "addButton": "Add section",
+          "addTitle": "New section",
+          "saveToLibrary": "Also save to the module library (re-attachable to future projects)",
+          "deleteConfirm": "Delete this section and everything under it? This cannot be undone."
+        },
+        "subsection": {
+          "label": "Sub-section",
+          "addButton": "Add sub-section",
+          "addTitle": "New sub-section",
+          "deleteConfirm": "Delete this sub-section? Its items move up to the section (they are not deleted)."
+        },
+        "dragHint": "Drag the handle to reorder or move between sub-sections.",
+        "dropHere": "Drop items here",
+        "dupWarning": "This name already exists here — pick a different one.",
+        "suggest": {
+          "library": "Library",
+          "inProject": "In project",
+          "added": "already added"
+        }
       },
       "report": {
         "title": "Report",

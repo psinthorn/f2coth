@@ -416,6 +416,15 @@ export interface PortalProjectItem {
   checked_at: string | null;
 }
 
+export interface PortalProjectSubsection {
+  id: string;
+  project_module_id: string;
+  name_en: string;
+  name_th: string;
+  sort_order: number;
+  items: PortalProjectItem[];
+}
+
 export interface PortalProjectModule {
   id: string;
   project_id: string;
@@ -423,6 +432,7 @@ export interface PortalProjectModule {
   name_en: string;
   name_th: string;
   position: number;
+  subsections: PortalProjectSubsection[];
   items: PortalProjectItem[];
 }
 
