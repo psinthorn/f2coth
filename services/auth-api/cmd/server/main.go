@@ -58,6 +58,10 @@ func main() {
 		r.Post("/refresh", h.Refresh)
 		r.Post("/logout", h.Logout)
 
+		// Staff MFA: verify is public (mfa_pending token is the credential);
+		// setup/enable/disable require a live staff session (below).
+		r.Post("/mfa/verify", h.MFAVerify)
+
 		// Public password-reset endpoints. Enumeration-safe (always 200 on
 		// forgot); rate-limiting is enforced at Traefik.
 		r.Post("/forgot-password", pr.StaffForgot)
@@ -79,12 +83,22 @@ func main() {
 			r.Post("/request-link", ch.RequestLink)
 			r.Post("/change-password", ch.ChangePassword)
 			r.Post("/switch-org", ch.SwitchOrg)
+
+			// Customer MFA: verify is public (pending token); setup/enable/
+			// disable authenticate via the caller's Bearer token internally.
+			r.Post("/mfa/verify", ch.MFAVerify)
+			r.Post("/mfa/setup", ch.MFASetup)
+			r.Post("/mfa/enable", ch.MFAEnable)
+			r.Post("/mfa/disable", ch.MFADisable)
 		})
 
 		r.Group(func(r chi.Router) {
 			r.Use(authmw.RequireJWT(cfg.JWTSecret))
 			r.Get("/me", h.Me)
 			r.Patch("/me/locale", h.SetLocale)
+			r.Post("/mfa/setup", h.MFASetup)
+			r.Post("/mfa/enable", h.MFAEnable)
+			r.Post("/mfa/disable", h.MFADisable)
 
 			// Admin-only user management.
 			r.Group(func(r chi.Router) {

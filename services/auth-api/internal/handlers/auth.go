@@ -69,10 +69,10 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var u models.User
 	err := h.DB.QueryRow(ctx, `
-        SELECT id, email, password_hash, full_name, role, locale, is_active, last_login_at, created_at, updated_at
+        SELECT id, email, password_hash, full_name, role, locale, is_active, last_login_at, created_at, updated_at, mfa_enabled
         FROM users WHERE email = $1 AND is_active = TRUE
     `, req.Email).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.FullName, &u.Role, &u.Locale,
-		&u.IsActive, &u.LastLoginAt, &u.CreatedAt, &u.UpdatedAt)
+		&u.IsActive, &u.LastLoginAt, &u.CreatedAt, &u.UpdatedAt, &u.MFAEnabled)
 
 	logAttempt := func(success bool, userID *string) {
 		_, _ = h.DB.Exec(context.Background(), `
@@ -96,13 +96,30 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// MFA gate: enrolled staff get a short-lived mfa_pending token instead of a
+	// session; they redeem it at /api/auth/mfa/verify.
+	if u.MFAEnabled {
+		pending, err := signMFAPending(h.Cfg, "mfa_staff", u.ID)
+		if err != nil {
+			writeErr(w, http.StatusInternalServerError, "token sign failed")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"mfa_required": true, "mfa_token": pending})
+		return
+	}
+
+	h.issueStaffSession(w, r, ctx, u, logAttempt)
+}
+
+// issueStaffSession mints access + refresh tokens and writes the login response.
+// Shared by password login and MFA verify.
+func (h *AuthHandler) issueStaffSession(w http.ResponseWriter, r *http.Request, ctx context.Context, u models.User, logAttempt func(bool, *string)) {
 	access, err := h.signAccessToken(u)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "token sign failed")
 		return
 	}
 	refresh, refreshHash := newRefreshToken()
-
 	_, err = h.DB.Exec(ctx, `
         INSERT INTO refresh_tokens (user_id, token_hash, user_agent, ip_address, expires_at)
         VALUES ($1, $2, $3, NULLIF($4,'')::inet, $5)
@@ -111,9 +128,10 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "could not issue refresh token")
 		return
 	}
-
 	_, _ = h.DB.Exec(ctx, `UPDATE users SET last_login_at = NOW() WHERE id = $1`, u.ID)
-	logAttempt(true, &u.ID)
+	if logAttempt != nil {
+		logAttempt(true, &u.ID)
+	}
 
 	writeJSON(w, http.StatusOK, tokenResp{
 		AccessToken:  access,

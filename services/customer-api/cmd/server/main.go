@@ -75,6 +75,19 @@ func main() {
 
 		r.Get("/me", ph.Me)
 		r.Patch("/me", ph.UpdateProfile)
+
+		// Org self-administration (Team & Roles) — Owner/Admin manage their own
+		// org's members. Module-gated, then capability-gated.
+		r.Group(func(r chi.Router) {
+			r.Use(authmw.GateModule("portal.team"))
+			r.Use(authmw.RequireCap(authmw.ManageMembers))
+			r.Get("/members", ph.ListMembers)
+			r.Post("/members/invite", ph.InviteMember)
+			r.Patch("/members/{contactId}/role", ph.SetMemberRole)
+			r.Patch("/members/{contactId}/status", ph.SetMemberStatus)
+			r.Delete("/members/{contactId}", ph.RemoveMember)
+		})
+
 		r.Get("/tickets", ph.ListTickets)
 		r.Post("/tickets", ph.CreateTicket)
 		r.Get("/tickets/{id}", ph.GetTicket)
@@ -130,6 +143,7 @@ func main() {
 		r.Post("/customers/{id}/contacts/{contactId}/disable", ah.DisableContact)
 		r.Post("/customers/{id}/contacts/{contactId}/enable", ah.EnableContact)
 		r.Post("/customers/{id}/contacts/{contactId}/resend", ah.ResendInvite)
+		r.Patch("/customers/{id}/contacts/{contactId}/role", ah.SetContactRole)
 
 		// Portal settings — email-verification enforcement toggle.
 		r.Get("/portal-settings", ah.GetPortalSettings)

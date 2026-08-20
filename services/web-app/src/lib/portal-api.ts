@@ -81,8 +81,12 @@ async function request<T>(path: string, init: RequestInit = {}, retried = false)
   }
 
   if (!res.ok) {
+    // Server errors are JSON {"error":"..."}; surface that message (falls back
+    // to raw body) so forbidden / last-owner / duplicate toasts read cleanly.
     const body = await res.text();
-    throw new HttpError(res.status, body);
+    let msg = body;
+    try { const j = JSON.parse(body); if (j?.error) msg = j.error; } catch { /* keep raw */ }
+    throw new HttpError(res.status, msg);
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -93,12 +97,27 @@ async function request<T>(path: string, init: RequestInit = {}, retried = false)
 export type TicketStatus = "open" | "in_progress" | "waiting_customer" | "resolved" | "closed";
 export type TicketPriority = "low" | "normal" | "high" | "urgent";
 
+export type OrgRole = "owner" | "admin" | "billing" | "member" | "viewer";
+
+export interface PortalMember {
+  contact_id: string;
+  email: string;
+  full_name: string;
+  role: OrgRole;
+  is_primary: boolean;
+  disabled: boolean;
+  verified: boolean;
+  pending: boolean;
+  last_login_at: string | null;
+  invited_at: string | null;
+}
+
 export interface PortalContact {
   id: string;
   customer_id: string;
   email: string;
   full_name: string;
-  role: "owner" | "member";
+  role: OrgRole;
   last_login_at: string | null;
   disabled_at: string | null;
   created_at: string;
@@ -108,6 +127,7 @@ export interface PortalContact {
   phone?: string | null;
   job_title?: string | null;
   is_primary?: boolean;
+  mfa_enabled?: boolean;
 }
 
 export interface PortalMembership {
@@ -194,7 +214,10 @@ export interface PortalMessage {
 // ----- Endpoints -----
 
 export const portalApi = {
-  login: async (email: string, password: string) => {
+  // Returns { mfaRequired: true, mfaToken } when the account has MFA enabled —
+  // the caller then collects a code and calls mfaVerify. Otherwise stores the
+  // session and returns { contact }.
+  login: async (email: string, password: string): Promise<{ mfaRequired: boolean; mfaToken?: string; contact?: PortalContact }> => {
     const res = await fetch(`${API_BASE}/auth/customer/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -202,9 +225,26 @@ export const portalApi = {
     });
     if (!res.ok) throw new HttpError(res.status, await res.text());
     const data = await res.json();
+    if (data.mfa_required) return { mfaRequired: true, mfaToken: data.mfa_token };
+    setPortalAuth(data.access_token, data.refresh_token, data.contact);
+    return { mfaRequired: false, contact: data.contact as PortalContact };
+  },
+  // Complete the second factor with a TOTP code or a recovery code.
+  mfaVerify: async (mfaToken: string, input: { code?: string; recovery_code?: string }) => {
+    const res = await fetch(`${API_BASE}/auth/customer/mfa/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mfa_token: mfaToken, ...input }),
+    });
+    if (!res.ok) throw new HttpError(res.status, await res.text());
+    const data = await res.json();
     setPortalAuth(data.access_token, data.refresh_token, data.contact);
     return data.contact as PortalContact;
   },
+  // ── MFA enrolment (authenticated) ──
+  mfaSetup: () => request<{ secret: string; otpauth_uri: string }>("/auth/customer/mfa/setup", { method: "POST" }),
+  mfaEnable: (code: string) => request<{ recovery_codes: string[] }>("/auth/customer/mfa/enable", { method: "POST", body: JSON.stringify({ code }) }),
+  mfaDisable: (code: string) => request<void>("/auth/customer/mfa/disable", { method: "POST", body: JSON.stringify({ code }) }),
   logout: async () => {
     const rt = refreshTok();
     if (rt) {
@@ -254,6 +294,17 @@ export const portalApi = {
     if (typeof window !== "undefined") sessionStorage.setItem(KEY_ACCESS, data.access_token);
     return data;
   },
+
+  // ── Team & Roles (org self-administration; Owner/Admin only) ──
+  listMembers: () => request<{ members: PortalMember[] }>("/portal/members"),
+  inviteMember: (input: { email: string; full_name: string; role: OrgRole }) =>
+    request<{ contact_id: string; linked: boolean }>("/portal/members/invite", { method: "POST", body: JSON.stringify(input) }),
+  setMemberRole: (contactId: string, role: OrgRole) =>
+    request<void>(`/portal/members/${contactId}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  setMemberStatus: (contactId: string, disabled: boolean) =>
+    request<void>(`/portal/members/${contactId}/status`, { method: "PATCH", body: JSON.stringify({ disabled }) }),
+  removeMember: (contactId: string) =>
+    request<void>(`/portal/members/${contactId}`, { method: "DELETE" }),
 
   getTicketBilling: (id: string) => request<PortalTicketBilling>(`/portal/tickets/${id}/billing`),
 

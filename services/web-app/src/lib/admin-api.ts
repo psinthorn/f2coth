@@ -235,7 +235,7 @@ export const adminApi = {
     input: {
       email: string;
       full_name: string;
-      role: "owner" | "member";
+      role: CustomerOrgRole;
       phone?: string;
       job_title?: string;
     },
@@ -248,6 +248,13 @@ export const adminApi = {
     request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/disable`, { method: "POST" }),
   enableCustomerContact: (id: string, contactId: string) =>
     request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/enable`, { method: "POST" }),
+  // Assign an existing/linked user any of the 5 per-org roles (staff parity
+  // with the org-owner Team page). Last-owner protection enforced server-side.
+  setCustomerContactRole: (id: string, contactId: string, role: CustomerOrgRole) =>
+    request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
   // Resend the email-verification / login link to a portal user.
   resendCustomerContactInvite: (id: string, contactId: string) =>
     request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/resend`, { method: "POST" }),
@@ -1250,12 +1257,14 @@ export interface CustomerShowcaseAuditEntry {
   at: string;
 }
 
+export type CustomerOrgRole = "owner" | "admin" | "billing" | "member" | "viewer";
+
 export interface CustomerContactRow {
   id: string;
   customer_id: string;
   email: string;
   full_name: string;
-  role: "owner" | "member";
+  role: CustomerOrgRole;
   last_login_at: string | null;
   disabled_at: string | null;
   created_at: string;

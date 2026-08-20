@@ -60,14 +60,14 @@ func (h *PortalHandler) Me(w http.ResponseWriter, r *http.Request) {
         SELECT cc.id, $2::uuid, cc.email, cc.full_name, m.role,
                cc.last_login_at, cc.disabled_at, cc.created_at,
                cc.email_verified_at, cc.must_change_password,
-               cc.phone, cc.job_title, m.is_primary
+               cc.phone, cc.job_title, m.is_primary, cc.mfa_enabled
         FROM customer_contacts cc
         JOIN contact_org_memberships m ON m.contact_id = cc.id AND m.customer_id = $2 AND m.disabled_at IS NULL
         WHERE cc.id = $1 AND cc.disabled_at IS NULL
     `, conid, cid).Scan(&c.ID, &c.CustomerID, &c.Email, &c.FullName, &c.Role,
 		&c.LastLoginAt, &c.DisabledAt, &c.CreatedAt,
 		&c.EmailVerifiedAt, &c.MustChangePassword,
-		&c.Phone, &c.JobTitle, &c.IsPrimary)
+		&c.Phone, &c.JobTitle, &c.IsPrimary, &c.MFAEnabled)
 	if err == pgx.ErrNoRows {
 		writeErr(w, http.StatusUnauthorized, "contact not found")
 		return

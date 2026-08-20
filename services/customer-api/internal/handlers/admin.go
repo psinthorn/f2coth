@@ -274,8 +274,8 @@ func (h *AdminHandler) CreateContact(w http.ResponseWriter, r *http.Request) {
 	if req.Role == "" {
 		req.Role = "member"
 	}
-	if req.Role != "owner" && req.Role != "member" {
-		writeErr(w, http.StatusBadRequest, "role must be owner or member")
+	if !orgRoles[req.Role] {
+		writeErr(w, http.StatusBadRequest, "invalid role")
 		return
 	}
 
