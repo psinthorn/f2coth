@@ -39,9 +39,10 @@ func contactID(r *http.Request) string {
 // ----- /portal/me -----
 
 type meResp struct {
-	Contact     models.Contact         `json:"contact"`
-	Customer    models.Customer        `json:"customer"`
-	Memberships []models.OrgMembership `json:"memberships"`
+	Contact          models.Contact         `json:"contact"`
+	Customer         models.Customer        `json:"customer"`
+	Memberships      []models.OrgMembership `json:"memberships"`
+	MFASetupRequired bool                   `json:"mfa_setup_required"`
 }
 
 func (h *PortalHandler) Me(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +90,15 @@ func (h *PortalHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, meResp{Contact: c, Customer: cust, Memberships: memberships})
+	// Enforcement: policy may require certain org roles to have MFA. Surfaced so
+	// the portal shell can force enrolment before the app is usable.
+	var mfaSetupRequired bool
+	_ = h.DB.QueryRow(r.Context(),
+		`SELECT $1 = ANY(COALESCE(require_mfa_customer_roles, '{}')) FROM portal_settings WHERE id = 1`,
+		c.Role).Scan(&mfaSetupRequired)
+	mfaSetupRequired = mfaSetupRequired && !c.MFAEnabled
+
+	writeJSON(w, http.StatusOK, meResp{Contact: c, Customer: cust, Memberships: memberships, MFASetupRequired: mfaSetupRequired})
 }
 
 // loadMemberships returns every org the contact belongs to, for the portal

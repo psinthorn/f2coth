@@ -248,14 +248,20 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	}
 	var u models.User
 	err := h.DB.QueryRow(r.Context(), `
-        SELECT id, email, password_hash, full_name, role, locale, is_active, last_login_at, created_at, updated_at
+        SELECT id, email, password_hash, full_name, role, locale, is_active, last_login_at, created_at, updated_at, mfa_enabled
         FROM users WHERE id = $1
     `, uid).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.FullName, &u.Role, &u.Locale,
-		&u.IsActive, &u.LastLoginAt, &u.CreatedAt, &u.UpdatedAt)
+		&u.IsActive, &u.LastLoginAt, &u.CreatedAt, &u.UpdatedAt, &u.MFAEnabled)
 	if err != nil {
 		writeErr(w, http.StatusNotFound, "user not found")
 		return
 	}
+	// Enforcement: policy may require staff to have MFA. Surfaced so the admin
+	// shell can force enrolment before the console is usable.
+	var requireStaff bool
+	_ = h.DB.QueryRow(r.Context(),
+		`SELECT COALESCE(require_mfa_staff, FALSE) FROM portal_settings WHERE id = 1`).Scan(&requireStaff)
+	u.MFASetupRequired = requireStaff && !u.MFAEnabled
 	writeJSON(w, http.StatusOK, u)
 }
 

@@ -100,6 +100,8 @@ export interface User {
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
+  mfa_enabled?: boolean;
+  mfa_setup_required?: boolean;
 }
 
 export interface Lead {
@@ -166,6 +168,24 @@ export const adminApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     }),
+  // Complete staff MFA at login (TOTP or recovery code) → stores the session.
+  mfaVerify: async (mfaToken: string, input: { code?: string; recovery_code?: string }) => {
+    const res = await fetch(`${API_BASE}/auth/mfa/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mfa_token: mfaToken, ...input }),
+    });
+    if (!res.ok) throw new HttpError(res.status, await res.text());
+    const data = await res.json();
+    sessionStorage.setItem("f2_access_token", data.access_token);
+    sessionStorage.setItem("f2_refresh_token", data.refresh_token);
+    if (data.user) sessionStorage.setItem("f2_user", JSON.stringify(data.user));
+    return data.user as User;
+  },
+  // MFA enrolment (authenticated staff).
+  mfaSetup: () => request<{ secret: string; otpauth_uri: string }>("/auth/mfa/setup", { method: "POST" }),
+  mfaEnable: (code: string) => request<{ recovery_codes: string[] }>("/auth/mfa/enable", { method: "POST", body: JSON.stringify({ code }) }),
+  mfaDisable: (code: string) => request<void>("/auth/mfa/disable", { method: "POST", body: JSON.stringify({ code }) }),
 
   // Leads
   listLeads: () => request<{ leads: Lead[] }>("/leads/"),
@@ -261,8 +281,8 @@ export const adminApi = {
 
   // Portal settings — email-verification enforcement toggle.
   getPortalSettings: () =>
-    request<{ require_email_verification: boolean }>(`/customer/admin/portal-settings`),
-  updatePortalSettings: (input: { require_email_verification: boolean }) =>
+    request<{ require_email_verification: boolean; require_mfa_staff: boolean; require_mfa_customer_roles: string[] }>(`/customer/admin/portal-settings`),
+  updatePortalSettings: (input: { require_email_verification?: boolean; require_mfa_staff?: boolean; require_mfa_customer_roles?: string[] }) =>
     request<void>(`/customer/admin/portal-settings`, {
       method: "PATCH",
       body: JSON.stringify(input),

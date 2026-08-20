@@ -50,8 +50,9 @@ type NavItem = {
     | "/admin/features"
     | "/admin/ai"
     | "/admin/ai/routing"
-    | "/admin/ai/usage";
-  labelKey: "dashboard" | "leads" | "tickets" | "rateCard" | "customers" | "dsr" | "blog" | "appMode" | "homeContent" | "pagesEditor" | "servicesEditor" | "caseStudiesEditor" | "users" | "pricing" | "orders" | "invoices" | "payments" | "paymentMethods" | "subscriptions" | "renewals" | "refunds" | "bankImports" | "webhooks" | "disputes" | "analytics" | "suspensions" | "projects" | "contracts" | "assethub" | "smtp" | "features" | "aiHome" | "aiRouting" | "aiUsage";
+    | "/admin/ai/usage"
+    | "/admin/security";
+  labelKey: "dashboard" | "leads" | "tickets" | "rateCard" | "customers" | "dsr" | "blog" | "appMode" | "homeContent" | "pagesEditor" | "servicesEditor" | "caseStudiesEditor" | "users" | "pricing" | "orders" | "invoices" | "payments" | "paymentMethods" | "subscriptions" | "renewals" | "refunds" | "bankImports" | "webhooks" | "disputes" | "analytics" | "suspensions" | "projects" | "contracts" | "assethub" | "smtp" | "features" | "aiHome" | "aiRouting" | "aiUsage" | "security";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   adminOnly?: boolean;
@@ -65,6 +66,7 @@ const NAV: NavGroup[] = [
     key: "workspace",
     items: [
       { href: "/admin", labelKey: "dashboard", icon: LayoutDashboard, exact: true, moduleKey: "admin.dashboard" },
+      { href: "/admin/security", labelKey: "security", icon: ShieldCheck },
       { href: "/admin/app-mode", labelKey: "appMode", icon: ToggleRight, adminOnly: true, moduleKey: "admin.app_mode" },
     ],
   },
@@ -166,6 +168,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         if (cancelled) return;
         setUser(u);
         sessionStorage.setItem("f2_user", JSON.stringify(u));
+        // Policy may require staff to enrol MFA before using the console.
+        if (u.mfa_setup_required && !pathname.endsWith("/admin/security")) {
+          router.push("/admin/security");
+        }
         setLoading(false);
       })
       .catch((err: unknown) => {

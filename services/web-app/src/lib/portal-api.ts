@@ -258,7 +258,7 @@ export const portalApi = {
   },
 
   me: () =>
-    request<{ contact: PortalContact; customer: PortalCustomer; memberships: PortalMembership[] }>(
+    request<{ contact: PortalContact; customer: PortalCustomer; memberships: PortalMembership[]; mfa_setup_required?: boolean }>(
       "/portal/me",
     ),
 

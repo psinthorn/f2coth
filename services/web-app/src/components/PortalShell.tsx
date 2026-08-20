@@ -84,6 +84,9 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           // First login with a temp password → force a change before anything else.
           if (d.contact.must_change_password && !pathname.endsWith("/portal/change-password")) {
             router.push("/portal/change-password");
+          } else if (d.mfa_setup_required && !pathname.endsWith("/portal/security")) {
+            // Policy requires MFA for this role — force enrolment.
+            router.push("/portal/security");
           }
           setContact(d.contact);
           setCustomer(d.customer);
