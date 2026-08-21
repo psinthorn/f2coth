@@ -259,6 +259,23 @@ export const portalApi = {
       throw new HttpError(res.status, msg);
     }
   },
+  // Passwordless sign-in: request a link (enumeration-safe, always resolves).
+  magicLinkRequest: async (email: string) => {
+    await fetch(`${API_BASE}/auth/customer/magic-link/request`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
+    }).catch(() => {});
+  },
+  // Redeem a magic link → session (or an MFA step for enrolled accounts).
+  magicLinkVerify: async (token: string, remember = false): Promise<{ mfaRequired: boolean; mfaToken?: string; contact?: PortalContact }> => {
+    const res = await fetch(`${API_BASE}/auth/customer/magic-link/verify`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }),
+    });
+    if (!res.ok) throw new HttpError(res.status, await res.text());
+    const data = await res.json();
+    if (data.mfa_required) return { mfaRequired: true, mfaToken: data.mfa_token };
+    setPortalAuth(data.access_token, data.refresh_token, data.contact, remember);
+    return { mfaRequired: false, contact: data.contact as PortalContact };
+  },
   // Complete the second factor with a TOTP code or a recovery code.
   mfaVerify: async (mfaToken: string, input: { code?: string; recovery_code?: string }, remember = false) => {
     const res = await fetch(`${API_BASE}/auth/customer/mfa/verify`, {

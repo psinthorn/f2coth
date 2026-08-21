@@ -54,6 +54,14 @@ function LoginForm() {
     }
   }
 
+  const [magicSent, setMagicSent] = useState(false);
+  async function sendMagicLink() {
+    if (!email.trim()) { setErr(t("needEmailForLink")); return; }
+    setErr(""); setBusy(true);
+    await portalApi.magicLinkRequest(email.trim());
+    setBusy(false); setMagicSent(true);
+  }
+
   // Self-service: re-send the email-verification link if the user lost it.
   // Enumeration-safe on the server (always 200), so the message is generic.
   async function requestVerifyLink() {
@@ -167,6 +175,13 @@ function LoginForm() {
             <button type="submit" disabled={busy} className="btn-accent w-full">
               {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submit")}
             </button>
+            {magicSent ? (
+              <p className="rounded-lg bg-emerald-50 p-2.5 text-center text-xs text-emerald-800">{t("magic.sent")}</p>
+            ) : (
+              <button type="button" onClick={sendMagicLink} disabled={busy} className="w-full rounded-lg border border-navy-200 py-2 text-sm text-navy-700 hover:bg-navy-50 disabled:opacity-50">
+                {t("magic.button")}
+              </button>
+            )}
             <p className="text-center text-xs text-navy-500">
               <Link href={"/portal/login/forgot" as any} className="hover:text-accent-700">{t("forgotPassword")}</Link>
               <span className="mx-2">·</span>

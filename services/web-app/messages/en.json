@@ -2695,7 +2695,11 @@
       },
       "rememberMe": "Remember me",
       "noAccount": "New to F2?",
-      "createAccount": "Create an account"
+      "createAccount": "Create an account",
+      "magic": {
+        "button": "Email me a sign-in link",
+        "sent": "Check your email for a sign-in link."
+      }
     },
     "home": {
       "welcome": "Welcome back,",
@@ -3152,6 +3156,12 @@
       "sentTitle": "Check your email",
       "sentBody": "We sent a verification link to {email}. Click it to activate your workspace, then sign in.",
       "toLogin": "Go to sign in"
+    },
+    "magic": {
+      "verifying": "Signing you in…",
+      "expiredTitle": "Link expired",
+      "expiredBody": "This sign-in link is invalid or has already been used. Request a new one from the login page.",
+      "backToLogin": "Back to sign in"
     }
   },
   "payments": {
