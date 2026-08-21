@@ -134,7 +134,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window === "undefined") return null;
     try {
-      const cached = sessionStorage.getItem("f2_user");
+      const cached = localStorage.getItem("f2_user") ?? sessionStorage.getItem("f2_user");
       return cached ? (JSON.parse(cached) as User) : null;
     } catch {
       return null;
@@ -142,7 +142,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   });
   const [loading, setLoading] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
-    return !sessionStorage.getItem("f2_user");
+    return !(localStorage.getItem("f2_user") ?? sessionStorage.getItem("f2_user"));
   });
   const [open, setOpen] = useState(false);
   // Fetched once at mount alongside `me()`. Empty object means "fetch failed"

@@ -735,7 +735,8 @@
         "invalid": "Invalid code. Try again.",
         "useRecovery": "Use a recovery code instead",
         "useApp": "Use your authenticator app instead"
-      }
+      },
+      "rememberMe": "Remember me"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -2691,7 +2692,8 @@
         "invalid": "Invalid code. Try again.",
         "useRecovery": "Use a recovery code instead",
         "useApp": "Use your authenticator app instead"
-      }
+      },
+      "rememberMe": "Remember me"
     },
     "home": {
       "welcome": "Welcome back,",

@@ -72,7 +72,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   useEffect(() => {
     let cancelled = false;
 
-    if (!sessionStorage.getItem("f2_portal_access_token")) {
+    if (!localStorage.getItem("f2_portal_access_token") && !sessionStorage.getItem("f2_portal_access_token")) {
       redirectToPortalLogin();
       return;
     }

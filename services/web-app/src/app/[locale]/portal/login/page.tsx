@@ -30,6 +30,7 @@ function LoginForm() {
   const next = searchParams?.get("next") ?? "/portal";
 
   // Second-factor step: set once password login reports mfa_required.
+  const [remember, setRemember] = useState(false);
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
   const [useRecovery, setUseRecovery] = useState(false);
@@ -44,7 +45,7 @@ function LoginForm() {
     if (!mfaToken) return;
     setBusy(true); setErr("");
     try {
-      await portalApi.mfaVerify(mfaToken, useRecovery ? { recovery_code: mfaCode.trim() } : { code: mfaCode.trim() });
+      await portalApi.mfaVerify(mfaToken, useRecovery ? { recovery_code: mfaCode.trim() } : { code: mfaCode.trim() }, remember);
       goNext();
     } catch {
       setErr(t("mfa.invalid"));
@@ -76,7 +77,7 @@ function LoginForm() {
     setBusy(true);
     setErr("");
     try {
-      const res = await portalApi.login(email, password);
+      const res = await portalApi.login(email, password, remember);
       if (res.mfaRequired) {
         setMfaToken(res.mfaToken ?? null);
         setBusy(false);
@@ -159,6 +160,10 @@ function LoginForm() {
                 <span>{err}</span>
               </div>
             )}
+            <label className="flex items-center gap-2 text-sm text-navy-700">
+              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="rounded border-navy-300" />
+              {t("rememberMe")}
+            </label>
             <button type="submit" disabled={busy} className="btn-accent w-full">
               {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submit")}
             </button>

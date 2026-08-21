@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { Loader2, AlertTriangle, Lock } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useBusyAction } from "@/lib/toast";
-import { adminApi } from "@/lib/admin-api";
+import { adminApi, setAdminAuth } from "@/lib/admin-api";
 
 export default function AdminLoginPage() {
   return (
@@ -29,6 +29,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams?.get("next") ?? "/admin";
 
+  const [remember, setRemember] = useState(false);
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
   const [useRecovery, setUseRecovery] = useState(false);
@@ -43,7 +44,7 @@ function LoginForm() {
     if (!mfaToken) return;
     setErr("");
     const ok = await run(async () => {
-      await adminApi.mfaVerify(mfaToken, useRecovery ? { recovery_code: mfaCode.trim() } : { code: mfaCode.trim() });
+      await adminApi.mfaVerify(mfaToken, useRecovery ? { recovery_code: mfaCode.trim() } : { code: mfaCode.trim() }, remember);
     });
     if (ok) goNext(); else setErr(t("mfa.invalid"));
   }
@@ -67,9 +68,7 @@ function LoginForm() {
       }
       const data = await res.json();
       if (data.mfa_required) { mfaNeeded = data.mfa_token; return; }
-      sessionStorage.setItem("f2_access_token", data.access_token);
-      sessionStorage.setItem("f2_refresh_token", data.refresh_token);
-      if (data.user) sessionStorage.setItem("f2_user", JSON.stringify(data.user));
+      setAdminAuth(data.access_token, data.refresh_token, data.user, remember);
     });
     if (ok && mfaNeeded) { setMfaToken(mfaNeeded); return; } // show the 2FA step
     if (ok) {
@@ -155,6 +154,10 @@ function LoginForm() {
               <span>{err}</span>
             </div>
           )}
+          <label className="flex items-center gap-2 text-sm text-navy-700">
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="rounded border-navy-300" />
+            {t("rememberMe")}
+          </label>
           <button type="submit" disabled={busy} className="btn-primary w-full disabled:opacity-40">
             {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("submitting")}</> : t("submit")}
           </button>

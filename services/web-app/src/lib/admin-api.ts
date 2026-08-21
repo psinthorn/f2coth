@@ -10,21 +10,40 @@ export class HttpError extends Error {
   }
 }
 
+// "Remember me" persists the session in localStorage (survives browser close);
+// otherwise sessionStorage. Reads check both; refresh preserves the active one.
+function activeStore(): Storage | null {
+  if (typeof window === "undefined") return null;
+  if (localStorage.getItem("f2_access_token")) return localStorage;
+  return sessionStorage;
+}
+
 function token(): string | null {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem("f2_access_token");
+  return localStorage.getItem("f2_access_token") ?? sessionStorage.getItem("f2_access_token");
 }
 
 function refreshTok(): string | null {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem("f2_refresh_token");
+  return localStorage.getItem("f2_refresh_token") ?? sessionStorage.getItem("f2_refresh_token");
 }
 
 export function clearAuth() {
   if (typeof window === "undefined") return;
-  sessionStorage.removeItem("f2_access_token");
-  sessionStorage.removeItem("f2_refresh_token");
-  sessionStorage.removeItem("f2_user");
+  for (const s of [localStorage, sessionStorage]) {
+    s.removeItem("f2_access_token"); s.removeItem("f2_refresh_token"); s.removeItem("f2_user");
+  }
+}
+
+// remember=true → localStorage; false → sessionStorage; undefined → keep active.
+export function setAdminAuth(access: string, refresh: string, user: unknown, remember?: boolean) {
+  if (typeof window === "undefined") return;
+  const store = remember === undefined ? (activeStore() ?? sessionStorage) : (remember ? localStorage : sessionStorage);
+  const other = store === localStorage ? sessionStorage : localStorage;
+  other.removeItem("f2_access_token"); other.removeItem("f2_refresh_token"); other.removeItem("f2_user");
+  store.setItem("f2_access_token", access);
+  store.setItem("f2_refresh_token", refresh);
+  if (user) store.setItem("f2_user", JSON.stringify(user));
 }
 
 export function redirectToLogin(returnTo?: string) {
@@ -44,9 +63,7 @@ async function attemptRefresh(): Promise<boolean> {
     });
     if (!res.ok) return false;
     const data = await res.json();
-    sessionStorage.setItem("f2_access_token", data.access_token);
-    sessionStorage.setItem("f2_refresh_token", data.refresh_token);
-    if (data.user) sessionStorage.setItem("f2_user", JSON.stringify(data.user));
+    setAdminAuth(data.access_token, data.refresh_token, data.user); // preserve active store
     return true;
   } catch {
     return false;
@@ -169,7 +186,7 @@ export const adminApi = {
       body: JSON.stringify({ email, password }),
     }),
   // Complete staff MFA at login (TOTP or recovery code) → stores the session.
-  mfaVerify: async (mfaToken: string, input: { code?: string; recovery_code?: string }) => {
+  mfaVerify: async (mfaToken: string, input: { code?: string; recovery_code?: string }, remember = false) => {
     const res = await fetch(`${API_BASE}/auth/mfa/verify`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -177,9 +194,7 @@ export const adminApi = {
     });
     if (!res.ok) throw new HttpError(res.status, await res.text());
     const data = await res.json();
-    sessionStorage.setItem("f2_access_token", data.access_token);
-    sessionStorage.setItem("f2_refresh_token", data.refresh_token);
-    if (data.user) sessionStorage.setItem("f2_user", JSON.stringify(data.user));
+    setAdminAuth(data.access_token, data.refresh_token, data.user, remember);
     return data.user as User;
   },
   // MFA enrolment (authenticated staff).
