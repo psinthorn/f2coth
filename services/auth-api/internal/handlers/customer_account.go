@@ -126,6 +126,14 @@ func (h *CustomerAuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request
 		writeErr(w, http.StatusInternalServerError, "verify update error")
 		return
 	}
+	// Verify-to-activate: flip a self-registered org from pending → active.
+	if _, err := tx.Exec(ctx, `
+		UPDATE customers SET status = 'active'
+		 WHERE id = (SELECT customer_id FROM customer_contacts WHERE id = $1)
+		   AND status = 'pending'`, contactID); err != nil {
+		writeErr(w, http.StatusInternalServerError, "activate error")
+		return
+	}
 	if _, err := tx.Exec(ctx,
 		`UPDATE password_resets SET used_at = NOW() WHERE token_hash = $1`, tokenHash); err != nil {
 		writeErr(w, http.StatusInternalServerError, "mark-used error")

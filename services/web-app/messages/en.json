@@ -2693,7 +2693,9 @@
         "useRecovery": "Use a recovery code instead",
         "useApp": "Use your authenticator app instead"
       },
-      "rememberMe": "Remember me"
+      "rememberMe": "Remember me",
+      "noAccount": "New to F2?",
+      "createAccount": "Create an account"
     },
     "home": {
       "welcome": "Welcome back,",
@@ -3132,6 +3134,24 @@
       "disable": "Turn off 2FA",
       "disableConfirm": "Turn off two-factor authentication?",
       "disabledToast": "Two-factor authentication disabled"
+    },
+    "register": {
+      "brandTitle": "F2 Client Portal",
+      "heading": "Create your account",
+      "subtitle": "Set up your company workspace in a minute.",
+      "company": "Company name",
+      "name": "Your name",
+      "email": "Work email",
+      "password": "Password",
+      "passwordHint": "At least 10 characters, with letters and numbers.",
+      "submit": "Create account",
+      "submitting": "Creating…",
+      "error": "Could not create your account. Please try again.",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "sentTitle": "Check your email",
+      "sentBody": "We sent a verification link to {email}. Click it to activate your workspace, then sign in.",
+      "toLogin": "Go to sign in"
     }
   },
   "payments": {

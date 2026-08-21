@@ -246,6 +246,19 @@ export const portalApi = {
     setPortalAuth(data.access_token, data.refresh_token, data.contact, remember);
     return { mfaRequired: false, contact: data.contact as PortalContact };
   },
+  // Public self-registration: creates an org + owner, then emails a verify link.
+  register: async (input: { company_name: string; full_name: string; email: string; password: string }) => {
+    const res = await fetch(`${API_BASE}/auth/customer/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      let msg = body; try { const j = JSON.parse(body); if (j?.error) msg = j.error; } catch { /* raw */ }
+      throw new HttpError(res.status, msg);
+    }
+  },
   // Complete the second factor with a TOTP code or a recovery code.
   mfaVerify: async (mfaToken: string, input: { code?: string; recovery_code?: string }, remember = false) => {
     const res = await fetch(`${API_BASE}/auth/customer/mfa/verify`, {

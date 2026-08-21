@@ -69,6 +69,7 @@ func main() {
 
 		// Customer (portal) login flow — separate JWT audience.
 		r.Route("/customer", func(r chi.Router) {
+			r.Post("/register", ch.Register) // public self-registration (org + owner)
 			r.Post("/login", ch.Login)
 			r.Post("/refresh", ch.Refresh)
 			r.Post("/logout", ch.Logout)

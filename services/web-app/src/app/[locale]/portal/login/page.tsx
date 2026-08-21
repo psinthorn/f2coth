@@ -173,6 +173,10 @@ function LoginForm() {
               <Link href="/" className="hover:text-accent-700">{t("back")}</Link>
             </p>
             <p className="text-center text-xs text-navy-500">
+              {t("noAccount")}{" "}
+              <Link href={"/register" as any} className="text-accent-700 hover:underline">{t("createAccount")}</Link>
+            </p>
+            <p className="text-center text-xs text-navy-500">
               <button type="button" onClick={requestVerifyLink} className="hover:text-accent-700 underline-offset-2 hover:underline">
                 {t("resendVerification")}
               </button>

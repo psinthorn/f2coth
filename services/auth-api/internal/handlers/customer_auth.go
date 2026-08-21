@@ -81,7 +81,7 @@ func (h *CustomerAuthHandler) loadMemberships(ctx context.Context, contactID str
 		SELECT m.customer_id, c.name, m.role, m.is_primary
 		FROM contact_org_memberships m
 		JOIN customers c ON c.id = m.customer_id
-		WHERE m.contact_id = $1 AND c.is_active = TRUE AND m.disabled_at IS NULL
+		WHERE m.contact_id = $1 AND c.is_active = TRUE AND c.status <> 'pending' AND m.disabled_at IS NULL
 		ORDER BY m.is_primary DESC, c.name`, contactID)
 	if err != nil {
 		return nil, err
