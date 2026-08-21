@@ -190,15 +190,22 @@ func (h *Handler) GetProjectBoard(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"project": p, "modules": mods})
 }
 
-// loadBoardModules returns the ordered attached modules plus their items
-// for a project. Shared by admin GetProjectBoard and portal PortalGetBoard.
+// loadBoardModules returns the ordered sections, their sub-sections, and the
+// items nested under each. Items with subsection_id set are grouped under the
+// matching sub-section; the rest sit directly under the section. Shared by
+// admin GetProjectBoard and portal PortalGetBoard.
 func loadBoardModules(ctx context.Context, h *Handler, projectID string) ([]models.ProjectModule, error) {
+	// Sections. Display fields live on the row now (custom sections have no
+	// template); COALESCE with the template covers any un-backfilled row.
 	modRows, err := h.DB.Query(ctx, `
 		SELECT pm.id, pm.project_id, pm.template_id,
-		       t.code, t.name_en, t.name_th, t.icon,
-		       pm.position, pm.added_by, pm.added_at
+		       COALESCE(pm.code, t.code, ''),
+		       COALESCE(pm.name_en, t.name_en, ''),
+		       COALESCE(pm.name_th, t.name_th, ''),
+		       COALESCE(pm.icon, t.icon),
+		       pm.position, pm.is_custom, pm.added_by, pm.added_at
 		  FROM project_modules pm
-		  JOIN checklist_templates t ON t.id = pm.template_id
+		  LEFT JOIN checklist_templates t ON t.id = pm.template_id
 		 WHERE pm.project_id = $1
 		 ORDER BY pm.position, pm.added_at`, projectID)
 	if err != nil {
@@ -210,9 +217,10 @@ func loadBoardModules(ctx context.Context, h *Handler, projectID string) ([]mode
 	for modRows.Next() {
 		var m models.ProjectModule
 		if err := modRows.Scan(&m.ID, &m.ProjectID, &m.TemplateID, &m.Code,
-			&m.NameEN, &m.NameTH, &m.Icon, &m.Position, &m.AddedBy, &m.AddedAt); err != nil {
+			&m.NameEN, &m.NameTH, &m.Icon, &m.Position, &m.IsCustom, &m.AddedBy, &m.AddedAt); err != nil {
 			return nil, err
 		}
+		m.Subsections = []models.ProjectSubsection{}
 		m.Items = []models.ProjectItem{}
 		mods = append(mods, m)
 		modIDs = append(modIDs, m.ID)
@@ -220,9 +228,41 @@ func loadBoardModules(ctx context.Context, h *Handler, projectID string) ([]mode
 	if len(modIDs) == 0 {
 		return mods, nil
 	}
+	modIdx := map[string]int{}
+	for i, m := range mods {
+		modIdx[m.ID] = i
+	}
+
+	// Sub-sections. subIdx maps subsection id → (module index, subsection index).
+	subRows, err := h.DB.Query(ctx, `
+		SELECT id, project_module_id, name_en, name_th, sort_order, is_custom
+		  FROM project_subsections
+		 WHERE project_module_id = ANY($1)
+		 ORDER BY sort_order, name_en`, modIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer subRows.Close()
+	type subLoc struct{ mod, sub int }
+	subIdx := map[string]subLoc{}
+	for subRows.Next() {
+		var s models.ProjectSubsection
+		if err := subRows.Scan(&s.ID, &s.ProjectModuleID, &s.NameEN, &s.NameTH,
+			&s.SortOrder, &s.IsCustom); err != nil {
+			return nil, err
+		}
+		s.Items = []models.ProjectItem{}
+		mi, ok := modIdx[s.ProjectModuleID]
+		if !ok {
+			continue
+		}
+		mods[mi].Subsections = append(mods[mi].Subsections, s)
+		subIdx[s.ID] = subLoc{mi, len(mods[mi].Subsections) - 1}
+	}
+
 	itemRows, err := h.DB.Query(ctx, `
-		SELECT id, project_module_id, text_en, text_th, sort_order, required,
-		       status, note, photo_url, checked_by, checked_at, updated_at
+		SELECT id, project_module_id, subsection_id, text_en, text_th, sort_order, required,
+		       status, note, photo_url, checked_by, checked_at, is_custom, updated_at
 		  FROM project_items
 		 WHERE project_module_id = ANY($1)
 		 ORDER BY sort_order`, modIDs)
@@ -230,18 +270,20 @@ func loadBoardModules(ctx context.Context, h *Handler, projectID string) ([]mode
 		return nil, err
 	}
 	defer itemRows.Close()
-	idx := map[string]int{}
-	for i, m := range mods {
-		idx[m.ID] = i
-	}
 	for itemRows.Next() {
 		var it models.ProjectItem
-		if err := itemRows.Scan(&it.ID, &it.ProjectModuleID, &it.TextEN, &it.TextTH,
+		if err := itemRows.Scan(&it.ID, &it.ProjectModuleID, &it.SubsectionID, &it.TextEN, &it.TextTH,
 			&it.SortOrder, &it.Required, &it.Status, &it.Note, &it.PhotoURL,
-			&it.CheckedBy, &it.CheckedAt, &it.UpdatedAt); err != nil {
+			&it.CheckedBy, &it.CheckedAt, &it.IsCustom, &it.UpdatedAt); err != nil {
 			return nil, err
 		}
-		if i, ok := idx[it.ProjectModuleID]; ok {
+		if it.SubsectionID != nil {
+			if loc, ok := subIdx[*it.SubsectionID]; ok {
+				mods[loc.mod].Subsections[loc.sub].Items = append(mods[loc.mod].Subsections[loc.sub].Items, it)
+				continue
+			}
+		}
+		if i, ok := modIdx[it.ProjectModuleID]; ok {
 			mods[i].Items = append(mods[i].Items, it)
 		}
 	}
@@ -255,17 +297,20 @@ func (h *Handler) GetProjectProgress(w http.ResponseWriter, r *http.Request) {
 
 func writeProjectProgress(w http.ResponseWriter, r *http.Request, h *Handler, projectID string) {
 	rows, err := h.DB.Query(r.Context(), `
-		SELECT pm.id, t.code, t.name_en, t.name_th,
+		SELECT pm.id,
+		       COALESCE(pm.code, t.code, ''),
+		       COALESCE(pm.name_en, t.name_en, ''),
+		       COALESCE(pm.name_th, t.name_th, ''),
 		       COUNT(pi.id) AS total,
 		       COUNT(*) FILTER (WHERE pi.status IN ('pass','fail','na')) AS done,
 		       COUNT(*) FILTER (WHERE pi.status = 'fail') AS fail,
 		       COUNT(*) FILTER (WHERE pi.status = 'na')   AS na,
 		       COUNT(*) FILTER (WHERE pi.status = 'pending') AS pending
 		  FROM project_modules pm
-		  JOIN checklist_templates t ON t.id = pm.template_id
+		  LEFT JOIN checklist_templates t ON t.id = pm.template_id
 		  LEFT JOIN project_items pi ON pi.project_module_id = pm.id
 		 WHERE pm.project_id = $1
-		 GROUP BY pm.id, t.code, t.name_en, t.name_th, pm.position
+		 GROUP BY pm.id, pm.code, t.code, pm.name_en, t.name_en, pm.name_th, t.name_th, pm.position
 		 ORDER BY pm.position`, projectID)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")

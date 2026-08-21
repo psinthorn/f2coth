@@ -52,7 +52,8 @@ type Contact struct {
 	Phone              *string    `json:"phone,omitempty"`
 	JobTitle           *string    `json:"job_title,omitempty"`
 	// IsPrimary marks this org as the contact's home org (membership context).
-	IsPrimary *bool `json:"is_primary,omitempty"`
+	IsPrimary  *bool `json:"is_primary,omitempty"`
+	MFAEnabled bool  `json:"mfa_enabled"`
 }
 
 // OrgMembership is one org a contact belongs to (migration 071). Drives the

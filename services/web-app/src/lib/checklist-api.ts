@@ -53,7 +53,14 @@ async function request<T>(path: string, init: RequestInit = {}, retried = false)
     redirectToLogin();
     throw new HttpError(401, "unauthorized");
   }
-  if (!res.ok) throw new HttpError(res.status, await res.text());
+  if (!res.ok) {
+    // Server errors are JSON {"error":"..."}; surface that message (falls back
+    // to the raw body) so duplicate/validation toasts read cleanly.
+    const body = await res.text();
+    let msg = body;
+    try { const j = JSON.parse(body); if (j?.error) msg = j.error; } catch { /* keep raw */ }
+    throw new HttpError(res.status, msg);
+  }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
@@ -96,6 +103,7 @@ export type ItemStatus = "pending" | "pass" | "fail" | "na";
 export interface ProjectItem {
   id: string;
   project_module_id: string;
+  subsection_id: string | null;
   text_en: string;
   text_th: string;
   sort_order: number;
@@ -105,20 +113,40 @@ export interface ProjectItem {
   photo_url: string | null;
   checked_by: string | null;
   checked_at: string | null;
+  is_custom: boolean;
   updated_at: string;
+}
+
+export interface Suggestion {
+  name_en: string;
+  name_th: string;
+  source: "library" | "project";
+  exists: boolean;
+}
+
+export interface ProjectSubsection {
+  id: string;
+  project_module_id: string;
+  name_en: string;
+  name_th: string;
+  sort_order: number;
+  is_custom: boolean;
+  items: ProjectItem[];
 }
 
 export interface ProjectModule {
   id: string;
   project_id: string;
-  template_id: string;
+  template_id: string | null;
   code: string;
   name_en: string;
   name_th: string;
   icon: string | null;
   position: number;
+  is_custom: boolean;
   added_by: string | null;
   added_at: string;
+  subsections: ProjectSubsection[];
   items: ProjectItem[];
 }
 
@@ -217,8 +245,46 @@ export const checklistApi = {
       body: JSON.stringify({ order }),
     }),
 
-  updateItem: (id: string, patch: { status?: ItemStatus; note?: string; photo_url?: string }) =>
+  updateItem: (id: string, patch: { status?: ItemStatus; note?: string; photo_url?: string; text_en?: string; text_th?: string }) =>
     request<void>(`/items/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+
+  // Add a one-off custom item to an attached module. subsection_id places it
+  // under a sub-section; save_to_library also appends it to the underlying
+  // template for future projects.
+  addItem: (projectId: string, pmId: string, input: { text_en: string; text_th: string; required?: boolean; save_to_library?: boolean; subsection_id?: string | null }) =>
+    request<ProjectItem>(`/projects/${projectId}/modules/${pmId}/items`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  deleteItem: (id: string) =>
+    request<void>(`/items/${id}`, { method: "DELETE" }),
+
+  // ── Sections (custom create + rename; delete reuses detachModule) ──
+  createSection: (projectId: string, input: { name_en: string; name_th: string; save_to_library?: boolean }) =>
+    request<ProjectModule>(`/projects/${projectId}/sections`, { method: "POST", body: JSON.stringify(input) }),
+  updateSection: (projectId: string, pmId: string, patch: { name_en?: string; name_th?: string }) =>
+    request<void>(`/projects/${projectId}/sections/${pmId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+
+  // ── Sub-sections ──
+  createSubsection: (projectId: string, pmId: string, input: { name_en: string; name_th: string }) =>
+    request<ProjectSubsection>(`/projects/${projectId}/modules/${pmId}/subsections`, { method: "POST", body: JSON.stringify(input) }),
+  updateSubsection: (id: string, patch: { name_en?: string; name_th?: string }) =>
+    request<void>(`/subsections/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deleteSubsection: (id: string) =>
+    request<void>(`/subsections/${id}`, { method: "DELETE" }),
+
+  // Smart suggestions (typeahead) from the library + existing project entries.
+  suggest: (projectId: string, kind: "section" | "subsection" | "item", q: string) =>
+    request<{ suggestions: Suggestion[] }>(`/projects/${projectId}/suggest?kind=${kind}&q=${encodeURIComponent(q)}`),
+
+  // ── Drag-and-drop reorder ──
+  // Reorder items within a container, or move them between sub-sections / up
+  // to the section: send the destination container's full ordered id list.
+  reorderItems: (projectId: string, input: { module_id: string; subsection_id: string | null; order: string[] }) =>
+    request<void>(`/projects/${projectId}/items/reorder`, { method: "PATCH", body: JSON.stringify(input) }),
+  reorderSubsections: (projectId: string, pmId: string, order: string[]) =>
+    request<void>(`/projects/${projectId}/modules/${pmId}/subsections/reorder`, { method: "PATCH", body: JSON.stringify({ order }) }),
 
   // Uploads bypass the JSON request() wrapper because they need multipart.
   // Same auth (Bearer) + refresh flow, hand-rolled here so we don't touch

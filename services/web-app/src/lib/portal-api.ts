@@ -15,27 +15,44 @@ const KEY_ACCESS = "f2_portal_access_token";
 const KEY_REFRESH = "f2_portal_refresh_token";
 const KEY_CONTACT = "f2_portal_contact";
 
+// "Remember me" persists the session in localStorage (survives browser close);
+// otherwise sessionStorage (cleared when the tab closes). Reads check both;
+// the store currently holding the token is the "active" one, so a token refresh
+// preserves whichever the user chose at login.
+function activeStore(): Storage | null {
+  if (typeof window === "undefined") return null;
+  if (localStorage.getItem(KEY_ACCESS)) return localStorage;
+  return sessionStorage;
+}
+
 function token(): string | null {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem(KEY_ACCESS);
+  return localStorage.getItem(KEY_ACCESS) ?? sessionStorage.getItem(KEY_ACCESS);
 }
 
 function refreshTok(): string | null {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem(KEY_REFRESH);
+  return localStorage.getItem(KEY_REFRESH) ?? sessionStorage.getItem(KEY_REFRESH);
 }
 
 export function clearPortalAuth() {
   if (typeof window === "undefined") return;
-  sessionStorage.removeItem(KEY_ACCESS);
-  sessionStorage.removeItem(KEY_REFRESH);
-  sessionStorage.removeItem(KEY_CONTACT);
+  for (const s of [localStorage, sessionStorage]) {
+    s.removeItem(KEY_ACCESS); s.removeItem(KEY_REFRESH); s.removeItem(KEY_CONTACT);
+  }
 }
 
-export function setPortalAuth(access: string, refresh: string, contact: unknown) {
-  sessionStorage.setItem(KEY_ACCESS, access);
-  sessionStorage.setItem(KEY_REFRESH, refresh);
-  sessionStorage.setItem(KEY_CONTACT, JSON.stringify(contact));
+// remember=true → localStorage; false → sessionStorage; undefined → keep the
+// current active store (used by refresh / switch-org so they don't downgrade
+// a "remember me" session).
+export function setPortalAuth(access: string, refresh: string, contact: unknown, remember?: boolean) {
+  if (typeof window === "undefined") return;
+  const store = remember === undefined ? (activeStore() ?? sessionStorage) : (remember ? localStorage : sessionStorage);
+  const other = store === localStorage ? sessionStorage : localStorage;
+  other.removeItem(KEY_ACCESS); other.removeItem(KEY_REFRESH); other.removeItem(KEY_CONTACT);
+  store.setItem(KEY_ACCESS, access);
+  store.setItem(KEY_REFRESH, refresh);
+  store.setItem(KEY_CONTACT, JSON.stringify(contact));
 }
 
 export function redirectToPortalLogin(returnTo?: string) {
@@ -81,8 +98,12 @@ async function request<T>(path: string, init: RequestInit = {}, retried = false)
   }
 
   if (!res.ok) {
+    // Server errors are JSON {"error":"..."}; surface that message (falls back
+    // to raw body) so forbidden / last-owner / duplicate toasts read cleanly.
     const body = await res.text();
-    throw new HttpError(res.status, body);
+    let msg = body;
+    try { const j = JSON.parse(body); if (j?.error) msg = j.error; } catch { /* keep raw */ }
+    throw new HttpError(res.status, msg);
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -93,12 +114,27 @@ async function request<T>(path: string, init: RequestInit = {}, retried = false)
 export type TicketStatus = "open" | "in_progress" | "waiting_customer" | "resolved" | "closed";
 export type TicketPriority = "low" | "normal" | "high" | "urgent";
 
+export type OrgRole = "owner" | "admin" | "billing" | "member" | "viewer";
+
+export interface PortalMember {
+  contact_id: string;
+  email: string;
+  full_name: string;
+  role: OrgRole;
+  is_primary: boolean;
+  disabled: boolean;
+  verified: boolean;
+  pending: boolean;
+  last_login_at: string | null;
+  invited_at: string | null;
+}
+
 export interface PortalContact {
   id: string;
   customer_id: string;
   email: string;
   full_name: string;
-  role: "owner" | "member";
+  role: OrgRole;
   last_login_at: string | null;
   disabled_at: string | null;
   created_at: string;
@@ -108,6 +144,7 @@ export interface PortalContact {
   phone?: string | null;
   job_title?: string | null;
   is_primary?: boolean;
+  mfa_enabled?: boolean;
 }
 
 export interface PortalMembership {
@@ -194,7 +231,10 @@ export interface PortalMessage {
 // ----- Endpoints -----
 
 export const portalApi = {
-  login: async (email: string, password: string) => {
+  // Returns { mfaRequired: true, mfaToken } when the account has MFA enabled —
+  // the caller then collects a code and calls mfaVerify. Otherwise stores the
+  // session and returns { contact }.
+  login: async (email: string, password: string, remember = false): Promise<{ mfaRequired: boolean; mfaToken?: string; contact?: PortalContact }> => {
     const res = await fetch(`${API_BASE}/auth/customer/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -202,9 +242,56 @@ export const portalApi = {
     });
     if (!res.ok) throw new HttpError(res.status, await res.text());
     const data = await res.json();
-    setPortalAuth(data.access_token, data.refresh_token, data.contact);
+    if (data.mfa_required) return { mfaRequired: true, mfaToken: data.mfa_token };
+    setPortalAuth(data.access_token, data.refresh_token, data.contact, remember);
+    return { mfaRequired: false, contact: data.contact as PortalContact };
+  },
+  // Public self-registration: creates an org + owner, then emails a verify link.
+  register: async (input: { company_name: string; full_name: string; email: string; password: string }) => {
+    const res = await fetch(`${API_BASE}/auth/customer/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      let msg = body; try { const j = JSON.parse(body); if (j?.error) msg = j.error; } catch { /* raw */ }
+      throw new HttpError(res.status, msg);
+    }
+  },
+  // Passwordless sign-in: request a link (enumeration-safe, always resolves).
+  magicLinkRequest: async (email: string) => {
+    await fetch(`${API_BASE}/auth/customer/magic-link/request`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
+    }).catch(() => {});
+  },
+  // Redeem a magic link → session (or an MFA step for enrolled accounts).
+  magicLinkVerify: async (token: string, remember = false): Promise<{ mfaRequired: boolean; mfaToken?: string; contact?: PortalContact }> => {
+    const res = await fetch(`${API_BASE}/auth/customer/magic-link/verify`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }),
+    });
+    if (!res.ok) throw new HttpError(res.status, await res.text());
+    const data = await res.json();
+    if (data.mfa_required) return { mfaRequired: true, mfaToken: data.mfa_token };
+    setPortalAuth(data.access_token, data.refresh_token, data.contact, remember);
+    return { mfaRequired: false, contact: data.contact as PortalContact };
+  },
+  // Complete the second factor with a TOTP code or a recovery code.
+  mfaVerify: async (mfaToken: string, input: { code?: string; recovery_code?: string }, remember = false) => {
+    const res = await fetch(`${API_BASE}/auth/customer/mfa/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mfa_token: mfaToken, ...input }),
+    });
+    if (!res.ok) throw new HttpError(res.status, await res.text());
+    const data = await res.json();
+    setPortalAuth(data.access_token, data.refresh_token, data.contact, remember);
     return data.contact as PortalContact;
   },
+  // ── MFA enrolment (authenticated) ──
+  mfaSetup: () => request<{ secret: string; otpauth_uri: string }>("/auth/customer/mfa/setup", { method: "POST" }),
+  mfaEnable: (code: string) => request<{ recovery_codes: string[] }>("/auth/customer/mfa/enable", { method: "POST", body: JSON.stringify({ code }) }),
+  mfaDisable: (code: string) => request<void>("/auth/customer/mfa/disable", { method: "POST", body: JSON.stringify({ code }) }),
   logout: async () => {
     const rt = refreshTok();
     if (rt) {
@@ -218,7 +305,7 @@ export const portalApi = {
   },
 
   me: () =>
-    request<{ contact: PortalContact; customer: PortalCustomer; memberships: PortalMembership[] }>(
+    request<{ contact: PortalContact; customer: PortalCustomer; memberships: PortalMembership[]; mfa_setup_required?: boolean }>(
       "/portal/me",
     ),
 
@@ -250,10 +337,21 @@ export const portalApi = {
       "/auth/customer/switch-org",
       { method: "POST", body: JSON.stringify({ customer_id }) },
     );
-    // Swap only the access token; refresh token + contact stay as they are.
-    if (typeof window !== "undefined") sessionStorage.setItem(KEY_ACCESS, data.access_token);
+    // Swap only the access token; keep it in whichever store the session uses.
+    if (typeof window !== "undefined") (activeStore() ?? sessionStorage).setItem(KEY_ACCESS, data.access_token);
     return data;
   },
+
+  // ── Team & Roles (org self-administration; Owner/Admin only) ──
+  listMembers: () => request<{ members: PortalMember[] }>("/portal/members"),
+  inviteMember: (input: { email: string; full_name: string; role: OrgRole }) =>
+    request<{ contact_id: string; linked: boolean }>("/portal/members/invite", { method: "POST", body: JSON.stringify(input) }),
+  setMemberRole: (contactId: string, role: OrgRole) =>
+    request<void>(`/portal/members/${contactId}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  setMemberStatus: (contactId: string, disabled: boolean) =>
+    request<void>(`/portal/members/${contactId}/status`, { method: "PATCH", body: JSON.stringify({ disabled }) }),
+  removeMember: (contactId: string) =>
+    request<void>(`/portal/members/${contactId}`, { method: "DELETE" }),
 
   getTicketBilling: (id: string) => request<PortalTicketBilling>(`/portal/tickets/${id}/billing`),
 
@@ -416,6 +514,15 @@ export interface PortalProjectItem {
   checked_at: string | null;
 }
 
+export interface PortalProjectSubsection {
+  id: string;
+  project_module_id: string;
+  name_en: string;
+  name_th: string;
+  sort_order: number;
+  items: PortalProjectItem[];
+}
+
 export interface PortalProjectModule {
   id: string;
   project_id: string;
@@ -423,6 +530,7 @@ export interface PortalProjectModule {
   name_en: string;
   name_th: string;
   position: number;
+  subsections: PortalProjectSubsection[];
   items: PortalProjectItem[];
 }
 

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/sha256"
 	"log"
 	"os"
 	"strconv"
@@ -20,6 +21,7 @@ type Config struct {
 	NotificationAPIURL string
 	PrivacyNotifyTo    string
 	SiteURL            string
+	MFAEncKey          [32]byte // AES-256 key for encrypting TOTP secrets at rest
 }
 
 func Load() Config {
@@ -42,10 +44,16 @@ func Load() Config {
 		}
 	}
 
+	// AES-256 key for TOTP-secret encryption: explicit MFA_ENC_KEY if provided,
+	// else derived from JWT_SECRET so dev works without extra config.
+	mfaSeed := getenv("MFA_ENC_KEY", secret)
+	mfaKey := sha256.Sum256([]byte(mfaSeed))
+
 	return Config{
 		ServicePort:        getenv("SERVICE_PORT", "8004"),
 		DatabaseURL:        getenv("DATABASE_URL", ""),
 		JWTSecret:          secret,
+		MFAEncKey:          mfaKey,
 		JWTIssuer:          getenv("JWT_ISSUER", "f2.co.th"),
 		JWTTTL:             time.Duration(jwtTTLMin) * time.Minute,
 		RefreshTTL:         time.Duration(refTTLHr) * time.Hour,

@@ -60,15 +60,14 @@ func mintContactToken() (string, string, error) {
 	return raw, hex.EncodeToString(sum[:]), nil
 }
 
-// sendInviteEmail dispatches login instructions (username + temp password) and
-// a verification link for a newly created portal user.
-func (h *AdminHandler) sendInviteEmail(email, fullName, orgName, tempPassword, rawToken, locale string) {
+// sendContactInvite dispatches login instructions (username + temp password)
+// and a verification link for a newly created portal user. Free function so
+// both staff (AdminHandler) and org self-admin (PortalHandler) can reuse it.
+func sendContactInvite(n *notify.Client, portalBase, email, fullName, orgName, tempPassword, rawToken, locale string) {
 	if locale == "" {
 		locale = "en"
 	}
-	loginURL := h.Cfg.PortalBaseURL + "/portal/login"
-	verifyURL := h.Cfg.PortalBaseURL + "/portal/verify-email/" + rawToken
-	h.Notify.Send(notify.Job{
+	n.Send(notify.Job{
 		Channel:   "email",
 		Template:  "contact_invite_customer",
 		ToAddress: email,
@@ -77,32 +76,40 @@ func (h *AdminHandler) sendInviteEmail(email, fullName, orgName, tempPassword, r
 			"email":         email,
 			"org_name":      orgName,
 			"temp_password": tempPassword,
-			"login_url":     loginURL,
-			"verify_url":    verifyURL,
+			"login_url":     portalBase + "/portal/login",
+			"verify_url":    portalBase + "/portal/verify-email/" + rawToken,
 			"ttl_hours":     verifyTTLHours,
 		},
 		Locale: locale,
 	})
 }
 
-// sendVerifyEmail dispatches a standalone email-verification link (resend).
-func (h *AdminHandler) sendVerifyEmail(email, fullName, rawToken, locale string) {
+// sendContactVerify dispatches a standalone email-verification link (resend).
+func sendContactVerify(n *notify.Client, portalBase, email, fullName, rawToken, locale string) {
 	if locale == "" {
 		locale = "en"
 	}
-	verifyURL := h.Cfg.PortalBaseURL + "/portal/verify-email/" + rawToken
-	h.Notify.Send(notify.Job{
+	n.Send(notify.Job{
 		Channel:   "email",
 		Template:  "email_verification_customer",
 		ToAddress: email,
 		Payload: map[string]any{
 			"full_name":  fullName,
 			"email":      email,
-			"verify_url": verifyURL,
+			"verify_url": portalBase + "/portal/verify-email/" + rawToken,
 			"ttl_hours":  verifyTTLHours,
 		},
 		Locale: locale,
 	})
+}
+
+// Thin wrappers keep the existing AdminHandler call sites unchanged.
+func (h *AdminHandler) sendInviteEmail(email, fullName, orgName, tempPassword, rawToken, locale string) {
+	sendContactInvite(h.Notify, h.Cfg.PortalBaseURL, email, fullName, orgName, tempPassword, rawToken, locale)
+}
+
+func (h *AdminHandler) sendVerifyEmail(email, fullName, rawToken, locale string) {
+	sendContactVerify(h.Notify, h.Cfg.PortalBaseURL, email, fullName, rawToken, locale)
 }
 
 // ResendInvite lets an admin re-send an email-verification link to a member of

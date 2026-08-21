@@ -115,7 +115,8 @@
       "editor": "editor",
       "viewer": "viewer",
       "owner": "owner",
-      "member": "member"
+      "member": "member",
+      "billing": "billing"
     },
     "preferredLanguage": "Preferred language",
     "slaStatus": {
@@ -137,8 +138,10 @@
       "deleted": "Deleted",
       "done": "Done",
       "sent": "Sent",
-      "error": "Something went wrong"
-    }
+      "error": "Something went wrong",
+      "copied": "Copied"
+    },
+    "copy": "Copy"
   },
   "header": {
     "nav": {
@@ -676,7 +679,8 @@
         "aiRouting": "AI routing",
         "aiUsage": "AI usage",
         "contracts": "Contracts",
-        "assethub": "Asset Register"
+        "assethub": "Asset Register",
+        "security": "Security"
       },
       "signedInAs": "Signed in as",
       "signOut": "Sign out",
@@ -721,7 +725,18 @@
         "success": "Password updated. Redirecting to sign in…",
         "backToLogin": "Back to sign in",
         "error": "Reset failed."
-      }
+      },
+      "mfa": {
+        "title": "Two-factor authentication",
+        "hint": "Enter the 6-digit code from your authenticator app.",
+        "recoveryHint": "Enter one of your recovery codes.",
+        "recoveryPlaceholder": "XXXX-XXXX",
+        "verify": "Verify",
+        "invalid": "Invalid code. Try again.",
+        "useRecovery": "Use a recovery code instead",
+        "useApp": "Use your authenticator app instead"
+      },
+      "rememberMe": "Remember me"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -1132,6 +1147,12 @@
         "badgeUnverified": "Email unverified",
         "badgePendingPassword": "Temp password",
         "badgeLinked": "Linked"
+      },
+      "mfaPolicy": {
+        "title": "Two-factor authentication policy",
+        "hint": "Require MFA for high-privilege accounts. Affected users are forced to enrol at next sign-in.",
+        "staff": "Require MFA for all F2 staff",
+        "customerRoles": "Require MFA for these portal roles"
       }
     },
     "users": {
@@ -2048,7 +2069,38 @@
         "notePlaceholder": "Add a note…",
         "viewPhoto": "View photo",
         "attachPhoto": "Attach photo",
-        "uploading": "Uploading…"
+        "uploading": "Uploading…",
+        "customBadge": "Custom",
+        "deleteConfirm": "Delete this custom item? This cannot be undone.",
+        "addItem": {
+          "button": "Add item",
+          "textEnPlaceholder": "Item text (English)",
+          "textThPlaceholder": "Item text (ไทย)",
+          "saveToLibrary": "Also save to the module library (future projects get it too)",
+          "bothRequired": "Both English and Thai text are required."
+        },
+        "nameEnPlaceholder": "Name (English)",
+        "nameThPlaceholder": "Name (ไทย)",
+        "section": {
+          "addButton": "Add section",
+          "addTitle": "New section",
+          "saveToLibrary": "Also save to the module library (re-attachable to future projects)",
+          "deleteConfirm": "Delete this section and everything under it? This cannot be undone."
+        },
+        "subsection": {
+          "label": "Sub-section",
+          "addButton": "Add sub-section",
+          "addTitle": "New sub-section",
+          "deleteConfirm": "Delete this sub-section? Its items move up to the section (they are not deleted)."
+        },
+        "dragHint": "Drag the handle to reorder or move between sub-sections.",
+        "dropHere": "Drop items here",
+        "dupWarning": "This name already exists here — pick a different one.",
+        "suggest": {
+          "library": "Library",
+          "inProject": "In project",
+          "added": "already added"
+        }
       },
       "report": {
         "title": "Report",
@@ -2502,6 +2554,31 @@
         "ignored": "Finding ignored",
         "copied": "Copied"
       }
+    },
+    "security": {
+      "title": "Security",
+      "subtitle": "Protect your account with two-factor authentication.",
+      "mfaHeading": "Two-factor authentication (2FA)",
+      "statusOn": "Your account is protected with an authenticator app.",
+      "statusOff": "Add a second step at sign-in using an authenticator app.",
+      "on": "On",
+      "off": "Off",
+      "enable": "Enable 2FA",
+      "step1": "1. Add this key to your authenticator app",
+      "manualHint": "Open Google Authenticator, Authy, or 1Password and add a new account using this key.",
+      "secretLabel": "Setup key",
+      "openInApp": "Open in authenticator app",
+      "step2": "2. Enter the 6-digit code to confirm",
+      "confirm": "Confirm",
+      "enabledToast": "Two-factor authentication enabled",
+      "recoveryTitle": "Save your recovery codes",
+      "recoveryHint": "Each code works once. Store them somewhere safe — they let you sign in if you lose your device.",
+      "copyCodes": "Copy codes",
+      "done": "Done",
+      "disableLabel": "Enter a code to turn off 2FA",
+      "disable": "Turn off 2FA",
+      "disableConfirm": "Turn off two-factor authentication?",
+      "disabledToast": "Two-factor authentication disabled"
     }
   },
   "portal": {
@@ -2554,7 +2631,9 @@
         "subscriptions": "Subscriptions",
         "billingProfile": "Tax invoice info",
         "projects": "Projects",
-        "assets": "Asset Register"
+        "assets": "Asset Register",
+        "team": "Team & Roles",
+        "security": "Security"
       },
       "organisation": "Organisation",
       "switchOrg": "Switch organisation",
@@ -2603,6 +2682,23 @@
         "success": "Password updated. Redirecting to sign in…",
         "backToLogin": "Back to sign in",
         "error": "Reset failed."
+      },
+      "mfa": {
+        "title": "Two-factor authentication",
+        "hint": "Enter the 6-digit code from your authenticator app.",
+        "recoveryHint": "Enter one of your recovery codes.",
+        "recoveryPlaceholder": "XXXX-XXXX",
+        "verify": "Verify",
+        "invalid": "Invalid code. Try again.",
+        "useRecovery": "Use a recovery code instead",
+        "useApp": "Use your authenticator app instead"
+      },
+      "rememberMe": "Remember me",
+      "noAccount": "New to F2?",
+      "createAccount": "Create an account",
+      "magic": {
+        "button": "Email me a sign-in link",
+        "sent": "Check your email for a sign-in link."
       }
     },
     "home": {
@@ -2970,6 +3066,102 @@
         "ip": "IP"
       },
       "empty": "No devices on record yet"
+    },
+    "team": {
+      "title": "Team & Roles",
+      "subtitle": "Manage who can access this organization and what they can do.",
+      "you": "you",
+      "invite": {
+        "title": "Invite a member",
+        "namePlaceholder": "Full name",
+        "emailPlaceholder": "Work email",
+        "send": "Send invite",
+        "required": "Name and email are required.",
+        "sent": "Invitation sent",
+        "hint": "They receive an email to set a password and verify their address."
+      },
+      "col": {
+        "member": "Member",
+        "role": "Role",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "role": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "billing": "Billing",
+        "member": "Member",
+        "viewer": "Viewer"
+      },
+      "status": {
+        "active": "Active",
+        "pending": "Invited",
+        "unverified": "Unverified",
+        "disabled": "Disabled"
+      },
+      "action": {
+        "disable": "Disable",
+        "enable": "Enable",
+        "remove": "Remove from org"
+      },
+      "remove": {
+        "confirm": "Remove {name} from this organization? They keep access to any other org they belong to."
+      },
+      "toast": {
+        "roleChanged": "Role updated",
+        "disabled": "Member disabled",
+        "enabled": "Member enabled",
+        "removed": "Member removed"
+      }
+    },
+    "security": {
+      "title": "Security",
+      "subtitle": "Protect your account with two-factor authentication.",
+      "mfaHeading": "Two-factor authentication (2FA)",
+      "statusOn": "Your account is protected with an authenticator app.",
+      "statusOff": "Add a second step at sign-in using an authenticator app.",
+      "on": "On",
+      "off": "Off",
+      "enable": "Enable 2FA",
+      "step1": "1. Add this key to your authenticator app",
+      "manualHint": "Open Google Authenticator, Authy, or 1Password and add a new account using this key.",
+      "secretLabel": "Setup key",
+      "openInApp": "Open in authenticator app",
+      "step2": "2. Enter the 6-digit code to confirm",
+      "confirm": "Confirm",
+      "enabledToast": "Two-factor authentication enabled",
+      "recoveryTitle": "Save your recovery codes",
+      "recoveryHint": "Each code works once. Store them somewhere safe — they let you sign in if you lose your device.",
+      "copyCodes": "Copy codes",
+      "done": "Done",
+      "disableLabel": "Enter a code to turn off 2FA",
+      "disable": "Turn off 2FA",
+      "disableConfirm": "Turn off two-factor authentication?",
+      "disabledToast": "Two-factor authentication disabled"
+    },
+    "register": {
+      "brandTitle": "F2 Client Portal",
+      "heading": "Create your account",
+      "subtitle": "Set up your company workspace in a minute.",
+      "company": "Company name",
+      "name": "Your name",
+      "email": "Work email",
+      "password": "Password",
+      "passwordHint": "At least 10 characters, with letters and numbers.",
+      "submit": "Create account",
+      "submitting": "Creating…",
+      "error": "Could not create your account. Please try again.",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "sentTitle": "Check your email",
+      "sentBody": "We sent a verification link to {email}. Click it to activate your workspace, then sign in.",
+      "toLogin": "Go to sign in"
+    },
+    "magic": {
+      "verifying": "Signing you in…",
+      "expiredTitle": "Link expired",
+      "expiredBody": "This sign-in link is invalid or has already been used. Request a new one from the login page.",
+      "backToLogin": "Back to sign in"
     }
   },
   "payments": {

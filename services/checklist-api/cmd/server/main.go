@@ -73,6 +73,7 @@ func main() {
 			r.Get("/projects/{id}/progress", h.GetProjectProgress)
 			r.Get("/projects/{id}/report", h.GetProjectReport)
 			r.Get("/projects/{id}/visits", h.ListVisits)
+			r.Get("/projects/{id}/suggest", h.Suggest)
 
 			// Attachments — staff read (metadata + streamed file).
 			r.Group(func(r chi.Router) {
@@ -86,6 +87,17 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(mw.RequireStaff(cfg.JWTSecret))
 			r.Patch("/items/{id}", h.UpdateItem)
+			r.Delete("/items/{id}", h.DeleteItem)
+			r.Post("/projects/{id}/modules/{pmId}/items", h.AddItem)
+			// Custom sections + sub-sections (3-level hierarchy).
+			r.Post("/projects/{id}/sections", h.CreateSection)
+			r.Patch("/projects/{id}/sections/{pmId}", h.UpdateSection)
+			r.Post("/projects/{id}/modules/{pmId}/subsections", h.CreateSubsection)
+			r.Patch("/projects/{id}/modules/{pmId}/subsections/reorder", h.ReorderSubsections)
+			r.Patch("/subsections/{id}", h.UpdateSubsection)
+			r.Delete("/subsections/{id}", h.DeleteSubsection)
+			// Drag-and-drop reorder (+ move items between containers).
+			r.Patch("/projects/{id}/items/reorder", h.ReorderItems)
 			r.Post("/projects/{id}/visits", h.CreateVisit)
 			r.Post("/uploads", h.UploadPhoto)
 

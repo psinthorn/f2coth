@@ -88,39 +88,59 @@ func (h *PortalHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 // ---------- Admin: portal settings (email-verification enforcement) ----------
 
 type portalSettings struct {
-	RequireEmailVerification bool `json:"require_email_verification"`
+	RequireEmailVerification bool     `json:"require_email_verification"`
+	RequireMFAStaff          bool     `json:"require_mfa_staff"`
+	RequireMFACustomerRoles  []string `json:"require_mfa_customer_roles"`
 }
 
 // GetPortalSettings — GET /api/customer/admin/portal-settings
 func (h *AdminHandler) GetPortalSettings(w http.ResponseWriter, r *http.Request) {
 	var s portalSettings
 	if err := h.DB.QueryRow(r.Context(),
-		`SELECT require_email_verification FROM portal_settings WHERE id = 1`).
-		Scan(&s.RequireEmailVerification); err != nil {
+		`SELECT require_email_verification, require_mfa_staff, COALESCE(require_mfa_customer_roles,'{}')
+		   FROM portal_settings WHERE id = 1`).
+		Scan(&s.RequireEmailVerification, &s.RequireMFAStaff, &s.RequireMFACustomerRoles); err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
 	writeJSON(w, http.StatusOK, s)
 }
 
-// UpdatePortalSettings — PATCH /api/customer/admin/portal-settings
+var orgRoleSet = map[string]bool{"owner": true, "admin": true, "billing": true, "member": true, "viewer": true}
+
+// UpdatePortalSettings — PATCH /api/customer/admin/portal-settings. Any subset
+// of fields may be sent; only the provided ones change.
 func (h *AdminHandler) UpdatePortalSettings(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		RequireEmailVerification *bool `json:"require_email_verification"`
+		RequireEmailVerification *bool     `json:"require_email_verification"`
+		RequireMFAStaff          *bool     `json:"require_mfa_staff"`
+		RequireMFACustomerRoles  *[]string `json:"require_mfa_customer_roles"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4*1024)).Decode(&req); err != nil {
 		writeErr(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	if req.RequireEmailVerification == nil {
-		writeErr(w, http.StatusBadRequest, "require_email_verification required")
-		return
+	roles := []string{}
+	if req.RequireMFACustomerRoles != nil {
+		for _, role := range *req.RequireMFACustomerRoles {
+			if !orgRoleSet[role] {
+				writeErr(w, http.StatusBadRequest, "invalid role in require_mfa_customer_roles")
+				return
+			}
+			roles = append(roles, role)
+		}
 	}
+	// $3 flags whether the roles array was provided; when false the existing
+	// value is kept, so partial updates don't clobber it.
 	if _, err := h.DB.Exec(r.Context(), `
-        UPDATE portal_settings
-        SET require_email_verification = $1, updated_by = NULLIF($2,'')::uuid
+        UPDATE portal_settings SET
+          require_email_verification = COALESCE($1, require_email_verification),
+          require_mfa_staff          = COALESCE($2, require_mfa_staff),
+          require_mfa_customer_roles = CASE WHEN $3 THEN $4::text[] ELSE require_mfa_customer_roles END,
+          updated_by = NULLIF($5,'')::uuid
         WHERE id = 1
-    `, *req.RequireEmailVerification, staffID(r)); err != nil {
+    `, req.RequireEmailVerification, req.RequireMFAStaff,
+		req.RequireMFACustomerRoles != nil, roles, staffID(r)); err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}

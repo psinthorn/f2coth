@@ -15,6 +15,7 @@ import {
   adminApi,
   type AdminCustomer,
   type CustomerContactRow,
+  type CustomerOrgRole,
   type AdminDomain,
   type AdminSLA,
   type BillingProfile,
@@ -22,6 +23,7 @@ import {
 
 const priorities = ["low", "normal", "high", "urgent"] as const;
 const slaStatuses = ["draft", "active", "renewing", "expired"] as const;
+const ORG_ROLES: CustomerOrgRole[] = ["owner", "admin", "billing", "member", "viewer"];
 
 export default function AdminCustomerDetailPage() {
   const t = useTranslations("admin.customers.detail");
@@ -46,7 +48,7 @@ export default function AdminCustomerDetailPage() {
   const [saving, setSaving] = useState(false);
 
   const [showAdd, setShowAdd] = useState(false);
-  const [cForm, setCForm] = useState({ email: "", full_name: "", role: "member" as "owner" | "member", phone: "", job_title: "" });
+  const [cForm, setCForm] = useState({ email: "", full_name: "", role: "member" as CustomerOrgRole, phone: "", job_title: "" });
   const [adding, setAdding] = useState(false);
 
   const [showTicket, setShowTicket] = useState(false);
@@ -172,6 +174,11 @@ export default function AdminCustomerDetailPage() {
   async function enableContact(contactId: string) {
     if (!id) return;
     const ok = await run(() => adminApi.enableCustomerContact(id, contactId), { success: tc("toast.updated") });
+    if (ok) await load();
+  }
+  async function changeContactRole(contactId: string, role: CustomerOrgRole) {
+    if (!id) return;
+    const ok = await run(() => adminApi.setCustomerContactRole(id, contactId, role), { success: tc("toast.updated") });
     if (ok) await load();
   }
 
@@ -342,11 +349,10 @@ export default function AdminCustomerDetailPage() {
                       <label className="text-sm font-medium text-navy-800">{t("roleField")}</label>
                       <select
                         value={cForm.role}
-                        onChange={(e) => setCForm({ ...cForm, role: e.target.value as "owner" | "member" })}
+                        onChange={(e) => setCForm({ ...cForm, role: e.target.value as CustomerOrgRole })}
                         className="rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-accent-500 focus:outline-none"
                       >
-                        <option value="owner">{tc("role.owner")}</option>
-                        <option value="member">{tc("role.member")}</option>
+                        {ORG_ROLES.map((r) => <option key={r} value={r}>{tc(`role.${r}`)}</option>)}
                       </select>
                     </div>
                   </div>
@@ -368,7 +374,18 @@ export default function AdminCustomerDetailPage() {
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-medium text-navy-900 truncate">{c.full_name}</p>
-                          <p className="text-xs text-navy-500 truncate">{c.email} · {tc(`role.${c.role}`)}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-navy-500 truncate">{c.email}</p>
+                            <select
+                              value={c.role}
+                              disabled={contactBusy || !!c.disabled_at}
+                              onChange={(e) => changeContactRole(c.id, e.target.value as CustomerOrgRole)}
+                              aria-label={t("roleField")}
+                              className="rounded-md border border-navy-200 bg-white px-1.5 py-0.5 text-[11px] text-navy-700 focus:border-accent-500 focus:outline-none disabled:opacity-50"
+                            >
+                              {ORG_ROLES.map((r) => <option key={r} value={r}>{tc(`role.${r}`)}</option>)}
+                            </select>
+                          </div>
                           <div className="mt-1 flex flex-wrap items-center gap-1.5">
                             {c.email_verified_at ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">
