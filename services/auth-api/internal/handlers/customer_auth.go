@@ -338,6 +338,9 @@ func (h *CustomerAuthHandler) SetLocale(w http.ResponseWriter, r *http.Request) 
 	tokStr := strings.TrimPrefix(authz, "Bearer ")
 	claims := jwt.MapClaims{}
 	tok, err := jwt.ParseWithClaims(tokStr, claims, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrTokenSignatureInvalid
+		}
 		return []byte(h.Cfg.JWTSecret), nil
 	})
 	if err != nil || !tok.Valid {

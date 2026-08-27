@@ -698,7 +698,7 @@ export const adminApi = {
   getBankImport: (id: string) => request<BankImportFull>(`/payment/admin/bank-imports/${id}`),
   uploadBankImport: async (file: File, sourceName: string) => {
     const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-    const t = sessionStorage.getItem("f2_access_token");
+    const t = token(); // both stores (remember-me)
     const fd = new FormData();
     fd.append("file", file);
     fd.append("source_name", sourceName);

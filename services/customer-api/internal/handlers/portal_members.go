@@ -43,15 +43,27 @@ func activeOwnerCount(ctx context.Context, db *pgxpool.Pool, cid string) (int, e
 // revokeContactSessions logs a contact out of all sessions so a role/status
 // change takes effect on their next login (the customer JWT re-derives role from
 // the active membership). Best-effort — a failed revoke shouldn't fail the write.
-func revokeContactSessions(ctx context.Context, db *pgxpool.Pool, contactID string) {
+// revokeContactSessions logs a contact out of the sessions bound to THIS org
+// (active_customer_id) so a role/status change takes effect on their next login
+// without disturbing sessions they hold in other orgs. Mirrors admin.DisableContact.
+func revokeContactSessions(ctx context.Context, db *pgxpool.Pool, contactID, cid string) {
 	_, _ = db.Exec(ctx,
-		`UPDATE customer_refresh_tokens SET revoked_at = NOW() WHERE contact_id = $1 AND revoked_at IS NULL`,
-		contactID)
+		`UPDATE customer_refresh_tokens SET revoked_at = NOW()
+		  WHERE contact_id = $1 AND active_customer_id = $2 AND revoked_at IS NULL`,
+		contactID, cid)
 }
 
-func (h *PortalHandler) revokeContactTokens(ctx context.Context, contactID string) {
-	revokeContactSessions(ctx, h.DB, contactID)
+func (h *PortalHandler) revokeContactTokens(ctx context.Context, contactID, cid string) {
+	revokeContactSessions(ctx, h.DB, contactID, cid)
 }
+
+// otherActiveOwnerExists is the guard subquery used to keep an org from ever
+// dropping to zero active owners — atomically, inside the same statement that
+// demotes/disables/removes, so there is no check-then-act race. Params: $1
+// target contact, $2 customer.
+const otherActiveOwnerExists = `EXISTS (SELECT 1 FROM contact_org_memberships o
+	 WHERE o.customer_id = $2 AND o.contact_id <> $1
+	   AND o.role = 'owner' AND o.disabled_at IS NULL)`
 
 func (h *PortalHandler) ownerCount(ctx context.Context, cid string) (int, error) {
 	return activeOwnerCount(ctx, h.DB, cid)
@@ -138,9 +150,9 @@ func (h *PortalHandler) InviteMember(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "invalid role")
 		return
 	}
-	// Only an owner may grant the owner role.
-	if req.Role == "owner" && callerRole(r) != "owner" {
-		writeErr(w, http.StatusForbidden, "only an owner can grant the owner role")
+	// Only an owner may grant a privileged (owner/billing) role.
+	if privilegedGrant(req.Role) && callerRole(r) != "owner" {
+		writeErr(w, http.StatusForbidden, "only an owner can grant the owner or billing role")
 		return
 	}
 
@@ -250,15 +262,23 @@ func (h *PortalHandler) InviteMember(w http.ResponseWriter, r *http.Request) {
 // loadTargetMembership fetches the target's role in the active org + guards that
 // they are actually a member of it. Also enforces the "admin can't touch owner"
 // rule against the caller.
-func (h *PortalHandler) loadTargetMembership(r *http.Request, cid, targetID string) (role string, ok bool) {
-	err := h.DB.QueryRow(r.Context(),
+func (h *PortalHandler) loadTargetMembership(r *http.Request, cid, targetID string) (role string, found bool, err error) {
+	e := h.DB.QueryRow(r.Context(),
 		`SELECT role FROM contact_org_memberships WHERE contact_id = $1 AND customer_id = $2`,
 		targetID, cid).Scan(&role)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return "", false
+	if errors.Is(e, pgx.ErrNoRows) {
+		return "", false, nil
 	}
-	return role, err == nil
+	if e != nil {
+		return "", false, e // real DB error — surface as 500, not a spurious 404
+	}
+	return role, true, nil
 }
+
+// privilegedGrant reports whether granting/managing this role is owner-only.
+// owner AND billing carry capabilities an admin doesn't itself hold, so only an
+// owner may grant or modify them (prevents capability escalation by proxy).
+func privilegedGrant(role string) bool { return role == "owner" || role == "billing" }
 
 type roleReq struct {
 	Role string `json:"role"`
@@ -273,36 +293,37 @@ func (h *PortalHandler) SetMemberRole(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "invalid role")
 		return
 	}
-	targetRole, ok := h.loadTargetMembership(r, cid, targetID)
-	if !ok {
-		writeErr(w, http.StatusNotFound, "member not found")
-		return
-	}
-	caller := callerRole(r)
-	// Only an owner may promote to, or modify, an owner.
-	if (req.Role == "owner" || targetRole == "owner") && caller != "owner" {
-		writeErr(w, http.StatusForbidden, "only an owner can manage owners")
-		return
-	}
-	// Last-owner protection: don't demote the final owner.
-	if targetRole == "owner" && req.Role != "owner" {
-		n, err := h.ownerCount(r.Context(), cid)
-		if err != nil {
-			writeErr(w, http.StatusInternalServerError, "db error")
-			return
-		}
-		if n <= 1 {
-			writeErr(w, http.StatusConflict, "the organization must keep at least one owner")
-			return
-		}
-	}
-	if _, err := h.DB.Exec(r.Context(),
-		`UPDATE contact_org_memberships SET role = $3 WHERE contact_id = $1 AND customer_id = $2`,
-		targetID, cid, req.Role); err != nil {
+	targetRole, found, err := h.loadTargetMembership(r, cid, targetID)
+	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
-	h.revokeContactTokens(r.Context(), targetID)
+	if !found {
+		writeErr(w, http.StatusNotFound, "member not found")
+		return
+	}
+	// Only an owner may grant or modify a privileged (owner/billing) role.
+	if (privilegedGrant(req.Role) || privilegedGrant(targetRole)) && callerRole(r) != "owner" {
+		writeErr(w, http.StatusForbidden, "only an owner can manage owner or billing roles")
+		return
+	}
+	// Atomic last-owner guard: demoting an owner only succeeds while another
+	// active owner remains (no check-then-act race; a disabled ex-owner can
+	// still be demoted because the guard requires ANOTHER *active* owner).
+	res, err := h.DB.Exec(r.Context(),
+		`UPDATE contact_org_memberships SET role = $3
+		  WHERE contact_id = $1 AND customer_id = $2
+		    AND ($3 = 'owner' OR role <> 'owner' OR `+otherActiveOwnerExists+`)`,
+		targetID, cid, req.Role)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if res.RowsAffected() == 0 {
+		writeErr(w, http.StatusConflict, "the organization must keep at least one owner")
+		return
+	}
+	h.revokeContactTokens(r.Context(), targetID, cid)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -319,8 +340,12 @@ func (h *PortalHandler) SetMemberStatus(w http.ResponseWriter, r *http.Request) 
 		writeErr(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	targetRole, ok := h.loadTargetMembership(r, cid, targetID)
-	if !ok {
+	targetRole, found, err := h.loadTargetMembership(r, cid, targetID)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if !found {
 		writeErr(w, http.StatusNotFound, "member not found")
 		return
 	}
@@ -328,32 +353,31 @@ func (h *PortalHandler) SetMemberStatus(w http.ResponseWriter, r *http.Request) 
 		writeErr(w, http.StatusForbidden, "only an owner can manage owners")
 		return
 	}
-	if req.Disabled && targetRole == "owner" {
-		n, err := h.ownerCount(r.Context(), cid)
-		if err != nil {
+	if !req.Disabled {
+		if _, err := h.DB.Exec(r.Context(),
+			`UPDATE contact_org_memberships SET disabled_at = NULL WHERE contact_id = $1 AND customer_id = $2`,
+			targetID, cid); err != nil {
 			writeErr(w, http.StatusInternalServerError, "db error")
 			return
 		}
-		if n <= 1 {
-			writeErr(w, http.StatusConflict, "the organization must keep at least one active owner")
-			return
-		}
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
-	var clause string
-	if req.Disabled {
-		clause = "disabled_at = NOW()"
-	} else {
-		clause = "disabled_at = NULL"
-	}
-	if _, err := h.DB.Exec(r.Context(),
-		`UPDATE contact_org_memberships SET `+clause+` WHERE contact_id = $1 AND customer_id = $2`,
-		targetID, cid); err != nil {
+	// Disable, guarded atomically against removing the last active owner.
+	res, err := h.DB.Exec(r.Context(),
+		`UPDATE contact_org_memberships SET disabled_at = NOW()
+		  WHERE contact_id = $1 AND customer_id = $2
+		    AND (role <> 'owner' OR `+otherActiveOwnerExists+`)`,
+		targetID, cid)
+	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
-	if req.Disabled {
-		h.revokeContactTokens(r.Context(), targetID)
+	if res.RowsAffected() == 0 {
+		writeErr(w, http.StatusConflict, "the organization must keep at least one active owner")
+		return
 	}
+	h.revokeContactTokens(r.Context(), targetID, cid)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -362,32 +386,33 @@ func (h *PortalHandler) SetMemberStatus(w http.ResponseWriter, r *http.Request) 
 func (h *PortalHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	cid := customerID(r)
 	targetID := chi.URLParam(r, "contactId")
-	targetRole, ok := h.loadTargetMembership(r, cid, targetID)
-	if !ok {
-		writeErr(w, http.StatusNotFound, "member not found")
-		return
-	}
-	if targetRole == "owner" {
-		if callerRole(r) != "owner" {
-			writeErr(w, http.StatusForbidden, "only an owner can remove an owner")
-			return
-		}
-		n, err := h.ownerCount(r.Context(), cid)
-		if err != nil {
-			writeErr(w, http.StatusInternalServerError, "db error")
-			return
-		}
-		if n <= 1 {
-			writeErr(w, http.StatusConflict, "the organization must keep at least one owner")
-			return
-		}
-	}
-	if _, err := h.DB.Exec(r.Context(),
-		`DELETE FROM contact_org_memberships WHERE contact_id = $1 AND customer_id = $2`,
-		targetID, cid); err != nil {
+	targetRole, found, err := h.loadTargetMembership(r, cid, targetID)
+	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
-	h.revokeContactTokens(r.Context(), targetID)
+	if !found {
+		writeErr(w, http.StatusNotFound, "member not found")
+		return
+	}
+	if targetRole == "owner" && callerRole(r) != "owner" {
+		writeErr(w, http.StatusForbidden, "only an owner can remove an owner")
+		return
+	}
+	// Atomic last-owner guard (allows removing a disabled ex-owner).
+	res, err := h.DB.Exec(r.Context(),
+		`DELETE FROM contact_org_memberships
+		  WHERE contact_id = $1 AND customer_id = $2
+		    AND (role <> 'owner' OR `+otherActiveOwnerExists+`)`,
+		targetID, cid)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if res.RowsAffected() == 0 {
+		writeErr(w, http.StatusConflict, "the organization must keep at least one owner")
+		return
+	}
+	h.revokeContactTokens(r.Context(), targetID, cid)
 	w.WriteHeader(http.StatusNoContent)
 }

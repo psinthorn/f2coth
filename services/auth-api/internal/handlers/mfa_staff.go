@@ -36,9 +36,16 @@ func (h *AuthHandler) MFASetup(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "encrypt error")
 		return
 	}
+	// Only stash a provisional secret when MFA is NOT already active (prevents a
+	// silent second-factor swap without proving a current code).
 	var email string
-	if err := h.DB.QueryRow(r.Context(),
-		`UPDATE users SET mfa_secret = $2 WHERE id = $1 RETURNING email`, uid, enc).Scan(&email); err != nil {
+	err = h.DB.QueryRow(r.Context(),
+		`UPDATE users SET mfa_secret = $2 WHERE id = $1 AND mfa_enabled = FALSE RETURNING email`, uid, enc).Scan(&email)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeErr(w, http.StatusConflict, "MFA is already enabled; disable it first to re-enroll")
+		return
+	}
+	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
@@ -172,6 +179,14 @@ func (h *AuthHandler) MFAVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Audit the second factor to login_events, same table password login uses.
+	logAttempt := func(success bool, userID *string) {
+		_, _ = h.DB.Exec(context.Background(), `
+            INSERT INTO login_events (user_id, email_attempt, success, ip_address, user_agent)
+            VALUES ($1, $2, $3, NULLIF($4,'')::inet, $5)`,
+			userID, u.Email, success, r.RemoteAddr, r.UserAgent())
+	}
+
 	ok := false
 	if code := strings.TrimSpace(req.Code); code != "" {
 		if secret, e := mfa.Decrypt(h.Cfg.MFAEncKey, enc); e == nil {
@@ -184,9 +199,10 @@ func (h *AuthHandler) MFAVerify(w http.ResponseWriter, r *http.Request) {
 		ok = e == nil && tag.RowsAffected() == 1
 	}
 	if !ok {
+		logAttempt(false, &u.ID) // record the failed second factor
 		writeErr(w, http.StatusUnauthorized, "invalid code")
 		return
 	}
 
-	h.issueStaffSession(w, r, ctx, u, nil)
+	h.issueStaffSession(w, r, ctx, u, logAttempt)
 }

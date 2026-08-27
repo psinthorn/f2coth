@@ -55,6 +55,9 @@ func (h *CustomerAuthHandler) contactFromBearer(r *http.Request) (string, error)
 	}
 	claims := jwt.MapClaims{}
 	tok, err := jwt.ParseWithClaims(strings.TrimPrefix(authz, "Bearer "), claims, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrTokenSignatureInvalid
+		}
 		return []byte(h.Cfg.JWTSecret), nil
 	})
 	if err != nil || !tok.Valid {

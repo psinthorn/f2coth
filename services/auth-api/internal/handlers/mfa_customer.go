@@ -73,10 +73,17 @@ func (h *CustomerAuthHandler) MFASetup(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "encrypt error")
 		return
 	}
+	// Only stash a provisional secret when MFA is NOT already active — otherwise
+	// a caller could silently swap the live second-factor without proving a code.
 	var email string
-	if err := h.DB.QueryRow(r.Context(),
-		`UPDATE customer_contacts SET mfa_secret = $2 WHERE id = $1 RETURNING email`,
-		contactID, enc).Scan(&email); err != nil {
+	err = h.DB.QueryRow(r.Context(),
+		`UPDATE customer_contacts SET mfa_secret = $2 WHERE id = $1 AND mfa_enabled = FALSE RETURNING email`,
+		contactID, enc).Scan(&email)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeErr(w, http.StatusConflict, "MFA is already enabled; disable it first to re-enroll")
+		return
+	}
+	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}

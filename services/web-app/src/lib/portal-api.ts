@@ -419,7 +419,7 @@ export const portalApi = {
     }),
   uploadSlipFile: async (paymentId: string, file: File) => {
     const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-    const t = sessionStorage.getItem("f2_portal_access_token");
+    const t = token(); // both stores (remember-me)
     const fd = new FormData();
     fd.append("file", file);
     const res = await fetch(`${apiBase}/payment/portal/payments/${paymentId}/slip-file`, {

@@ -153,8 +153,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     let cancelled = false;
 
-    // No token at all → not signed in, go to login.
-    if (!sessionStorage.getItem("f2_access_token")) {
+    // No token at all → not signed in, go to login. "Remember me" persists in
+    // localStorage, so check both stores.
+    if (!localStorage.getItem("f2_access_token") && !sessionStorage.getItem("f2_access_token")) {
       redirectToLogin();
       return;
     }
@@ -167,7 +168,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       .then((u) => {
         if (cancelled) return;
         setUser(u);
-        sessionStorage.setItem("f2_user", JSON.stringify(u));
+        // Write to whichever store holds the session (remember-me → localStorage).
+        (localStorage.getItem("f2_access_token") ? localStorage : sessionStorage).setItem("f2_user", JSON.stringify(u));
         // Policy may require staff to enrol MFA before using the console.
         if (u.mfa_setup_required && !pathname.endsWith("/admin/security")) {
           router.push("/admin/security");
@@ -209,7 +211,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }, [open]);
 
   function logout() {
-    const rt = sessionStorage.getItem("f2_refresh_token");
+    // Remember-me keeps the refresh token in localStorage — check both so
+    // logout always revokes it server-side.
+    const rt = localStorage.getItem("f2_refresh_token") ?? sessionStorage.getItem("f2_refresh_token");
     if (rt) {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
       fetch(`${apiBase}/auth/logout`, {

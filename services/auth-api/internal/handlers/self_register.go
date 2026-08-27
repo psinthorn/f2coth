@@ -82,21 +82,23 @@ func (h *CustomerAuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	// Enumeration-safe: if the email already exists, do nothing and return the
-	// same generic success (don't reveal that the address is taken).
+	// SAME status + body as success. We still run a bcrypt hash on this path so
+	// the response timing doesn't distinguish "exists" from "free".
 	var exists bool
 	if err := h.DB.QueryRow(ctx,
 		`SELECT EXISTS(SELECT 1 FROM customer_contacts WHERE email = $1)`, email).Scan(&exists); err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
 		return
 	}
-	if exists {
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-		return
-	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), h.Cfg.BcryptCost)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "hash error")
+		return
+	}
+	if exists {
+		// bcrypt already ran above → constant-ish time; return the generic 200.
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -112,7 +114,7 @@ func (h *CustomerAuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		INSERT INTO customers (slug, name, status, self_registered, is_active)
 		VALUES ($1, $2, 'pending', TRUE, TRUE) RETURNING id`,
 		slugify(company)+"-"+randHex(3), company).Scan(&customerID); err != nil {
-		writeErr(w, http.StatusInternalServerError, "org create error: "+err.Error())
+		writeErr(w, http.StatusInternalServerError, "could not create organization")
 		return
 	}
 	var contactID string
@@ -143,7 +145,8 @@ func (h *CustomerAuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go h.dispatchVerifyEmail(email, name, "en", raw)
-	writeJSON(w, http.StatusCreated, map[string]string{"status": "ok"})
+	// Same status + body as the already-exists path — no enumeration oracle.
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 // dispatchVerifyEmail sends the "confirm your email" link (fire-and-forget).
