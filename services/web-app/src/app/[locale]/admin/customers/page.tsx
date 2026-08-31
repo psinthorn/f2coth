@@ -76,6 +76,7 @@ export default function AdminCustomersPage() {
       </header>
 
       <PortalVerificationToggle />
+      <MFAPolicyPanel />
 
       {err && (
         <div className="mb-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-800">
@@ -216,6 +217,72 @@ function PortalVerificationToggle() {
       >
         <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${on ? "translate-x-5" : "translate-x-0.5"}`} />
       </button>
+    </div>
+  );
+}
+
+const MFA_ORG_ROLES = ["owner", "admin", "billing", "member", "viewer"] as const;
+
+function MFAPolicyPanel() {
+  const t = useTranslations("admin.customers.mfaPolicy");
+  const tc = useTranslations("common");
+  const [staff, setStaff] = useState<boolean | null>(null);
+  const [roles, setRoles] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    adminApi.getPortalSettings()
+      .then((s) => { setStaff(s.require_mfa_staff); setRoles(s.require_mfa_customer_roles ?? []); })
+      .catch(() => setStaff(false));
+  }, []);
+
+  async function save(next: { require_mfa_staff?: boolean; require_mfa_customer_roles?: string[] }) {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await adminApi.updatePortalSettings(next);
+      if (next.require_mfa_staff !== undefined) setStaff(next.require_mfa_staff);
+      if (next.require_mfa_customer_roles) setRoles(next.require_mfa_customer_roles);
+      toast.success(tc("toast.saved"));
+    } catch {
+      toast.error(tc("toast.error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+  const toggleRole = (r: string) => {
+    const next = roles.includes(r) ? roles.filter((x) => x !== r) : [...roles, r];
+    save({ require_mfa_customer_roles: next });
+  };
+
+  if (staff === null) return null;
+  return (
+    <div className="mb-6 rounded-lg border border-navy-100 bg-navy-50 p-4">
+      <div className="flex items-start gap-3">
+        <ShieldCheck className="mt-0.5 h-5 w-5 text-navy-500" />
+        <div className="flex-1">
+          <p className="text-sm font-medium text-navy-900">{t("title")}</p>
+          <p className="text-xs text-navy-500">{t("hint")}</p>
+
+          <label className="mt-3 flex items-center gap-2 text-sm text-navy-800">
+            <input type="checkbox" checked={staff} disabled={saving} onChange={(e) => save({ require_mfa_staff: e.target.checked })} className="rounded border-navy-300" />
+            {t("staff")}
+          </label>
+
+          <p className="mt-3 text-xs font-medium uppercase tracking-wider text-navy-400">{t("customerRoles")}</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {MFA_ORG_ROLES.map((r) => {
+              const active = roles.includes(r);
+              return (
+                <button key={r} onClick={() => toggleRole(r)} disabled={saving}
+                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition disabled:opacity-50 ${active ? "border-accent-300 bg-accent-50 text-accent-800" : "border-navy-200 bg-white text-navy-600 hover:bg-navy-50"}`}>
+                  {tc(`role.${r}`)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

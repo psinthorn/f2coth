@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import {
-  LayoutDashboard, Inbox, LogOut, Menu, X, Loader2, Building2, Globe, ShieldCheck, Receipt, FileSignature, ClipboardCheck, Repeat, UserCog, MailWarning, MonitorSmartphone,
+  LayoutDashboard, Inbox, LogOut, Menu, X, Loader2, Building2, Globe, ShieldCheck, Receipt, FileSignature, ClipboardCheck, Repeat, UserCog, MailWarning, MonitorSmartphone, Users, Fingerprint,
 } from "lucide-react";
 import { portalApi, clearPortalAuth, redirectToPortalLogin, type PortalContact, type PortalCustomer, type PortalMembership } from "@/lib/portal-api";
 import SandboxBanner from "@/components/SandboxBanner";
@@ -16,12 +16,13 @@ import Toaster from "@/components/Toaster";
 type GroupKey = "workspace" | "support" | "services";
 
 type NavItem = {
-  href: "/portal" | "/portal/tickets" | "/portal/domains" | "/portal/sla" | "/portal/billing" | "/portal/subscriptions" | "/portal/billing-profile" | "/portal/projects" | "/portal/profile" | "/portal/assethub";
-  labelKey: "account" | "tickets" | "domains" | "sla" | "billing" | "subscriptions" | "billingProfile" | "projects" | "profile" | "assets";
+  href: "/portal" | "/portal/tickets" | "/portal/domains" | "/portal/sla" | "/portal/billing" | "/portal/subscriptions" | "/portal/billing-profile" | "/portal/projects" | "/portal/profile" | "/portal/assethub" | "/portal/team" | "/portal/security";
+  labelKey: "account" | "tickets" | "domains" | "sla" | "billing" | "subscriptions" | "billingProfile" | "projects" | "profile" | "assets" | "team" | "security";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   requireService?: string;
   requireSLA?: boolean;
+  requireRole?: string[];
 };
 
 type NavGroup = { key: GroupKey; items: NavItem[] };
@@ -32,6 +33,8 @@ const NAV: NavGroup[] = [
     items: [
       { href: "/portal", labelKey: "account", icon: LayoutDashboard, exact: true },
       { href: "/portal/profile", labelKey: "profile", icon: UserCog },
+      { href: "/portal/security", labelKey: "security", icon: Fingerprint },
+      { href: "/portal/team", labelKey: "team", icon: Users, requireRole: ["owner", "admin"] },
       { href: "/portal/billing", labelKey: "billing", icon: Receipt },
       { href: "/portal/subscriptions", labelKey: "subscriptions", icon: Repeat },
       { href: "/portal/billing-profile", labelKey: "billingProfile", icon: FileSignature },
@@ -69,7 +72,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   useEffect(() => {
     let cancelled = false;
 
-    if (!sessionStorage.getItem("f2_portal_access_token")) {
+    if (!localStorage.getItem("f2_portal_access_token") && !sessionStorage.getItem("f2_portal_access_token")) {
       redirectToPortalLogin();
       return;
     }
@@ -81,6 +84,9 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           // First login with a temp password → force a change before anything else.
           if (d.contact.must_change_password && !pathname.endsWith("/portal/change-password")) {
             router.push("/portal/change-password");
+          } else if (d.mfa_setup_required && !pathname.endsWith("/portal/security")) {
+            // Policy requires MFA for this role — force enrolment.
+            router.push("/portal/security");
           }
           setContact(d.contact);
           setCustomer(d.customer);
@@ -143,6 +149,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     items: g.items.filter((n) => {
       if (n.requireService && !customer.services_used.includes(n.requireService)) return false;
       if (n.requireSLA && !hasSLA) return false;
+      if (n.requireRole && !n.requireRole.includes(contact.role)) return false;
       return true;
     }),
   })).filter((g) => g.items.length > 0);

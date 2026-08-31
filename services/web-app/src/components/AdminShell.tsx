@@ -50,8 +50,9 @@ type NavItem = {
     | "/admin/features"
     | "/admin/ai"
     | "/admin/ai/routing"
-    | "/admin/ai/usage";
-  labelKey: "dashboard" | "leads" | "tickets" | "rateCard" | "customers" | "dsr" | "blog" | "appMode" | "homeContent" | "pagesEditor" | "servicesEditor" | "caseStudiesEditor" | "users" | "pricing" | "orders" | "invoices" | "payments" | "paymentMethods" | "subscriptions" | "renewals" | "refunds" | "bankImports" | "webhooks" | "disputes" | "analytics" | "suspensions" | "projects" | "contracts" | "assethub" | "smtp" | "features" | "aiHome" | "aiRouting" | "aiUsage";
+    | "/admin/ai/usage"
+    | "/admin/security";
+  labelKey: "dashboard" | "leads" | "tickets" | "rateCard" | "customers" | "dsr" | "blog" | "appMode" | "homeContent" | "pagesEditor" | "servicesEditor" | "caseStudiesEditor" | "users" | "pricing" | "orders" | "invoices" | "payments" | "paymentMethods" | "subscriptions" | "renewals" | "refunds" | "bankImports" | "webhooks" | "disputes" | "analytics" | "suspensions" | "projects" | "contracts" | "assethub" | "smtp" | "features" | "aiHome" | "aiRouting" | "aiUsage" | "security";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   adminOnly?: boolean;
@@ -65,6 +66,7 @@ const NAV: NavGroup[] = [
     key: "workspace",
     items: [
       { href: "/admin", labelKey: "dashboard", icon: LayoutDashboard, exact: true, moduleKey: "admin.dashboard" },
+      { href: "/admin/security", labelKey: "security", icon: ShieldCheck },
       { href: "/admin/app-mode", labelKey: "appMode", icon: ToggleRight, adminOnly: true, moduleKey: "admin.app_mode" },
     ],
   },
@@ -132,7 +134,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window === "undefined") return null;
     try {
-      const cached = sessionStorage.getItem("f2_user");
+      const cached = localStorage.getItem("f2_user") ?? sessionStorage.getItem("f2_user");
       return cached ? (JSON.parse(cached) as User) : null;
     } catch {
       return null;
@@ -140,7 +142,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   });
   const [loading, setLoading] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
-    return !sessionStorage.getItem("f2_user");
+    return !(localStorage.getItem("f2_user") ?? sessionStorage.getItem("f2_user"));
   });
   const [open, setOpen] = useState(false);
   // Fetched once at mount alongside `me()`. Empty object means "fetch failed"
@@ -151,8 +153,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     let cancelled = false;
 
-    // No token at all → not signed in, go to login.
-    if (!sessionStorage.getItem("f2_access_token")) {
+    // No token at all → not signed in, go to login. "Remember me" persists in
+    // localStorage, so check both stores.
+    if (!localStorage.getItem("f2_access_token") && !sessionStorage.getItem("f2_access_token")) {
       redirectToLogin();
       return;
     }
@@ -165,7 +168,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       .then((u) => {
         if (cancelled) return;
         setUser(u);
-        sessionStorage.setItem("f2_user", JSON.stringify(u));
+        // Write to whichever store holds the session (remember-me → localStorage).
+        (localStorage.getItem("f2_access_token") ? localStorage : sessionStorage).setItem("f2_user", JSON.stringify(u));
+        // Policy may require staff to enrol MFA before using the console.
+        if (u.mfa_setup_required && !pathname.endsWith("/admin/security")) {
+          router.push("/admin/security");
+        }
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -203,7 +211,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }, [open]);
 
   function logout() {
-    const rt = sessionStorage.getItem("f2_refresh_token");
+    // Remember-me keeps the refresh token in localStorage — check both so
+    // logout always revokes it server-side.
+    const rt = localStorage.getItem("f2_refresh_token") ?? sessionStorage.getItem("f2_refresh_token");
     if (rt) {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
       fetch(`${apiBase}/auth/logout`, {

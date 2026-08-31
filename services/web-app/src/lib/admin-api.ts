@@ -10,21 +10,40 @@ export class HttpError extends Error {
   }
 }
 
+// "Remember me" persists the session in localStorage (survives browser close);
+// otherwise sessionStorage. Reads check both; refresh preserves the active one.
+function activeStore(): Storage | null {
+  if (typeof window === "undefined") return null;
+  if (localStorage.getItem("f2_access_token")) return localStorage;
+  return sessionStorage;
+}
+
 function token(): string | null {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem("f2_access_token");
+  return localStorage.getItem("f2_access_token") ?? sessionStorage.getItem("f2_access_token");
 }
 
 function refreshTok(): string | null {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem("f2_refresh_token");
+  return localStorage.getItem("f2_refresh_token") ?? sessionStorage.getItem("f2_refresh_token");
 }
 
 export function clearAuth() {
   if (typeof window === "undefined") return;
-  sessionStorage.removeItem("f2_access_token");
-  sessionStorage.removeItem("f2_refresh_token");
-  sessionStorage.removeItem("f2_user");
+  for (const s of [localStorage, sessionStorage]) {
+    s.removeItem("f2_access_token"); s.removeItem("f2_refresh_token"); s.removeItem("f2_user");
+  }
+}
+
+// remember=true → localStorage; false → sessionStorage; undefined → keep active.
+export function setAdminAuth(access: string, refresh: string, user: unknown, remember?: boolean) {
+  if (typeof window === "undefined") return;
+  const store = remember === undefined ? (activeStore() ?? sessionStorage) : (remember ? localStorage : sessionStorage);
+  const other = store === localStorage ? sessionStorage : localStorage;
+  other.removeItem("f2_access_token"); other.removeItem("f2_refresh_token"); other.removeItem("f2_user");
+  store.setItem("f2_access_token", access);
+  store.setItem("f2_refresh_token", refresh);
+  if (user) store.setItem("f2_user", JSON.stringify(user));
 }
 
 export function redirectToLogin(returnTo?: string) {
@@ -44,9 +63,7 @@ async function attemptRefresh(): Promise<boolean> {
     });
     if (!res.ok) return false;
     const data = await res.json();
-    sessionStorage.setItem("f2_access_token", data.access_token);
-    sessionStorage.setItem("f2_refresh_token", data.refresh_token);
-    if (data.user) sessionStorage.setItem("f2_user", JSON.stringify(data.user));
+    setAdminAuth(data.access_token, data.refresh_token, data.user); // preserve active store
     return true;
   } catch {
     return false;
@@ -100,6 +117,8 @@ export interface User {
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
+  mfa_enabled?: boolean;
+  mfa_setup_required?: boolean;
 }
 
 export interface Lead {
@@ -166,6 +185,22 @@ export const adminApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     }),
+  // Complete staff MFA at login (TOTP or recovery code) → stores the session.
+  mfaVerify: async (mfaToken: string, input: { code?: string; recovery_code?: string }, remember = false) => {
+    const res = await fetch(`${API_BASE}/auth/mfa/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mfa_token: mfaToken, ...input }),
+    });
+    if (!res.ok) throw new HttpError(res.status, await res.text());
+    const data = await res.json();
+    setAdminAuth(data.access_token, data.refresh_token, data.user, remember);
+    return data.user as User;
+  },
+  // MFA enrolment (authenticated staff).
+  mfaSetup: () => request<{ secret: string; otpauth_uri: string }>("/auth/mfa/setup", { method: "POST" }),
+  mfaEnable: (code: string) => request<{ recovery_codes: string[] }>("/auth/mfa/enable", { method: "POST", body: JSON.stringify({ code }) }),
+  mfaDisable: (code: string) => request<void>("/auth/mfa/disable", { method: "POST", body: JSON.stringify({ code }) }),
 
   // Leads
   listLeads: () => request<{ leads: Lead[] }>("/leads/"),
@@ -235,7 +270,7 @@ export const adminApi = {
     input: {
       email: string;
       full_name: string;
-      role: "owner" | "member";
+      role: CustomerOrgRole;
       phone?: string;
       job_title?: string;
     },
@@ -248,14 +283,21 @@ export const adminApi = {
     request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/disable`, { method: "POST" }),
   enableCustomerContact: (id: string, contactId: string) =>
     request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/enable`, { method: "POST" }),
+  // Assign an existing/linked user any of the 5 per-org roles (staff parity
+  // with the org-owner Team page). Last-owner protection enforced server-side.
+  setCustomerContactRole: (id: string, contactId: string, role: CustomerOrgRole) =>
+    request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
   // Resend the email-verification / login link to a portal user.
   resendCustomerContactInvite: (id: string, contactId: string) =>
     request<void>(`/customer/admin/customers/${id}/contacts/${contactId}/resend`, { method: "POST" }),
 
   // Portal settings — email-verification enforcement toggle.
   getPortalSettings: () =>
-    request<{ require_email_verification: boolean }>(`/customer/admin/portal-settings`),
-  updatePortalSettings: (input: { require_email_verification: boolean }) =>
+    request<{ require_email_verification: boolean; require_mfa_staff: boolean; require_mfa_customer_roles: string[] }>(`/customer/admin/portal-settings`),
+  updatePortalSettings: (input: { require_email_verification?: boolean; require_mfa_staff?: boolean; require_mfa_customer_roles?: string[] }) =>
     request<void>(`/customer/admin/portal-settings`, {
       method: "PATCH",
       body: JSON.stringify(input),
@@ -656,7 +698,7 @@ export const adminApi = {
   getBankImport: (id: string) => request<BankImportFull>(`/payment/admin/bank-imports/${id}`),
   uploadBankImport: async (file: File, sourceName: string) => {
     const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-    const t = sessionStorage.getItem("f2_access_token");
+    const t = token(); // both stores (remember-me)
     const fd = new FormData();
     fd.append("file", file);
     fd.append("source_name", sourceName);
@@ -1250,12 +1292,14 @@ export interface CustomerShowcaseAuditEntry {
   at: string;
 }
 
+export type CustomerOrgRole = "owner" | "admin" | "billing" | "member" | "viewer";
+
 export interface CustomerContactRow {
   id: string;
   customer_id: string;
   email: string;
   full_name: string;
-  role: "owner" | "member";
+  role: CustomerOrgRole;
   last_login_at: string | null;
   disabled_at: string | null;
   created_at: string;

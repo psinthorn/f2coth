@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Loader2, ChevronLeft, Check, X, MinusCircle, Circle, ChevronDown, ChevronRight } from "lucide-react";
 import PortalShell from "@/components/PortalShell";
-import { portalApi, type PortalProjectBoard, type PortalProjectItem, type PortalItemStatus } from "@/lib/portal-api";
+import { portalApi, type PortalProjectBoard, type PortalProjectItem, type PortalProjectSubsection, type PortalItemStatus } from "@/lib/portal-api";
 
 export default function PortalProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -34,8 +34,9 @@ function Detail({ id }: { id: string }) {
   }
   if (!board) return <div className="card text-center text-navy-500">{t("notFound")}</div>;
 
-  const total = board.modules.reduce((s, m) => s + m.items.length, 0);
-  const done = board.modules.reduce((s, m) => s + m.items.filter((it) => it.status !== "pending").length, 0);
+  const allItems = (m: PortalProjectBoard["modules"][number]) => [...m.items, ...m.subsections.flatMap((s) => s.items)];
+  const total = board.modules.reduce((s, m) => s + allItems(m).length, 0);
+  const done = board.modules.reduce((s, m) => s + allItems(m).filter((it) => it.status !== "pending").length, 0);
 
   return (
     <div>
@@ -50,44 +51,66 @@ function Detail({ id }: { id: string }) {
       </header>
       <div className="space-y-3">
         {board.modules.map((m) => (
-          <ModuleSection key={m.id} name_en={m.name_en} name_th={m.name_th} code={m.code} items={m.items} />
+          <ModuleSection key={m.id} name_en={m.name_en} name_th={m.name_th} code={m.code} items={m.items} subsections={m.subsections} />
         ))}
       </div>
     </div>
   );
 }
 
-function ModuleSection({ code, name_en, name_th, items }: {
-  code: string; name_en: string; name_th: string; items: PortalProjectItem[];
+function ItemLi({ it }: { it: PortalProjectItem }) {
+  return (
+    <li className="flex items-start gap-3 p-3">
+      <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${colorFor(it.status)}`}>
+        {iconFor(it.status)}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-navy-900">{it.text_en}</p>
+        <p className="text-xs text-navy-500">{it.text_th}</p>
+        {it.note && <p className="mt-1 text-xs text-navy-600">— {it.note}</p>}
+      </div>
+    </li>
+  );
+}
+
+function ModuleSection({ code, name_en, name_th, items, subsections }: {
+  code: string; name_en: string; name_th: string; items: PortalProjectItem[]; subsections: PortalProjectSubsection[];
 }) {
   const [expanded, setExpanded] = useState(true);
-  const done = items.filter((it) => it.status !== "pending").length;
+  const allItems = [...items, ...subsections.flatMap((s) => s.items)];
+  const done = allItems.filter((it) => it.status !== "pending").length;
   return (
     <section className="card p-0 overflow-hidden">
       <button onClick={() => setExpanded((x) => !x)} className="flex w-full items-center gap-3 px-4 py-3 hover:bg-navy-50">
         {expanded ? <ChevronDown className="h-4 w-4 text-navy-500" /> : <ChevronRight className="h-4 w-4 text-navy-500" />}
-        <span className="font-mono text-xs text-navy-400">{code}</span>
+        {code && <span className="font-mono text-xs text-navy-400">{code}</span>}
         <div className="min-w-0 flex-1 text-left">
           <p className="font-medium text-navy-900">{name_en}</p>
           <p className="text-xs text-navy-500">{name_th}</p>
         </div>
-        <span className="text-xs text-navy-500">{done} / {items.length}</span>
+        <span className="text-xs text-navy-500">{done} / {allItems.length}</span>
       </button>
       {expanded && (
-        <ul className="divide-y divide-navy-100">
-          {items.map((it) => (
-            <li key={it.id} className="flex items-start gap-3 p-3">
-              <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${colorFor(it.status)}`}>
-                {iconFor(it.status)}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-navy-900">{it.text_en}</p>
-                <p className="text-xs text-navy-500">{it.text_th}</p>
-                {it.note && <p className="mt-1 text-xs text-navy-600">— {it.note}</p>}
+        <div className="border-t border-navy-100">
+          {subsections.map((s) => (
+            <div key={s.id} className="bg-navy-50/30">
+              <div className="px-4 py-2">
+                <p className="text-sm font-medium text-navy-800">{s.name_en}</p>
+                <p className="text-xs text-navy-500">{s.name_th}</p>
               </div>
-            </li>
+              {s.items.length > 0 && (
+                <ul className="divide-y divide-navy-100 border-t border-navy-100 pl-4">
+                  {s.items.map((it) => <ItemLi key={it.id} it={it} />)}
+                </ul>
+              )}
+            </div>
           ))}
-        </ul>
+          {items.length > 0 && (
+            <ul className="divide-y divide-navy-100">
+              {items.map((it) => <ItemLi key={it.id} it={it} />)}
+            </ul>
+          )}
+        </div>
       )}
     </section>
   );

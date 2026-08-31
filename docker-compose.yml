@@ -206,11 +206,11 @@ services:
       - traefik.http.middlewares.privacy-ratelimit.ratelimit.average=5
       - traefik.http.middlewares.privacy-ratelimit.ratelimit.burst=3
       - traefik.http.middlewares.privacy-ratelimit.ratelimit.period=1m
-      # Password-reset endpoints — tighter still (5 attempts / min per IP)
-      # so brute-force enumeration is impractical. Applies to both staff
-      # (/api/auth/forgot-password + /reset-password) and customer variants
-      # (/api/auth/customer/...) since both live under the same prefix.
-      - traefik.http.routers.pwreset.rule=PathRegexp(`^/api/auth/(customer/)?(forgot|reset)-password$`)
+      # Sensitive/abuse-prone endpoints — tighter still (5 / min per IP) so
+      # brute-force enumeration and email-bombing are impractical. Covers
+      # password-reset (staff + customer), plus public self-registration and
+      # magic-link requests (both send email to caller-supplied addresses).
+      - traefik.http.routers.pwreset.rule=PathRegexp(`^/api/auth/((customer/)?(forgot|reset)-password|customer/(register|magic-link/request))$`)
       - traefik.http.routers.pwreset.entrypoints=web
       - traefik.http.routers.pwreset.service=auth
       - traefik.http.routers.pwreset.priority=200

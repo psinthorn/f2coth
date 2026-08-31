@@ -55,6 +55,9 @@ func (h *CustomerAuthHandler) contactFromBearer(r *http.Request) (string, error)
 	}
 	claims := jwt.MapClaims{}
 	tok, err := jwt.ParseWithClaims(strings.TrimPrefix(authz, "Bearer "), claims, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrTokenSignatureInvalid
+		}
 		return []byte(h.Cfg.JWTSecret), nil
 	})
 	if err != nil || !tok.Valid {
@@ -124,6 +127,14 @@ func (h *CustomerAuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request
 		       updated_at        = NOW()
 		 WHERE id = $1`, contactID); err != nil {
 		writeErr(w, http.StatusInternalServerError, "verify update error")
+		return
+	}
+	// Verify-to-activate: flip a self-registered org from pending → active.
+	if _, err := tx.Exec(ctx, `
+		UPDATE customers SET status = 'active'
+		 WHERE id = (SELECT customer_id FROM customer_contacts WHERE id = $1)
+		   AND status = 'pending'`, contactID); err != nil {
+		writeErr(w, http.StatusInternalServerError, "activate error")
 		return
 	}
 	if _, err := tx.Exec(ctx,

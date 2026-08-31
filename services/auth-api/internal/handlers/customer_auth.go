@@ -38,6 +38,7 @@ type customerContact struct {
 
 	MustChangePassword bool
 	EmailVerified      bool
+	MFAEnabled         bool
 }
 
 type customerLoginReq struct {
@@ -80,7 +81,7 @@ func (h *CustomerAuthHandler) loadMemberships(ctx context.Context, contactID str
 		SELECT m.customer_id, c.name, m.role, m.is_primary
 		FROM contact_org_memberships m
 		JOIN customers c ON c.id = m.customer_id
-		WHERE m.contact_id = $1 AND c.is_active = TRUE AND m.disabled_at IS NULL
+		WHERE m.contact_id = $1 AND c.is_active = TRUE AND c.status <> 'pending' AND m.disabled_at IS NULL
 		ORDER BY m.is_primary DESC, c.name`, contactID)
 	if err != nil {
 		return nil, err
@@ -129,11 +130,11 @@ func (h *CustomerAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var c customerContact
 	err := h.DB.QueryRow(ctx, `
         SELECT id, customer_id, email, password_hash, full_name, role, locale,
-               must_change_password, (email_verified_at IS NOT NULL)
+               must_change_password, (email_verified_at IS NOT NULL), mfa_enabled
         FROM customer_contacts
         WHERE email = $1 AND disabled_at IS NULL
     `, req.Email).Scan(&c.ID, &c.CustomerID, &c.Email, &c.PasswordHash, &c.FullName, &c.Role, &c.Locale,
-		&c.MustChangePassword, &c.EmailVerified)
+		&c.MustChangePassword, &c.EmailVerified, &c.MFAEnabled)
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeErr(w, http.StatusUnauthorized, "invalid credentials")
 		return
@@ -147,10 +148,24 @@ func (h *CustomerAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Resolve the active org from memberships (multi-org). The active org for a
-	// fresh login is the primary membership. A contact with no active, enabled
-	// membership (all orgs inactive or all memberships disabled) cannot log in —
-	// treated as an inactive account.
+	// MFA gate: if enrolled, no session is issued yet — hand back a short-lived
+	// mfa_pending token the client redeems at /customer/mfa/verify.
+	if c.MFAEnabled {
+		pending, err := signMFAPending(h.Cfg, "mfa_customer", c.ID)
+		if err != nil {
+			writeErr(w, http.StatusInternalServerError, "token sign failed")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"mfa_required": true, "mfa_token": pending})
+		return
+	}
+
+	h.issueCustomerSession(w, r, ctx, c)
+}
+
+// issueCustomerSession resolves the active org, mints access + refresh tokens,
+// and writes the login response. Shared by password login and MFA verify.
+func (h *CustomerAuthHandler) issueCustomerSession(w http.ResponseWriter, r *http.Request, ctx context.Context, c customerContact) {
 	memberships, err := h.loadMemberships(ctx, c.ID)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "db error")
@@ -323,6 +338,9 @@ func (h *CustomerAuthHandler) SetLocale(w http.ResponseWriter, r *http.Request) 
 	tokStr := strings.TrimPrefix(authz, "Bearer ")
 	claims := jwt.MapClaims{}
 	tok, err := jwt.ParseWithClaims(tokStr, claims, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrTokenSignatureInvalid
+		}
 		return []byte(h.Cfg.JWTSecret), nil
 	})
 	if err != nil || !tok.Valid {
